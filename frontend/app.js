@@ -118,7 +118,7 @@ createApp({
 
  const cargarDatos = async () => {
   // Obtener token (el userId se usa como token)
-  const userData = localStorage.getItem('biocare_user');
+  const userData = localStorage.getItem('operia_user');
   if (!userData) return;
   const token = JSON.parse(userData).id;
 

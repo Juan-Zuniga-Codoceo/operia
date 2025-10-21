@@ -1,7 +1,7 @@
 {
-  "name": "biocaretask",
+  "name": "Operia",
   "version": "1.0.0",
-  "description": "Sistema de gestión de tareas para Biocare",
+  "description": "Sistema de gestión de tareas para Operia",
   "main": "backend/server.js",
   "scripts": {
     "start": "node start-server.js",
@@ -13,7 +13,7 @@
   "keywords": [
     "task",
     "management",
-    "biocare"
+    "Operia"
   ],
   "author": "Synapse Dev - Synapsedev.cl",
   "license": "ISC",

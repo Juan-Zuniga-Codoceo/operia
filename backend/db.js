@@ -183,10 +183,10 @@ db.serialize(() => {
   const defaultPassword = bcrypt.hashSync('1234', 10);
   db.run(
     `INSERT OR IGNORE INTO users (name, email, password, office, role) VALUES (?, ?, ?, ?, ?)`,
-    ['Admin', 'admin@biocare.cl', defaultPassword, 'Valparaíso', 'admin'],
+    ['Admin', 'admin@operia.cl', defaultPassword, 'Valparaíso', 'admin'],
     function (err) {
       if (err) console.error('❌ Error al insertar usuario admin:', err.message);
-      else if (this.changes > 0) console.log('✅ Usuario admin creado: admin@biocare.cl / contraseña: 1234');
+      else if (this.changes > 0) console.log('✅ Usuario admin creado: admin@operia.cl / contraseña: 1234');
       else console.log('ℹ️  El usuario admin ya existe');
     }
   );

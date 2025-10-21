@@ -31,7 +31,7 @@ class API {
       
       if (response.status === 401) {
         sessionStorage.removeItem('auth_token');
-        sessionStorage.removeItem('biocare_user');
+        sessionStorage.removeItem('operia_user');
         window.location.href = '/login';
         throw new Error('Sesión expirada');
       }
@@ -90,7 +90,7 @@ class API {
     }).then(async response => {
       if (response.status === 401) {
         sessionStorage.removeItem('auth_token');
-        sessionStorage.removeItem('biocare_user');
+        sessionStorage.removeItem('operia_user');
         window.location.href = '/login';
         throw new Error('Sesión expirada');
       }

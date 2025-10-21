@@ -20,7 +20,7 @@ process.env.NODE_ENV = 'production';
 process.env.HOST = '0.0.0.0';
 process.env.PORT = process.env.PORT || 3000;
 
-console.log('🚀 Iniciando BiocareTask en modo producción...');
+console.log('🚀 Iniciando Operia en modo producción...');
 console.log(`📂 Directorio de trabajo: ${__dirname}`);
 console.log(`💾 Directorio de datos: ${dataDir}`);
 console.log(`🌐 Host: ${process.env.HOST}`);

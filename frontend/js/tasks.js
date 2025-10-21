@@ -352,12 +352,12 @@ createApp({
       return text.replace(/\n/g, '<br>');
     };
 
-    const userData = sessionStorage.getItem('biocare_user');
+    const userData = sessionStorage.getItem('operia_user');
     if (!userData) { window.location.href = '/login'; }
     else { user.value = JSON.parse(userData); }
 
     const logout = () => {
-      sessionStorage.removeItem('biocare_user');
+      sessionStorage.removeItem('operia_user');
       sessionStorage.removeItem('auth_token');
       window.location.href = '/login';
     };

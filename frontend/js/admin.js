@@ -119,13 +119,13 @@ const toggleUserStatus = async (userToToggle) => {
     };
 
     const logout = () => {
-      sessionStorage.removeItem('biocare_user');
+      sessionStorage.removeItem('operia_user');
       sessionStorage.removeItem('auth_token');
       window.location.href = '/login.html';
     };
 
     onMounted(() => {
-      const userData = sessionStorage.getItem('biocare_user');
+      const userData = sessionStorage.getItem('operia_user');
       if (!userData) {
         window.location.href = '/login.html';
         return;

@@ -29,7 +29,7 @@ const sendUpdateAnnouncement = async () => {
     console.log(`👥 Se encontraron ${users.length} usuarios para notificar.`);
 
     // 2. Definir el contenido del correo
-    const subject = '🚀 ¡Nuevas Funciones y Mejoras en BiocareTask!';
+    const subject = '🚀 ¡Nuevas Funciones y Mejoras en Operia!';
     const mainContentHtml = `
       <p style="color: #34495E; font-size: 16px;">Hemos trabajado en nuevas herramientas para mejorar tu productividad y la colaboración en equipo. Estas son las principales novedades:</p>
       <ul style="padding-left: 20px; color: #34495E;">

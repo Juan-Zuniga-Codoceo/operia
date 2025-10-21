@@ -234,7 +234,7 @@ router.post('/tasks', jsonParser, authenticateToken, [body('title').notEmpty().t
                   <p style="color: #34495E; font-size: 16px;">${creator.name} te ha asignado una nueva tarea: "<strong>${title}</strong>".</p>
                   <p style="color: #7F8C8D;"><strong>Prioridad:</strong> <span style="color: ${priority === 'alta' ? '#E74C3C' : '#34495E'}; font-weight: bold;">${priority.toUpperCase()}</span></p>
                   <p style="color: #7F8C8D;"><strong>Vencimiento:</strong> ${formattedDueDate}</p>
-                  <p style="color: #34495E; font-size: 16px; margin-top: 20px;">Por favor, revísala en el tablero de BiocareTask.</p>
+                  <p style="color: #34495E; font-size: 16px; margin-top: 20px;">Por favor, revísala en el tablero de Operia.</p>
                 `;
                 const assigneeHtml = createEmailTemplate({
                   title: '🔔 ¡Nueva Tarea Asignada!',

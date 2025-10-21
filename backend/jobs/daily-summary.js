@@ -87,7 +87,7 @@ const sendDailySummaries = async () => {
             buttonText: 'Ir a mi Tablero'
         });
         
-        await sendEmail(user.email, `📋 Tu resumen diario de BiocareTask`, emailHtml);
+        await sendEmail(user.email, `📋 Tu resumen diario de Operia`, emailHtml);
         console.log(`✅ Correo enviado a: ${user.email}`);
       }
     }

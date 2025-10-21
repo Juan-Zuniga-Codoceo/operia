@@ -22,11 +22,11 @@ createApp({
         await API.put('/api/user/preferences', payload);
 
         
-        const localUser = JSON.parse(sessionStorage.getItem('biocare_user'));
+        const localUser = JSON.parse(sessionStorage.getItem('operia_user'));
         if (localUser) {
           localUser.email_notifications = payload.email_notifications;
           user.value.email_notifications = payload.email_notifications; // Sincronizamos el objeto 'user' principal
-          sessionStorage.setItem('biocare_user', JSON.stringify(localUser));
+          sessionStorage.setItem('operia_user', JSON.stringify(localUser));
         }
         API.showNotification('Preferencias guardadas.', 'success');
       } catch (error) {
@@ -48,7 +48,7 @@ createApp({
     // MODIFICADO: Cargamos el usuario y sincronizamos el interruptor al inicio.
     const loadUserAndSyncToggle = () => {
       try {
-        const userData = sessionStorage.getItem('biocare_user');
+        const userData = sessionStorage.getItem('operia_user');
         if (!userData) {
           window.location.href = '/login';
           return;
@@ -76,7 +76,7 @@ createApp({
       }
     };
     const logout = () => {
-      sessionStorage.removeItem('biocare_user');
+      sessionStorage.removeItem('operia_user');
       sessionStorage.removeItem('auth_token');
       window.location.href = '/login';
     };
@@ -109,7 +109,7 @@ createApp({
       try {
         const result = await API.upload('/api/user/avatar', formData);
         user.value.avatar_url = result.avatar_url;
-        sessionStorage.setItem('biocare_user', JSON.stringify(user.value));
+        sessionStorage.setItem('operia_user', JSON.stringify(user.value));
         API.showNotification('Imagen de perfil actualizada', 'success');
       } catch (error) {
         API.showNotification(error.message || 'Error al subir la imagen', 'error');

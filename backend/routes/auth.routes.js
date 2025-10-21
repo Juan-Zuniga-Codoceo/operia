@@ -134,11 +134,11 @@ router.post('/forgot-password', jsonParser, [
       const resetLink = `${baseUrl}/reset-password.html?token=${token}`;
 
       // Código NUEVO y CORRECTO:
-      const subject = 'Recuperación de Contraseña - BiocareTask';
+      const subject = 'Recuperación de Contraseña - Operia';
 
       // 1. Creamos el contenido principal del correo
       const mainContentHtml = `
-        <p style="color: #34495E; font-size: 16px; line-height: 1.5;">Has solicitado restablecer tu contraseña para tu cuenta en BiocareTask. Haz clic en el botón de abajo para continuar con el proceso.</p>
+        <p style="color: #34495E; font-size: 16px; line-height: 1.5;">Has solicitado restablecer tu contraseña para tu cuenta en Operia. Haz clic en el botón de abajo para continuar con el proceso.</p>
         <p style="color: #7F8C8D; font-size: 14px;">Este enlace es válido por 1 hora.</p>
       `;
 

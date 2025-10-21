@@ -120,7 +120,7 @@ createApp({
     };
 
     const logout = () => {
-      sessionStorage.removeItem('biocare_user');
+      sessionStorage.removeItem('operia_user');
       sessionStorage.removeItem('auth_token');
       sessionStorage.removeItem('restoredCount');
       window.location.href = '/login.html';
@@ -162,7 +162,7 @@ createApp({
     });
 
     onMounted(() => {
-      const userData = sessionStorage.getItem('biocare_user');
+      const userData = sessionStorage.getItem('operia_user');
       if (!userData) {
         window.location.href = '/login.html';
       } else {

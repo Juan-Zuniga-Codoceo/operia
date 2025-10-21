@@ -18,7 +18,7 @@ const UpdateModal = {
       <div class="modal-content" style="max-width: 550px;">
         <div class="update-modal-header">
           <i class="fa-solid fa-rocket"></i>
-          <h2>¡Novedades en BiocareTask!</h2>
+          <h2>¡Novedades en Operia!</h2>
         </div>
         <div class="modal-body">
           <p>Hemos lanzado una gran actualización con nuevas funciones y un diseño renovado:</p>

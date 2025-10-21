@@ -45,7 +45,7 @@ if (document.getElementById('login-app')) {
           }
 
           // Guardar sesión con los nuevos datos
-          sessionStorage.setItem('biocare_user', JSON.stringify(data.user));
+          sessionStorage.setItem('operia_user', JSON.stringify(data.user));
           sessionStorage.setItem('auth_token', data.token);
 
           // Redirigir

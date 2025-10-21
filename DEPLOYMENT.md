@@ -1,4 +1,4 @@
-# Guía de Implementación - BiocareTask
+# Guía de Implementación - Operia
 
 ## 📋 Requisitos del Servidor
 - Ubuntu 18.04+ o Windows Server 2016+

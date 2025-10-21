@@ -73,7 +73,7 @@ app.use((err, req, res, next) => {
 
 // === INICIAR SERVIDOR ===
 const server = app.listen(PORT, HOST, () => {
-  console.log(`🚀 BiocareTask corriendo en http://${HOST}:${PORT}`);
+  console.log(`🚀 Operia corriendo en http://${HOST}:${PORT}`);
   
   // Inicia el WebSocket Server
   initializeWebSocket(server);

@@ -41,7 +41,7 @@
   left: 0;
   top: 5px;
   font-size: 18px;
-  color: var(--c-primary); /* Íconos en azul Biocare */
+  color: var(--c-primary); /* Íconos en azul Operia */
 }
 
 .update-list li strong {
@@ -65,7 +65,7 @@
 }
 
 .modal-footer .dont-show-again input[type="checkbox"] {
-  accent-color: var(--c-action); /* Color del check en verde Biocare */
+  accent-color: var(--c-action); /* Color del check en verde Operia */
   cursor: pointer;
 }
 
