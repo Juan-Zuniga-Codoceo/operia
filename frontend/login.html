@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BiocareTask - Iniciar Sesión</title>
+  <link rel="stylesheet" href="css/login.css" />
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="assets/logo.png" type="image/png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+</head>
+
+<body>
+  <div id="login-app">
+    <div class="login-container">
+      <!-- Lado izquierdo: Branding -->
+      <div class="brand">
+        <div class="logo">
+          <img src="assets/logo.png" alt="Biocare Logo" />
+        </div>
+        <h1>BiocareTask</h1>
+        <p>Organiza tus tareas diarias de forma simple y segura</p>
+      </div>
+
+      <!-- Lado derecho: Formulario -->
+      <form @submit.prevent="login" class="login-form">
+        <h2>Iniciar Sesión</h2>
+        <p>Accede a tu cuenta para gestionar tus tareas</p>
+
+        <!-- Mensaje de error -->
+        <div class="error" v-if="error">
+          {{ error }}
+        </div>
+
+        <!-- Campo de correo -->
+        <div class="input-group">
+          <label>Correo corporativo</label>
+          <input type="email" v-model="email" placeholder="tu@biocare.cl" required autofocus />
+        </div>
+
+        <!-- Campo de contraseña -->
+        <div class="input-group password-group">
+          <label>Contraseña</label>
+          <input 
+            :type="passwordFieldType" 
+            v-model="password" 
+            placeholder="••••••••" 
+            required 
+          />
+          <button type="button" class="toggle-password" @click="togglePasswordVisibility">
+             <i :class="passwordFieldType === 'password' ? 'fa-solid fa-eye' : 'fa-solid fa-eye-slash'"></i>
+          </button>
+        </div>
+        <!-- Botón de acceso -->
+        <button type="submit" :disabled="loading" class="btn-primary">
+          {{ loading ? 'Cargando...' : 'Iniciar Sesión' }}
+        </button>
+
+        <!-- Enlace a registro -->
+        <div class="links">
+          <a href="/registro.html">¿No tienes cuenta? Regístrate</a>
+          <a href="/forgot-password.html" class="forgot-password">¿Olvidaste tu contraseña?</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Vue.js desde CDN -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="js/auth.js"></script>
+</body>
+
+</html>

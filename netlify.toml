@@ -1,0 +1,22 @@
+# netlify.toml
+
+# Configuración de construcción para Netlify
+[build]
+  # No hay un paso de construcción, solo son archivos estáticos
+  command = "echo 'No build required'"
+  # La carpeta que se va a publicar
+  publish = "frontend"
+
+# Redirección para la página de inicio
+[[redirects]]
+  from = "/"
+  to = "/login.html"
+  status = 200
+
+# Redirección (proxy) para la API
+# Esto conecta el frontend con tu backend de forma segura
+[[redirects]]
+  from = "/api/*"
+  to = "https://biocaretask-backend.onrender.com/:splat"
+  status = 200
+  force = true

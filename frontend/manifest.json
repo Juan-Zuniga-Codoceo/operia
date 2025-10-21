@@ -1,0 +1,15 @@
+{
+  "name": "BiocareTask",
+  "short_name": "Tareas",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#049DD9",
+  "theme_color": "#97BF04",
+  "icons": [
+    {
+      "src": "assets/logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}
