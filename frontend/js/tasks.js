@@ -267,6 +267,22 @@ createApp({
       }
     };
 
+    const getAssignees = (task) => {
+      if (!task.assigned_ids || !users.value.length) {
+        return [];
+      }
+      const ids = task.assigned_ids.split(',').map(Number);
+      return users.value.filter(u => ids.includes(u.id));
+    };
+
+    // Genera el estilo para el avatar de un usuario
+    const getAvatarStyle = (assignee) => {
+      if (assignee && assignee.avatar_url) {
+        return { 'background-image': `url(${assignee.avatar_url})` };
+      }
+      return {}; // Devuelve objeto vacío si no hay avatar
+    };
+
     const setupWebSocket = () => {
       const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
       const wsUrl = wsProtocol + window.location.host;
@@ -773,16 +789,23 @@ createApp({
       return estaVencida;
     };
 
-    const formatDate = (isoDate) => {
+    const formatDate = (isoDate, isCompact = false) => {
       if (!isoDate) return 'No especificada';
       try {
-        return new Date(isoDate).toLocaleString('es-CL', {
+        const date = new Date(isoDate);
+        if (isCompact) {
+          // Formato corto para la tarjeta: "21 oct"
+          return date.toLocaleDateString('es-CL', {
+            month: 'short', day: 'numeric'
+          });
+        }
+        // Formato largo para modales y detalles
+        return date.toLocaleString('es-CL', {
           day: 'numeric', month: 'long', year: 'numeric',
           hour: '2-digit', minute: '2-digit'
         });
       } catch { return isoDate; }
     };
-
     const formatCommentContent = (text) => {
       if (!text) return '';
       // Convierte saltos de línea a <br> y resalta las menciones con una clase CSS
@@ -1063,7 +1086,8 @@ const confirmCompletion = async () => {
       toggleLabelInNew, resetForm, handleFileUpload, removeFile, crearEtiqueta,
       toggleLabelInEdit, cambiarEstadoTarea, verDetalles, handleCommentAttachment,
       removeCommentAttachment, removeCommentAttachmentFile, agregarComentario, getLabelsArray, toggleNotifications,
-      marcarComoLeida, marcarTodasComoLeidas, eliminarNotificacion, formatDate,
+      marcarComoLeida, marcarTodasComoLeidas, eliminarNotificacion, formatDate,getAssignees, 
+      getAvatarStyle,
       getColor, getPriorityText, getFileSize, downloadFile,
       setQuickDate, setQuickEditDate,
       moverACamino: (id) => cambiarEstadoTarea(id, 'en_camino'),
