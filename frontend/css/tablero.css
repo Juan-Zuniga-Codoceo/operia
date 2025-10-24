@@ -814,20 +814,10 @@ body {
 .logo .task {
   display: none;
 }
+.main-nav-container { flex-grow: 1; display: flex; justify-content: center; background-color: transparent !important; }
 
-.main-nav-container {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-}
 
-.main-nav {
-  display: flex;
-  gap: var(--space-8);
-  background: var(--color-bg-main);
-  padding: var(--space-4);
-  border-radius: var(--radius);
-}
+.main-nav { display: flex; gap: 8px; background-color: #E8F0F2 !important; padding: 6px; border-radius: 12px !important; border: 1px solid #CBD5E0 !important; }
 
 .nav-link {
   display: flex;
@@ -918,23 +908,26 @@ body {
 .filter-item {
   display: flex;
   align-items: center;
-  gap: var(--space-8);
+  gap: 10px;
+  padding: 8px 16px;
+  background-color: #FFFFFF !important;
+  border-radius: 10px;
+  border: 1.5px solid #E2E8F0;
 }
 
-.filter-item i {
-  color: var(--color-text-muted);
+.filter-item i { 
+  color: #049DD9 !important;
+  font-size: 16px;
 }
 
 .filter-item input[type="date"] {
-  padding: var(--space-8) var(--space-12);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  font-size: var(--font-size-sm);
-  font-family: var(--font-family-base);
-  color: var(--color-text-primary);
-  background-color: var(--color-surface);
-  transition: var(--transition);
+  background-color: #FFFFFF !important;
+  color: #2c3e50 !important;
+  border: none;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
 }
+
 
 .filter-item input[type="date"]:focus {
   border-color: var(--color-primary);
@@ -3009,3 +3002,170 @@ input[type="datetime-local"]::placeholder {
 }
 
 /* ==================== FIN CORRECCIÓN ELEMENTOS OSCUROS ==================== */
+
+/* ==================== SOLUCIÓN DEFINITIVA - FONDOS NEGROS ==================== */
+
+/* ===== 1. CORREGIR MAIN-NAV-CONTAINER (BOTONES TABLERO/FICHAS) ===== */
+.main-nav-container {
+  background-color: transparent !important;
+  padding: 0 !important;
+}
+
+.main-nav {
+  display: flex !important;
+  gap: 8px !important;
+  background-color: #E8F0F2 !important;
+  padding: 6px !important;
+  border-radius: 12px !important;
+  border: 1px solid #CBD5E0 !important;
+}
+
+.nav-link {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 10px 24px !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  color: #4A5568 !important;
+  background-color: transparent !important;
+  text-decoration: none !important;
+  transition: all 0.2s ease !important;
+  border: 2px solid transparent !important;
+}
+
+.nav-link:hover {
+  color: #049DD9 !important;
+  background-color: rgba(4, 157, 217, 0.1) !important;
+}
+
+.nav-link.active {
+  background-color: #049DD9 !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 2px 8px rgba(4, 157, 217, 0.3) !important;
+  border-color: transparent !important;
+}
+
+/* ===== 2. CORREGIR INPUT DE FECHA (FLATPICKR) ===== */
+#filtro-fecha,
+input[type="date"],
+input[type="datetime-local"],
+.filter-item input[type="date"] {
+  background-color: #FFFFFF !important;
+  color: #2c3e50 !important;
+  border: 1.5px solid #CBD5E0 !important;
+  border-radius: 8px !important;
+  padding: 10px 14px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  font-family: 'Inter', 'Segoe UI', sans-serif !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+}
+
+/* Calendario de Flatpickr */
+.flatpickr-calendar {
+  background-color: #FFFFFF !important;
+  border: 1px solid #E2E8F0 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+
+.flatpickr-months {
+  background-color: #049DD9 !important;
+}
+
+.flatpickr-current-month {
+  color: #FFFFFF !important;
+}
+
+.flatpickr-weekdays {
+  background-color: #F7F8FA !important;
+}
+
+.flatpickr-weekday {
+  color: #2c3e50 !important;
+}
+
+.flatpickr-day {
+  color: #2c3e50 !important;
+  background-color: transparent !important;
+}
+
+.flatpickr-day:hover {
+  background-color: #E8F5FB !important;
+  color: #049DD9 !important;
+}
+
+.flatpickr-day.selected {
+  background-color: #049DD9 !important;
+  color: #FFFFFF !important;
+  border-color: #049DD9 !important;
+}
+
+.flatpickr-day.today {
+  border-color: #97BF04 !important;
+  background-color: rgba(151, 191, 4, 0.1) !important;
+}
+
+/* ===== 3. FILTER-ITEM COMPLETO ===== */
+.filter-item {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 8px 16px !important;
+  background-color: #FFFFFF !important;
+  border-radius: 10px !important;
+  border: 1.5px solid #E2E8F0 !important;
+}
+
+.filter-item i {
+  color: #049DD9 !important;
+  font-size: 16px !important;
+}
+
+/* ===== 4. ASEGURAR HEADER BLANCO ===== */
+.header {
+  background-color: #FFFFFF !important;
+  border-bottom: 1px solid #E2E8F0 !important;
+  color: #2c3e50 !important;
+}
+
+/* ===== 5. LOGO Y TEXTOS ===== */
+.logo h1 {
+  color: #2c3e50 !important;
+}
+
+.logo .operia {
+  color: #049DD9 !important;
+}
+
+.logo .task {
+  color: #2c3e50 !important;
+}
+
+/* ===== 6. ELIMINAR CUALQUIER FONDO OSCURO RESIDUAL ===== */
+* {
+  scrollbar-color: #CBD5E0 #F7F8FA !important;
+}
+
+*::-webkit-scrollbar {
+  width: 12px !important;
+  height: 12px !important;
+}
+
+*::-webkit-scrollbar-track {
+  background: #F7F8FA !important;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #CBD5E0 !important;
+  border-radius: 6px !important;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #A0AEC0 !important;
+}
+
+/* ==================== FIN SOLUCIÓN DEFINITIVA ==================== */
