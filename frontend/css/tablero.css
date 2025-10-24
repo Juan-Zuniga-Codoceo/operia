@@ -2164,3 +2164,848 @@ body {
   outline: var(--focus-outline);
   outline-offset: 2px;
 }
+
+
+
+
+/* ==================== PARCHE COLORES OPERIA - AGREGAR AL FINAL ==================== */
+
+/* Forzar fondo claro en body y elementos principales */
+body {
+  background: #F7F8FA !important;
+  color: #2c3e50 !important;
+}
+
+/* Header blanco limpio */
+.header {
+  background-color: #FFFFFF !important;
+  border-bottom: 1px solid #EAECEE !important;
+}
+
+/* Columnas Kanban con fondo blanco */
+.kanban-column {
+  background-color: transparent !important;
+}
+
+.task-list {
+  background-color: #FAFBFC !important;
+}
+
+/* Task cards con fondo blanco */
+.task-card {
+  background-color: #FFFFFF !important;
+  border: 1px solid #E2E8F0 !important;
+}
+
+/* Modal con fondo blanco */
+.modal-content {
+  background-color: #FFFFFF !important;
+}
+
+.modal-body {
+  background-color: #FFFFFF !important;
+}
+
+.modal-footer {
+  background-color: #F7F8FA !important;
+}
+
+/* Controls bar con fondo blanco */
+.controls-bar {
+  background-color: #FFFFFF !important;
+  border-bottom: 1px solid #EAECEE !important;
+}
+
+/* Detail sections con fondo blanco */
+.detail-section {
+  background-color: #FFFFFF !important;
+  border: 1px solid #E2E8F0 !important;
+}
+
+/* Formularios con fondos blancos */
+.form-group input,
+.form-group textarea,
+.form-group select {
+  background-color: #FFFFFF !important;
+  border: 1px solid #CBD5E0 !important;
+}
+
+/* Comment form con fondo claro */
+.comment-form {
+  background-color: #FAFBFC !important;
+  border: 1px solid #E2E8F0 !important;
+}
+
+.comment-form textarea {
+  background-color: #FFFFFF !important;
+}
+
+/* Asegurar texto oscuro legible */
+.task-title,
+.modal-header h2,
+.detail-section h3,
+.form-group label {
+  color: #2c3e50 !important;
+}
+
+/* Notificaciones panel con fondo blanco */
+.notifications-panel {
+  background-color: #FFFFFF !important;
+}
+
+/* Pills container con fondo blanco */
+.pills-container {
+  background-color: #FFFFFF !important;
+}
+
+/* Dropdown menu con fondo blanco */
+.dropdown-menu,
+.label-dropdown,
+.split-dropdown-menu {
+  background-color: #FFFFFF !important;
+}
+
+/* Asegurar iconos y stat items visibles */
+.stat-item i {
+  background-color: rgba(4, 157, 217, 0.1) !important;
+  color: #049DD9 !important;
+}
+
+.stat-item:nth-child(2) i {
+  background-color: rgba(151, 191, 4, 0.1) !important;
+  color: #97BF04 !important;
+}
+
+.stat-item.danger i {
+  background-color: rgba(231, 76, 60, 0.1) !important;
+  color: #E74C3C !important;
+}
+
+/* Asegurar nav activo con color Operia */
+.nav-link.active {
+  background-color: #049DD9 !important;
+  color: #FFFFFF !important;
+}
+
+/* Botones con colores Operia correctos */
+.btn-create {
+  background-color: #97BF04 !important;
+  color: #FFFFFF !important;
+}
+
+.btn-create:hover {
+  background-color: #83A603 !important;
+}
+
+.btn-primary-action {
+  background: linear-gradient(135deg, #97BF04 0%, #8AB303 100%) !important;
+  color: #FFFFFF !important;
+}
+
+.btn-split-trigger {
+  background: linear-gradient(135deg, #97BF04 0%, #8AB303 100%) !important;
+  color: #FFFFFF !important;
+}
+
+/* Eliminar gradientes oscuros del modal overlay */
+.modal {
+  background-color: rgba(44, 62, 80, 0.7) !important;
+}
+
+/* ==================== FIN PARCHE ==================== */
+
+/* ==================== PARCHE FINAL - CORREGIR FONDOS OSCUROS ==================== */
+
+/* Detail sections con fondo blanco limpio */
+.detail-section {
+  background-color: #FFFFFF !important;
+  border: 1px solid #E2E8F0 !important;
+  padding: 20px !important;
+  border-radius: 8px !important;
+  margin-bottom: 16px !important;
+}
+
+/* Detail section headers */
+.detail-section h3 {
+  color: #2c3e50 !important;
+  border-bottom: 1px solid #E2E8F0 !important;
+  padding-bottom: 12px !important;
+  margin-bottom: 16px !important;
+}
+
+/* Modal body completamente blanco */
+.modal-body {
+  background-color: #FFFFFF !important;
+  padding: 24px !important;
+}
+
+/* Cards de novedades con fondo blanco */
+.modal-body ul li {
+  background-color: #FFFFFF !important;
+  border: 1px solid #E2E8F0 !important;
+  border-left: 4px solid #049DD9 !important;
+  padding: 18px !important;
+  margin-bottom: 14px !important;
+  border-radius: 10px !important;
+}
+
+.modal-body ul li:hover {
+  background-color: #F8FAFC !important;
+  border-color: #CBD5E0 !important;
+}
+
+/* Iconos de las cards de novedades con azul Operia */
+.modal-body ul li i {
+  background-color: #049DD9 !important;
+  color: #FFFFFF !important;
+  width: 44px !important;
+  height: 44px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 10px !important;
+  font-size: 20px !important;
+}
+
+/* Texto de las cards de novedades */
+.modal-body ul li strong {
+  color: #1A202C !important;
+  font-weight: 700 !important;
+  font-size: 15px !important;
+}
+
+.modal-body ul li p {
+  color: #4A5568 !important;
+  font-size: 14px !important;
+}
+
+/* Comment form con fondo claro */
+.comment-form {
+  background-color: #FAFBFC !important;
+  border: 1px solid #E2E8F0 !important;
+  padding: 16px !important;
+}
+
+/* Comment list con fondo claro */
+.comment-content {
+  background-color: #F7F8FA !important;
+  border-radius: 8px !important;
+  padding: 12px !important;
+}
+
+/* Pills container blanco */
+.pills-container {
+  background-color: #FFFFFF !important;
+  border: 1px solid #E2E8F0 !important;
+}
+
+/* Inputs blancos */
+.label-input,
+.user-select-add,
+.form-group input,
+.form-group textarea,
+.form-group select {
+  background-color: #FFFFFF !important;
+  border: 1px solid #CBD5E0 !important;
+}
+
+/* Dropdown menu blanco */
+.label-dropdown,
+.split-dropdown-menu {
+  background-color: #FFFFFF !important;
+  border: 1px solid #E2E8F0 !important;
+}
+
+/* Notifications panel blanco */
+.notifications-panel {
+  background-color: #FFFFFF !important;
+}
+
+/* User menu dropdown blanco */
+.dropdown-menu {
+  background-color: #FFFFFF !important;
+  border: 1px solid #E2E8F0 !important;
+}
+
+/* Asegurar que attachments sean visibles */
+.attachment-pill {
+  background-color: #F7F8FA !important;
+  border: 1px solid #E2E8F0 !important;
+  color: #2c3e50 !important;
+}
+
+.attachment-pill:hover {
+  background-color: #EAF5FB !important;
+  border-color: #049DD9 !important;
+  color: #049DD9 !important;
+}
+
+/* Modal footer con fondo claro */
+.modal-footer {
+  background-color: #F7F8FA !important;
+  border-top: 1px solid #E2E8F0 !important;
+}
+
+/* Suggestions container claro */
+.suggestions-container {
+  background-color: #F8F9FA !important;
+  border: 1px dashed #CBD5E0 !important;
+}
+
+/* Task list con fondo claro */
+.task-list {
+  background-color: #FAFBFC !important;
+}
+
+/* Empty state con fondo transparente */
+.empty {
+  background-color: transparent !important;
+  border: 1px dashed #CBD5E0 !important;
+}
+
+/* Quick dates buttons */
+.quick-dates button {
+  background-color: #F7F8FA !important;
+  border: 1px solid #CBD5E0 !important;
+  color: #2c3e50 !important;
+}
+
+.quick-dates button:hover {
+  background-color: #049DD9 !important;
+  color: #FFFFFF !important;
+  border-color: #049DD9 !important;
+}
+
+/* Mention suggestions */
+.mention-suggestions {
+  background-color: #FFFFFF !important;
+  border: 1px solid #E2E8F0 !important;
+}
+
+.mention-item:hover,
+.mention-item.is-active {
+  background-color: #F7F8FA !important;
+  color: #049DD9 !important;
+}
+
+/* ==================== FIN PARCHE FINAL ==================== */
+
+/* ==================== ELIMINAR FRANJA NEGRA DEL FOOTER ==================== */
+
+/* Si hay un footer en el body, ocultarlo o hacerlo transparente */
+footer,
+body > footer,
+.footer,
+.page-footer,
+.main-footer {
+  display: none !important;
+}
+
+/* Si no se puede ocultar, hacer el fondo claro */
+footer,
+body > footer,
+.footer,
+.page-footer,
+.main-footer {
+  background-color: #F7F8FA !important;
+  color: #2c3e50 !important;
+  border-top: 1px solid #EAECEE !important;
+  padding: 0 !important;
+  min-height: 0 !important;
+}
+
+/* Asegurar que el dashboard ocupe todo el espacio */
+.dashboard {
+  min-height: calc(100vh - 64px) !important;
+  padding-bottom: 32px !important;
+}
+
+/* Body sin margen inferior extra */
+body {
+  margin: 0 !important;
+  padding: 0 !important;
+  background-color: #F7F8FA !important;
+}
+
+/* Eliminar cualquier elemento oscuro al final de la página */
+body::after,
+#app::after {
+  display: none !important;
+}
+
+/* ==================== FIN ELIMINACIÓN FRANJA NEGRA ==================== */
+
+/* ==================== MEJORAS PROFESIONALES TABLERO OPERIA ==================== */
+
+/* ===== 1. CONTROLS BAR ELEGANTE ===== */
+.controls-bar {
+  background-color: #FFFFFF !important;
+  border-bottom: 2px solid #E2E8F0 !important;
+  padding: 24px 32px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+}
+
+/* Filtros con iconos azul Operia */
+.filter-item i {
+  color: #049DD9 !important;
+  font-size: 16px !important;
+}
+
+.filter-item input[type="date"] {
+  border: 1.5px solid #CBD5E0 !important;
+  border-radius: 8px !important;
+  padding: 10px 14px !important;
+  transition: all 0.2s ease !important;
+}
+
+.filter-item input[type="date"]:focus {
+  border-color: #049DD9 !important;
+  box-shadow: 0 0 0 3px rgba(4, 157, 217, 0.1) !important;
+  outline: none !important;
+}
+
+/* Checkbox estilizado */
+.filter-checkbox {
+  color: #2c3e50 !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  padding: 8px 16px !important;
+  border-radius: 8px !important;
+  transition: all 0.2s ease !important;
+}
+
+.filter-checkbox:hover {
+  background-color: rgba(4, 157, 217, 0.05) !important;
+}
+
+.filter-checkbox input[type="checkbox"] {
+  width: 18px !important;
+  height: 18px !important;
+  accent-color: #049DD9 !important;
+}
+
+/* ===== 2. SUMMARY STATS MEJORADAS ===== */
+.summary-stats {
+  display: flex !important;
+  gap: 24px !important;
+}
+
+.stat-item {
+  display: flex !important;
+  align-items: center !important;
+  gap: 16px !important;
+  padding: 16px 24px !important;
+  background: linear-gradient(135deg, #F8FAFC 0%, #FFFFFF 100%) !important;
+  border-radius: 12px !important;
+  border: 1.5px solid #E2E8F0 !important;
+  transition: all 0.3s ease !important;
+}
+
+.stat-item:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(4, 157, 217, 0.1) !important;
+  border-color: #049DD9 !important;
+}
+
+.stat-item i {
+  width: 56px !important;
+  height: 56px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 12px !important;
+  font-size: 24px !important;
+  background: rgba(4, 157, 217, 0.12) !important;
+  color: #049DD9 !important;
+}
+
+.stat-item:nth-child(2) i {
+  background: rgba(151, 191, 4, 0.12) !important;
+  color: #97BF04 !important;
+}
+
+.stat-item.danger i {
+  background: rgba(231, 76, 60, 0.12) !important;
+  color: #E74C3C !important;
+}
+
+.stat-item.danger {
+  border-color: rgba(231, 76, 60, 0.3) !important;
+  background: linear-gradient(135deg, #FFF5F5 0%, #FFFFFF 100%) !important;
+}
+
+.stat-value {
+  font-size: 32px !important;
+  font-weight: 700 !important;
+  color: #2c3e50 !important;
+  line-height: 1 !important;
+}
+
+.stat-label {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #7f8c8d !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+
+/* ===== 3. BOTÓN NUEVA TAREA MEJORADO ===== */
+.btn-create {
+  background: linear-gradient(135deg, #97BF04 0%, #83A603 100%) !important;
+  color: white !important;
+  padding: 14px 28px !important;
+  border-radius: 10px !important;
+  font-weight: 700 !important;
+  font-size: 15px !important;
+  box-shadow: 0 4px 12px rgba(151, 191, 4, 0.3) !important;
+  transition: all 0.3s ease !important;
+  border: none !important;
+}
+
+.btn-create:hover {
+  background: linear-gradient(135deg, #83A603 0%, #6F8E03 100%) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(151, 191, 4, 0.4) !important;
+}
+
+.btn-create i {
+  font-size: 16px !important;
+}
+
+/* ===== 4. COLUMNAS KANBAN REFINADAS ===== */
+.kanban-column {
+  background-color: transparent !important;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+  box-shadow: none !important;
+}
+
+.column-title {
+  padding: 20px 24px !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+  color: white !important;
+  border-radius: 16px 16px 0 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+
+.column-pending .column-title {
+  background: linear-gradient(135deg, #ED8936 0%, #DD6B20 100%) !important;
+}
+
+.column-progress .column-title {
+  background: linear-gradient(135deg, #049DD9 0%, #0380B8 100%) !important;
+}
+
+.column-done .column-title {
+  background: linear-gradient(135deg, #2ecc71 0%, #27AE60 100%) !important;
+}
+
+.column-title i {
+  font-size: 18px !important;
+}
+
+/* ===== 5. TASK LIST MEJORADA ===== */
+.task-list {
+  background-color: #FAFBFC !important;
+  padding: 20px !important;
+  min-height: 450px !important;
+  border-radius: 0 0 16px 16px !important;
+  border: 2px solid #E2E8F0 !important;
+  border-top: none !important;
+}
+
+/* ===== 6. TASK CARDS PROFESIONALES ===== */
+.task-card {
+  background-color: #FFFFFF !important;
+  border-radius: 10px !important;
+  padding: 18px !important;
+  border: 1.5px solid #E2E8F0 !important;
+  border-left: 4px solid #CBD5E0 !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04) !important;
+  transition: all 0.25s ease !important;
+  cursor: pointer !important;
+}
+
+.task-card:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12) !important;
+  border-color: #CBD5E0 !important;
+}
+
+.task-card.alta {
+  border-left-color: #E74C3C !important;
+  border-left-width: 5px !important;
+}
+
+.task-card.media {
+  border-left-color: #f39c12 !important;
+  border-left-width: 5px !important;
+}
+
+.task-card.baja {
+  border-left-color: #2ecc71 !important;
+  border-left-width: 5px !important;
+}
+
+.task-card.vencida {
+  background: linear-gradient(135deg, #FFF5F5 0%, #FEE !important;
+  border-color: #FCA5A5 !important;
+  border-left-color: #E74C3C !important;
+}
+
+.task-title {
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  color: #2c3e50 !important;
+  margin-bottom: 14px !important;
+  line-height: 1.5 !important;
+  letter-spacing: -0.2px !important;
+}
+
+/* ===== 7. LABEL TAGS MEJORADAS ===== */
+.label-tag {
+  padding: 5px 12px !important;
+  background-color: #049DD9 !important;
+  color: white !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  border-radius: 6px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  transition: all 0.2s ease !important;
+}
+
+.label-tag:hover {
+  transform: scale(1.05) !important;
+  box-shadow: 0 2px 6px rgba(4, 157, 217, 0.3) !important;
+}
+
+/* ===== 8. TASK FOOTER MEJORADO ===== */
+.task-footer {
+  padding-top: 14px !important;
+  margin-top: 14px !important;
+  border-top: 1.5px solid #E2E8F0 !important;
+}
+
+.meta-item {
+  font-size: 13px !important;
+  color: #7f8c8d !important;
+  font-weight: 600 !important;
+}
+
+.meta-item i {
+  font-size: 14px !important;
+  color: #049DD9 !important;
+}
+
+.meta-item.meta-vencido {
+  color: #E74C3C !important;
+  font-weight: 700 !important;
+  background: #FEE2E2 !important;
+  padding: 4px 10px !important;
+  border-radius: 6px !important;
+}
+
+/* ===== 9. AVATARES MEJORADOS ===== */
+.avatar {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 50% !important;
+  border: 3px solid white !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12) !important;
+  font-weight: 700 !important;
+  font-size: 13px !important;
+  transition: all 0.3s ease !important;
+}
+
+.avatar:hover {
+  transform: translateY(-4px) scale(1.15) !important;
+  z-index: 10 !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* ===== 10. EMPTY STATE PROFESIONAL ===== */
+.empty {
+  padding: 80px 24px !important;
+  text-align: center !important;
+  color: #7f8c8d !important;
+  font-size: 15px !important;
+  font-weight: 500 !important;
+  font-style: italic !important;
+  background: transparent !important;
+  border: 2px dashed #CBD5E0 !important;
+  border-radius: 12px !important;
+}
+
+.empty::before {
+  font-size: 72px !important;
+  color: #CBD5E0 !important;
+  opacity: 0.4 !important;
+  margin-bottom: 20px !important;
+}
+
+/* ==================== FIN MEJORAS PROFESIONALES ==================== */
+
+/* ==================== CORREGIR ELEMENTOS OSCUROS - HEADER Y FECHA ==================== */
+
+/* ===== 1. INPUT DE FECHA CON FONDO BLANCO ===== */
+.filter-item input[type="date"],
+input[type="date"],
+input[type="datetime-local"] {
+  background-color: #FFFFFF !important;
+  color: #2c3e50 !important;
+  border: 1.5px solid #CBD5E0 !important;
+  border-radius: 8px !important;
+  padding: 10px 14px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  font-family: 'Inter', sans-serif !important;
+}
+
+.filter-item input[type="date"]:focus,
+input[type="date"]:focus,
+input[type="datetime-local"]:focus {
+  border-color: #049DD9 !important;
+  box-shadow: 0 0 0 3px rgba(4, 157, 217, 0.1) !important;
+  outline: none !important;
+}
+
+/* Placeholder del input de fecha */
+.filter-item input[type="date"]::placeholder,
+input[type="date"]::placeholder,
+input[type="datetime-local"]::placeholder {
+  color: #7f8c8d !important;
+}
+
+/* ===== 2. BOTONES DEL HEADER (TABLERO Y FICHAS) ===== */
+.main-nav {
+  display: flex !important;
+  gap: 8px !important;
+  background-color: #F7F8FA !important;
+  padding: 6px !important;
+  border-radius: 10px !important;
+}
+
+.nav-link {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 10px 24px !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  color: #4A5568 !important;
+  background-color: transparent !important;
+  text-decoration: none !important;
+  transition: all 0.2s ease !important;
+}
+
+.nav-link:hover {
+  color: #049DD9 !important;
+  background-color: rgba(4, 157, 217, 0.1) !important;
+}
+
+.nav-link.active {
+  background-color: #049DD9 !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 2px 8px rgba(4, 157, 217, 0.3) !important;
+}
+
+/* Iconos del nav */
+.nav-link i {
+  font-size: 16px !important;
+}
+
+/* ===== 3. HEADER COMPLETO BLANCO ===== */
+.header {
+  background-color: #FFFFFF !important;
+  border-bottom: 1px solid #E2E8F0 !important;
+  color: #2c3e50 !important;
+}
+
+/* Logo del header */
+.logo {
+  color: #2c3e50 !important;
+}
+
+.logo h1 {
+  color: #2c3e50 !important;
+}
+
+.logo .operia {
+  color: #049DD9 !important;
+}
+
+.logo .task {
+  color: #2c3e50 !important;
+}
+
+/* ===== 4. USER NAME EN EL HEADER ===== */
+.user-name {
+  color: #2c3e50 !important;
+  font-weight: 600 !important;
+}
+
+/* ===== 5. ICONOS DEL HEADER ===== */
+.btn-icon {
+  background-color: transparent !important;
+  color: #4A5568 !important;
+}
+
+.btn-icon:hover {
+  background-color: #F7F8FA !important;
+  color: #049DD9 !important;
+}
+
+/* Notification badge */
+.notification-badge {
+  background-color: #E74C3C !important;
+  color: #FFFFFF !important;
+}
+
+/* ===== 6. CALENDARIO/FLATPICKR CON FONDO BLANCO ===== */
+.flatpickr-calendar {
+  background-color: #FFFFFF !important;
+}
+
+.flatpickr-day {
+  color: #2c3e50 !important;
+}
+
+.flatpickr-day.selected {
+  background-color: #049DD9 !important;
+  color: #FFFFFF !important;
+}
+
+/* ===== 7. CHECKBOX "MIS TAREAS" ===== */
+.filter-checkbox {
+  color: #2c3e50 !important;
+  font-weight: 600 !important;
+}
+
+.filter-checkbox input[type="checkbox"] {
+  accent-color: #049DD9 !important;
+}
+
+/* ===== 8. WRAPPER DEL INPUT DE FECHA ===== */
+.date-input-wrapper {
+  position: relative !important;
+  display: inline-block !important;
+  width: 100% !important;
+}
+
+.date-input-wrapper input {
+  background-color: #FFFFFF !important;
+  color: #2c3e50 !important;
+}
+
+.date-input-wrapper i {
+  color: #7f8c8d !important;
+}
+
+/* ==================== FIN CORRECCIÓN ELEMENTOS OSCUROS ==================== */
