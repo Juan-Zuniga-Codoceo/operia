@@ -380,23 +380,48 @@ createApp({
       window.location.href = '/login';
     };
 
-    const abrirModalEditar = () => {
+    const abrirModalEditar = async () => {
+      console.log('🔧 abrirModalEditar LLAMADO');
+      console.log('Tarea seleccionada:', tareaSeleccionada.value);
+      console.log('Puede editar?:', puedeEditarTarea.value);
+      if (!tareaSeleccionada.value) {
+        console.error('❌ No hay tarea seleccionada');
+        return;
+      }
+
+      // Clonamos la tarea seleccionada para editarla
       editTask.value = JSON.parse(JSON.stringify(tareaSeleccionada.value));
-      const assignmentNames = tasks.value.find(t => t.id === editTask.value.id)?.assigned_names || '';
-      const labelNames = tasks.value.find(t => t.id === editTask.value.id)?.label_names || '';
+      console.log('✅ editTask DESPUÉS de asignar:', editTask.value);
+      console.log('✅ editTask.description:', editTask.value.description);
+
+      // Obtenemos los nombres de asignados y etiquetas
+      const assignmentNames = tasks.value.find(t => t.id === editTask.value.id)?.assigned_names;
+      const labelNames = tasks.value.find(t => t.id === editTask.value.id)?.label_names;
+
       const assignmentNameArray = assignmentNames ? assignmentNames.split(',') : [];
       const labelNameArray = labelNames ? labelNames.split(',') : [];
+
+      // Convertimos nombres a IDs
       editTask.value.assigned_to = users.value.filter(u => assignmentNameArray.includes(u.name)).map(u => u.id);
       editTask.value.label_ids = labels.value.filter(l => labelNameArray.includes(l.name)).map(l => l.id);
+
+      // Reseteamos archivos
       archivosParaSubirEnEdicion.value = [];
       adjuntosParaBorrar.value = [];
+
+      // Cerramos el modal de detalles y abrimos el de edición
       tareaSeleccionada.value = null;
       showEditModal.value = true;
+      console.log('✅ Modal de edición abierto');
     };
+
+
 
     const guardarCambiosTarea = async () => {
       try {
-        // 1. Guardar los cambios principales de la tarea (título, descripción, etc.)
+        console.log('💾 Guardando cambios de tarea:', editTask.value);
+
+        // 1. Guardar los cambios principales de la tarea
         await API.put(`/api/tasks/${editTask.value.id}`, editTask.value);
 
         // 2. Eliminar los adjuntos marcados (se ejecutan en paralelo)
@@ -409,36 +434,50 @@ createApp({
         // 3. Subir los nuevos archivos si los hay
         if (archivosParaSubirEnEdicion.value.length > 0) {
           const formData = new FormData();
-          formData.append('task_id', editTask.value.id.toString());
+
+          // ⚠️ CRÍTICO: Agregar taskid ANTES de los archivos
+          formData.append('taskid', editTask.value.id);
+
+          // Agregar cada archivo
           for (const file of archivosParaSubirEnEdicion.value) {
             formData.append('files', file);
           }
+
+          console.log('📤 Subiendo archivos para tarea:', editTask.value.id);
           await API.upload('/api/upload', formData);
         }
 
         showEditModal.value = false;
-        showSuccess('✅ Tarea actualizada correctamente');
+        showSuccess('Tarea actualizada correctamente');
+
         // La vista se actualizará automáticamente gracias al WebSocket
       } catch (err) {
-        showError('❌ Error al guardar los cambios: ' + err.message);
+        console.error('❌ Error al guardar:', err);
+        showError('Error al guardar los cambios: ' + err.message);
       }
     };
 
+
+
     const abrirConfirmarEliminar = () => {
+      console.log('🗑️ abrirConfirmarEliminar LLAMADO');
+      console.log('Puede eliminar?:', puedeEliminarTarea.value);
       showDeleteConfirm.value = true;
     };
 
     const eliminarTarea = async () => {
+      console.log('💥 eliminarTarea INICIADO');
+      console.log('ID a eliminar:', tareaSeleccionada.value?.id);
       try {
         await API.delete(`/api/tasks/${tareaSeleccionada.value.id}`);
+        console.log('✅ Tarea eliminada del backend');
         showDeleteConfirm.value = false;
         tareaSeleccionada.value = null;
-        showSuccess('🗑️ Tarea eliminada correctamente');
       } catch (err) {
-        showError('❌ Error al eliminar la tarea: ' + err.message);
+        console.error('❌ Error al eliminar:', err);
+        showError('Error al eliminar la tarea: ' + err.message);
       }
     };
-
     const crearTarea = async () => {
       if (!newTask.value.title.trim()) {
         return showError('El título es obligatorio');
@@ -786,7 +825,7 @@ createApp({
 
       // 3. Comparamos y mostramos en consola el resultado
       const estaVencida = fechaTarea < hoy;
-      console.log(`[DEPURACIÓN] Tarea: "${taskTitle}" | Fecha Tarea: ${fechaTarea.toLocaleString()} | ¿Está Vencida?: ${estaVencida}`);
+      // console.log(`[DEPURACIÓN] Tarea: "${taskTitle}" | Fecha Tarea: ${fechaTarea.toLocaleString()} | ¿Está Vencida?: ${estaVencida}`);
 
       return estaVencida;
     };
@@ -1072,146 +1111,146 @@ createApp({
     // REEMPLAZA tu `return` actual con este bloque completo
 
     return {
-  // Estados y datos
-  user,
-  tasks,
-  users,
-  labels,
-  resumen,
-  misTareas,
-  filtroFecha,
-  showModal,
-  tareaSeleccionada,
-  creandoTarea,
-  loading,
-  error,
-  showEditModal,
-  editTask,
-  showDeleteConfirm,
-  suggestedLabels,
-  showDropdown,
-  newTask,
-  nuevaEtiqueta,
-  nuevoComentario,
-  archivosAdjuntos,
-  notificaciones,
-  mostrarNotificaciones,
-  commentAttachments,
-  showNewLabelDropdown,
-  showLabelDropdown,
-  notificacionesPendientes,
-  
-  // Computed properties para labels
-  selectedLabelsInNew,
-  availableLabelsInNew,
-  selectedLabelsInEdit,
-  availableLabelsInEdit,
-  
-  // Computed properties para tareas
-  tareasFiltradas,
-  tareasPendientes,
-  tareasEnCamino,
-  tareasCompletadas,
-  
-  // Computed properties para usuarios
-  selectedUsersInNew,
-  availableUsersInNew,
-  selectedUsersInEdit,
-  availableUsersInEdit,
-  
-  // ⚠️ CRÍTICO: Permisos (DEBEN ESTAR AQUÍ)
-  puedeEditarTarea,
-  puedeEliminarTarea,
-  
-  // Funciones principales
-  logout,
-  cargarDatos,
-  abrirModalEditar,
-  guardarCambiosTarea,
-  abrirConfirmarEliminar,
-  eliminarTarea,
-  esTareaParaHoy,
-  esTareaVencida,
-  crearTarea,
-  toggleLabelInNew,
-  toggleLabelInEdit,
-  resetForm,
-  handleFileUpload,
-  removeFile,
-  crearEtiqueta,
-  cambiarEstadoTarea,
-  verDetalles,
-  handleCommentAttachment,
-  removeCommentAttachment,
-  removeCommentAttachmentFile,
-  agregarComentario,
-  getLabelsArray,
-  toggleNotifications,
-  marcarComoLeida,
-  marcarTodasComoLeidas,
-  eliminarNotificacion,
-  formatDate,
-  formatDescription,
-  getAssignees,
-  getAvatarStyle,
-  getColor,
-  getPriorityText,
-  getFileSize,
-  downloadFile,
-  setQuickDate,
-  setQuickEditDate,
-  addUserToNewTask,
-  removeUserFromNewTask,
-  addUserToEditTask,
-  removeUserFromEditTask,
-  toggleDropdown,
-  
-  // Selector de creador
-  mostrandoSelectorCreador,
-  nuevoCreadorId,
-  abrirSelectorDeCreador,
-  confirmarCambioDeCreador,
-  
-  // Menciones
-  showMentionList,
-  filteredMentionUsers,
-  handleCommentInput,
-  selectMention,
-  navigateMentions,
-  selectMentionWithEnter,
-  mentionNavIndex,
-  formatCommentContent,
-  
-  // Estado de tareas
-  showStateDropdown,
-  toggleStateDropdown,
-  avanzarEstado,
-  retrocederEstado,
-  handleNotificationClick,
-  
-  // Archivos en edición
-  archivosParaSubirEnEdicion,
-  adjuntosParaBorrar,
-  handleFileUploadEnEdicion,
-  quitarDeLaListaDeSubida,
-  marcarParaBorrar,
-  
-  // Modal de actualización
-  showUpdateModal,
-  closeUpdateModal,
-  archivarTarea,
-  
-  // Modal de completar tarea
-  showCompleteModal,
-  taskToComplete,
-  completionFile,
-  closingNote,
-  isCompleting,
-  openCompleteModal,
-  handleCompletionFile,
-  cancelCompletion,
-  confirmCompletion
-}
+      // Estados y datos
+      user,
+      tasks,
+      users,
+      labels,
+      resumen,
+      misTareas,
+      filtroFecha,
+      showModal,
+      tareaSeleccionada,
+      creandoTarea,
+      loading,
+      error,
+      showEditModal,
+      editTask,
+      showDeleteConfirm,
+      suggestedLabels,
+      showDropdown,
+      newTask,
+      nuevaEtiqueta,
+      nuevoComentario,
+      archivosAdjuntos,
+      notificaciones,
+      mostrarNotificaciones,
+      commentAttachments,
+      showNewLabelDropdown,
+      showLabelDropdown,
+      notificacionesPendientes,
+
+      // Computed properties para labels
+      selectedLabelsInNew,
+      availableLabelsInNew,
+      selectedLabelsInEdit,
+      availableLabelsInEdit,
+
+      // Computed properties para tareas
+      tareasFiltradas,
+      tareasPendientes,
+      tareasEnCamino,
+      tareasCompletadas,
+
+      // Computed properties para usuarios
+      selectedUsersInNew,
+      availableUsersInNew,
+      selectedUsersInEdit,
+      availableUsersInEdit,
+
+      // ⚠️ CRÍTICO: Permisos (DEBEN ESTAR AQUÍ)
+      puedeEditarTarea,
+      puedeEliminarTarea,
+
+      // Funciones principales
+      logout,
+      cargarDatos,
+      abrirModalEditar,
+      guardarCambiosTarea,
+      abrirConfirmarEliminar,
+      eliminarTarea,
+      esTareaParaHoy,
+      esTareaVencida,
+      crearTarea,
+      toggleLabelInNew,
+      toggleLabelInEdit,
+      resetForm,
+      handleFileUpload,
+      removeFile,
+      crearEtiqueta,
+      cambiarEstadoTarea,
+      verDetalles,
+      handleCommentAttachment,
+      removeCommentAttachment,
+      removeCommentAttachmentFile,
+      agregarComentario,
+      getLabelsArray,
+      toggleNotifications,
+      marcarComoLeida,
+      marcarTodasComoLeidas,
+      eliminarNotificacion,
+      formatDate,
+      formatDescription,
+      getAssignees,
+      getAvatarStyle,
+      getColor,
+      getPriorityText,
+      getFileSize,
+      downloadFile,
+      setQuickDate,
+      setQuickEditDate,
+      addUserToNewTask,
+      removeUserFromNewTask,
+      addUserToEditTask,
+      removeUserFromEditTask,
+      toggleDropdown,
+
+      // Selector de creador
+      mostrandoSelectorCreador,
+      nuevoCreadorId,
+      abrirSelectorDeCreador,
+      confirmarCambioDeCreador,
+
+      // Menciones
+      showMentionList,
+      filteredMentionUsers,
+      handleCommentInput,
+      selectMention,
+      navigateMentions,
+      selectMentionWithEnter,
+      mentionNavIndex,
+      formatCommentContent,
+
+      // Estado de tareas
+      showStateDropdown,
+      toggleStateDropdown,
+      avanzarEstado,
+      retrocederEstado,
+      handleNotificationClick,
+
+      // Archivos en edición
+      archivosParaSubirEnEdicion,
+      adjuntosParaBorrar,
+      handleFileUploadEnEdicion,
+      quitarDeLaListaDeSubida,
+      marcarParaBorrar,
+
+      // Modal de actualización
+      showUpdateModal,
+      closeUpdateModal,
+      archivarTarea,
+
+      // Modal de completar tarea
+      showCompleteModal,
+      taskToComplete,
+      completionFile,
+      closingNote,
+      isCompleting,
+      openCompleteModal,
+      handleCompletionFile,
+      cancelCompletion,
+      confirmCompletion
+    }
 
   }
 }).mount('#app');

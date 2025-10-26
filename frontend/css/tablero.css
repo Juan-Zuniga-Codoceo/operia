@@ -1264,15 +1264,36 @@ body {
   padding: var(--space-20);
 }
 
-.modal-content {
-  background: var(--color-surface);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.35);
-  width: 100%;
-  max-width: 580px;
-  max-height: 88vh;
-  overflow: hidden;
-  animation: modalFadeIn var(--duration-normal) var(--ease-standard);
+/* MODAL DE EDICIÓN - CORREGIR COLORES */
+.modal-content input[type="text"],
+.modal-content textarea,
+.modal-content select {
+  color: #1a1a1a !important;  /* Texto oscuro para que se vea */
+  background-color: #ffffff !important;  /* Fondo blanco */
+  border: 1px solid #d1d5db !important;
+}
+
+.modal-content input[type="text"]::placeholder,
+.modal-content textarea::placeholder {
+  color: #9ca3af !important;  /* Placeholder gris claro */
+}
+
+.modal-content label {
+  color: #374151 !important;  /* Labels en gris oscuro */
+  font-weight: 500;
+}
+
+.modal-header h2 {
+  color: #1a1a1a !important;  /* Título oscuro */
+}
+
+/* Inputs con focus */
+.modal-content input[type="text"]:focus,
+.modal-content textarea:focus,
+.modal-content select:focus {
+  border-color: #049DD9 !important;  /* Azul Operia al hacer focus */
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(4, 157, 217, 0.1);
 }
 
 @keyframes modalFadeIn {
