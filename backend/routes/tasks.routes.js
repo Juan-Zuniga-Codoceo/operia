@@ -518,23 +518,37 @@ router.get('/attachments/task/:taskId', authenticateToken, (req, res) => {
   });
 });
 
-
-// 📤 SUBIR ARCHIVOS A UNA TAREA (VERSIÓN MEJORADA CON PERMISOS DE ADMIN)
+// 📤 SUBIR ARCHIVOS A UNA TAREA (VERSIÓN CORREGIDA CON MULTER)
 router.post('/upload', authenticateToken, upload.array('files', 5), async (req, res) => {
+  // ⚠️ IMPORTANTE: Con multer, req.body está disponible DESPUÉS del middleware upload
+  console.log('📥 Body recibido:', req.body);
+  console.log('📎 Archivos recibidos:', req.files ? req.files.length : 0);
+  
   if (!req.files || req.files.length === 0) {
     return res.status(400).json({ error: 'No se subieron archivos.' });
   }
 
-  const { task_id } = req.body;
-  const cleanupFiles = () => { /* ... (función interna sin cambios) */ };
+  // El taskid viene en req.body DESPUÉS de que multer procesa los archivos
+  const task_id = req.body.taskid || req.body.task_id;
+  
+  const cleanupFiles = () => {
+    req.files.forEach(file => {
+      const filePath = path.join(uploadsDir, file.filename);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    });
+  };
 
   if (!task_id) {
+    console.error('❌ No se recibió task_id. Body:', req.body);
     cleanupFiles();
     return res.status(400).json({ error: 'ID de tarea requerido.' });
   }
 
-  
-  // 1. Obtenemos la información de la tarea para verificar permisos
+  console.log('✅ Task ID recibido:', task_id);
+
+  // Verificación de permisos (tu código actual)
   const getTaskSql = `
     SELECT t.created_by, GROUP_CONCAT(ta.user_id) as assigned_ids
     FROM tasks t
@@ -552,7 +566,6 @@ router.post('/upload', authenticateToken, upload.array('files', 5), async (req, 
       return res.status(404).json({ error: 'Tarea no encontrada.' });
     }
 
-    // 2. Lógica de permisos en Javascript
     const esAdmin = req.user.role === 'admin';
     const esCreador = task.created_by === req.userId;
     const estaAsignado = task.assigned_ids ? task.assigned_ids.split(',').includes(req.userId.toString()) : false;
@@ -561,12 +574,11 @@ router.post('/upload', authenticateToken, upload.array('files', 5), async (req, 
       cleanupFiles();
       return res.status(403).json({ error: 'No tienes permiso para subir archivos a esta tarea.' });
     }
-    
-    // ✨ FIN DE LA MODIFICACIÓN ✨
 
-    // 3. Si tiene permisos, procedemos a guardar los archivos (lógica sin cambios)
+    // Guardar archivos en la BD
     const stmt = db.prepare(`INSERT INTO attachments (task_id, file_path, file_name, file_type, file_size, uploaded_by) VALUES (?, ?, ?, ?, ?, ?)`);
     const insertedFiles = [];
+    
     db.serialize(() => {
       db.run("BEGIN TRANSACTION");
       for (const file of req.files) {
@@ -580,12 +592,14 @@ router.post('/upload', authenticateToken, upload.array('files', 5), async (req, 
           cleanupFiles();
           return res.status(500).json({ error: 'No se pudo guardar la información de los archivos.' });
         }
+        console.log('✅ Archivos guardados exitosamente');
         res.status(201).json({ success: true, files: insertedFiles });
         broadcast({ type: 'TASKS_UPDATED' });
       });
     });
   });
 });
+
 
 // 📥 DESCARGAR ARCHIVO (VERSIÓN MEJORADA CON PERMISOS DE ADMIN)
 router.get('/download/:filename', authenticateToken, (req, res) => {

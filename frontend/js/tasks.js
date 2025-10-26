@@ -417,45 +417,52 @@ createApp({
 
 
 
-    const guardarCambiosTarea = async () => {
-      try {
-        console.log('💾 Guardando cambios de tarea:', editTask.value);
-
-        // 1. Guardar los cambios principales de la tarea
-        await API.put(`/api/tasks/${editTask.value.id}`, editTask.value);
-
-        // 2. Eliminar los adjuntos marcados (se ejecutan en paralelo)
-        if (adjuntosParaBorrar.value.length > 0) {
-          await Promise.all(
-            adjuntosParaBorrar.value.map(id => API.delete(`/api/attachments/${id}`))
-          );
-        }
-
-        // 3. Subir los nuevos archivos si los hay
-        if (archivosParaSubirEnEdicion.value.length > 0) {
-          const formData = new FormData();
-
-          // ⚠️ CRÍTICO: Agregar taskid ANTES de los archivos
-          formData.append('taskid', editTask.value.id);
-
-          // Agregar cada archivo
-          for (const file of archivosParaSubirEnEdicion.value) {
-            formData.append('files', file);
-          }
-
-          console.log('📤 Subiendo archivos para tarea:', editTask.value.id);
-          await API.upload('/api/upload', formData);
-        }
-
-        showEditModal.value = false;
-        showSuccess('Tarea actualizada correctamente');
-
-        // La vista se actualizará automáticamente gracias al WebSocket
-      } catch (err) {
-        console.error('❌ Error al guardar:', err);
-        showError('Error al guardar los cambios: ' + err.message);
+  const guardarCambiosTarea = async () => {
+  try {
+    console.log('💾 Guardando cambios de tarea:', editTask.value);
+    
+    // 1. Guardar cambios principales de la tarea
+    await API.put(`/api/tasks/${editTask.value.id}`, editTask.value);
+    console.log('✅ Tarea actualizada');
+    
+    // 2. Eliminar adjuntos marcados
+    if (adjuntosParaBorrar.value.length > 0) {
+      await Promise.all(
+        adjuntosParaBorrar.value.map(id => API.delete(`/api/attachments/${id}`))
+      );
+      console.log('✅ Adjuntos eliminados');
+    }
+    
+    // 3. Subir nuevos archivos
+    if (archivosParaSubirEnEdicion.value && archivosParaSubirEnEdicion.value.length > 0) {
+      console.log('📤 Subiendo', archivosParaSubirEnEdicion.value.length, 'archivos...');
+      
+      const formData = new FormData();
+      
+      // IMPORTANTE: Agregar archivos PRIMERO
+      for (const file of archivosParaSubirEnEdicion.value) {
+        formData.append('files', file);
       }
-    };
+      
+      // Agregar taskid DESPUÉS de los archivos
+      formData.append('taskid', editTask.value.id);
+      
+      console.log('📋 FormData con taskid:', editTask.value.id);
+      
+      // Llamar a upload SIN el taskid en la URL
+      await API.upload('/api/upload', formData);
+      console.log('✅ Archivos subidos correctamente');
+    }
+    
+    showEditModal.value = false;
+    showSuccess('Tarea actualizada correctamente');
+    await cargarDatos();
+    
+  } catch (err) {
+    console.error('❌ Error completo:', err);
+    showError('Error al guardar: ' + (err.response?.data?.message || err.message));
+  }
+};
 
 
 
