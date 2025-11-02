@@ -5,9 +5,9 @@ createApp({
     'update-modal': UpdateModal
   },
   setup() {
-    // ======================================================
-    // 1. ESTADO REACTIVO (refs)
-    // ======================================================
+    // ====================================================== 
+    // 1. ESTADO REACTIVO (refs) 
+    // ====================================================== 
     const user = ref(null);
     const tasks = ref([]);
     const users = ref([]);
@@ -40,7 +40,8 @@ createApp({
     const adjuntosParaBorrar = ref([]);
     const newTask = ref({
       title: '', description: '', due_date: '', priority: 'media',
-      assigned_to: [], label_ids: [], comentario_inicial: ''
+      assigned_to: [], label_ids: [], comentario_inicial: '',
+      files: []
     });
     const keywordToLabelMap = {
       'factura': 'Factura', 'facturas': 'Factura', 'boleta': 'Factura',
@@ -67,9 +68,9 @@ createApp({
     const closingNote = ref('');
     const isCompleting = ref(false);
 
-    // ======================================================
-    // 2. PROPIEDADES COMPUTADAS (computed)
-    // ======================================================
+    // ====================================================== 
+    // 2. PROPIEDADES COMPUTADAS (computed) 
+    // ====================================================== 
     const notificacionesPendientes = computed(() => notificaciones.value.filter(n => !n.leida).length);
     const selectedLabelsInNew = computed(() => labels.value.filter(l => newTask.value.label_ids.includes(l.id)));
     const availableLabelsInNew = computed(() => labels.value.filter(l => !newTask.value.label_ids.includes(l.id)));
@@ -123,16 +124,16 @@ createApp({
     });
 
 
-    // ======================================================
-    // 3. OBSERVADORES (watch)
-    // ======================================================
+    // ====================================================== 
+    // 3. OBSERVADORES (watch) 
+    // ====================================================== 
     watch(() => [newTask.value.title, newTask.value.description], ([newTitle, newDesc]) => {
       if (labels.value.length === 0) return;
       const text = newTitle + ' ' + newDesc;
       if (!text.trim()) { suggestedLabels.value = []; return; }
       const foundLabelNames = new Set();
       for (const keyword in keywordToLabelMap) {
-        const regex = new RegExp(`\\b${keyword}\\b`, 'i');
+        const regex = new RegExp(`\b${keyword}\b`, 'i');
         if (regex.test(text)) { foundLabelNames.add(keywordToLabelMap[keyword]); }
       }
       const alreadySelectedNames = new Set(selectedLabelsInNew.value.map(l => l.name));
@@ -147,7 +148,7 @@ createApp({
       if (!text.trim()) { suggestedLabels.value = []; return; }
       const foundLabelNames = new Set();
       for (const keyword in keywordToLabelMap) {
-        const regex = new RegExp(`\\b${keyword}\\b`, 'i');
+        const regex = new RegExp(`\b${keyword}\b`, 'i');
         if (regex.test(text)) { foundLabelNames.add(keywordToLabelMap[keyword]); }
       }
       const alreadySelectedNames = new Set(selectedLabelsInEdit.value.map(l => l.name));
@@ -202,9 +203,9 @@ createApp({
       }
     });
 
-    // ======================================================
-    // 4. FUNCIONES
-    // ======================================================
+    // ====================================================== 
+    // 4. FUNCIONES 
+    // ====================================================== 
     const toggleDropdown = () => {
       showDropdown.value = !showDropdown.value;
       // Lógica para bloquear/desbloquear el scroll
@@ -495,11 +496,10 @@ createApp({
       creandoTarea.value = true;
       try {
         const result = await API.post('/api/tasks', newTask.value);
-        if (archivosAdjuntos.value.length > 0 && result.id) {
+        if (newTask.value.files && newTask.value.files.length > 0 && result.id) {
           const formData = new FormData();
           formData.append('task_id', result.id.toString());
-          // Usamos 'files' (plural) que coincide con el backend
-          for (const file of archivosAdjuntos.value) {
+          for (const file of newTask.value.files) {
             formData.append('files', file);
           }
           await API.upload('/api/upload', formData);
@@ -570,12 +570,37 @@ createApp({
     const resetForm = () => {
       newTask.value = {
         title: '', description: '', due_date: '', priority: 'media',
-        assigned_to: [], label_ids: [], comentario_inicial: ''
+        assigned_to: [], label_ids: [], comentario_inicial: '',
+        files: []
       };
       nuevaEtiqueta.value = '';
       nuevoComentario.value = '';
       archivosAdjuntos.value = [];
-      const fileInput = document.getElementById('fileInput');
+      const fileInput = document.getElementById('new-task-files');
+      if (fileInput) fileInput.value = '';
+    };
+
+    const handleNewTaskAttachment = (event) => {
+      const files = Array.from(event.target.files);
+      if (files.length > 0) {
+        if ((newTask.value.files.length + files.length) > 5) {
+          showError('Puedes subir un máximo de 5 archivos.');
+          event.target.value = '';
+          return;
+        }
+        for (const file of files) {
+          if (file.size > 10 * 1024 * 1024) { // 10MB
+            showError(`El archivo "${file.name}" excede los 10MB.`);
+            continue;
+          }
+          newTask.value.files.push(file);
+        }
+      }
+    };
+
+    const removeNewTaskFile = (index) => {
+      newTask.value.files.splice(index, 1);
+      const fileInput = document.getElementById('new-task-files');
       if (fileInput) fileInput.value = '';
     };
 
@@ -1134,9 +1159,9 @@ createApp({
       }
     };
 
-    // ======================================================
-    // 5. Carga Inicial (Lifecycle Hook) - VERSIÓN CORREGIDA
-    // ======================================================
+    // ====================================================== 
+    // 5. Carga Inicial (Lifecycle Hook) - VERSIÓN CORREGIDA 
+    // ====================================================== 
     onMounted(() => {
       cargarDatos();
       setupWebSocket();
@@ -1158,9 +1183,9 @@ createApp({
         showUpdateModal.value = true;
       }
     });
-    // ======================================================
-    // 6. EXPOSICIÓN A LA PLANTILLA (return)
-    // ======================================================
+    // ====================================================== 
+    // 6. EXPOSICIÓN A LA PLANTILLA (return) 
+    // ====================================================== 
     // REEMPLAZA tu `return` actual con este bloque completo
 
     return {
@@ -1230,6 +1255,8 @@ createApp({
       resetForm,
       handleFileUpload,
       removeFile,
+      handleNewTaskAttachment,
+      removeNewTaskFile,
       crearEtiqueta,
       cambiarEstadoTarea,
       verDetalles,

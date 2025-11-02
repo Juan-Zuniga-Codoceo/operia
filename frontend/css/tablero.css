@@ -406,3 +406,53 @@ html, body {
     font-size: 16px;
     line-height: 1;
 }
+
+/* Estilos para adjuntos en vista de detalle y comentarios */
+.attachments-list, .comment-attachments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.attachment-item-detail, .attachment-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background-color: var(--color-bg-body);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  transition: var(--transition);
+}
+
+.attachment-item-detail a, .attachment-item a {
+  color: var(--color-text-primary);
+  text-decoration: none;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-grow: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.attachment-item-detail a:hover, .attachment-item a:hover {
+    color: var(--color-accent);
+}
+
+.attachment-item-detail a span, .attachment-item a span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.attachment-item-detail .file-size, .attachment-item .file-size {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-left: auto;
+  white-space: nowrap;
+  padding-left: 10px;
+}
