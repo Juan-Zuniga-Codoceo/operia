@@ -714,52 +714,98 @@ createApp({
       if ((!nuevoComentario.value.trim() && commentAttachments.value.length === 0) || !tareaSeleccionada.value) {
         return;
       }
+
+      const currentTask = tareaSeleccionada.value;
+      const tempId = Date.now(); // ID temporal para el comentario optimista
+      const commentText = nuevoComentario.value.trim();
+
+      // 1. Crear objeto de comentario optimista
+      const optimisticComment = {
+        id: tempId,
+        contenido: commentText,
+        autor_nombre: user.value.name,
+        autor_avatar_url: user.value.avatar_url,
+        fecha_creacion: new Date().toISOString(),
+        comentarios: [] // Aseguramos que la propiedad exista
+      };
+
+      // 2. Actualizar la UI inmediatamente
+      if (!currentTask.comentarios) { currentTask.comentarios = []; }
+      currentTask.comentarios.push(optimisticComment);
+      nuevoComentario.value = '';
+      // La gestión de archivos adjuntos no será optimista por su complejidad
+      const attachmentsToUpload = [...commentAttachments.value];
+      removeCommentAttachment();
+
+      // 3. Intentar enviar al servidor
       try {
         const formData = new FormData();
-        formData.append('task_id', tareaSeleccionada.value.id);
-        formData.append('contenido', nuevoComentario.value.trim());
+        formData.append('task_id', currentTask.id);
+        formData.append('contenido', commentText);
 
-
-        // 1. Encontrar todas las menciones que sigan el formato @Nombre Completo
+        // Lógica de menciones
         const mentionRegex = /@([A-Za-z0-9_ Á-Úá-ú]+)/g;
-        const mentions = nuevoComentario.value.match(mentionRegex);
-        const mentionedUserIds = new Set();
-
+        const mentions = commentText.match(mentionRegex);
         if (mentions) {
+          const mentionedUserIds = new Set();
           mentions.forEach(mention => {
-            const username = mention.substring(1).trim(); // Quitar el '@' y espacios extra
-            // Buscamos el usuario en nuestra lista de usuarios cargada (insensible a mayúsculas)
+            const username = mention.substring(1).trim();
             const foundUser = users.value.find(u => u.name.toLowerCase() === username.toLowerCase());
-            if (foundUser) {
-              mentionedUserIds.add(foundUser.id);
-            }
+            if (foundUser) { mentionedUserIds.add(foundUser.id); }
           });
+          if (mentionedUserIds.size > 0) {
+            formData.append('mentioned_user_ids', JSON.stringify(Array.from(mentionedUserIds)));
+          }
         }
 
-        // 2. Si encontramos IDs, los añadimos al FormData como un string JSON
-        if (mentionedUserIds.size > 0) {
-          formData.append('mentioned_user_ids', JSON.stringify(Array.from(mentionedUserIds)));
-        }
-
-
-        if (commentAttachments.value.length > 0) {
-          for (const file of commentAttachments.value) {
+        // Lógica de adjuntos
+        if (attachmentsToUpload.length > 0) {
+          for (const file of attachmentsToUpload) {
             formData.append('attachments', file);
           }
         }
 
         await API.upload('/api/tasks/comments', formData);
 
-        nuevoComentario.value = '';
-        removeCommentAttachment();
-        showSuccess('💬 Comentario agregado');
+        // 4. Éxito: Refrescar los comentarios desde el servidor para obtener IDs reales
+        const updatedComments = await API.get(`/api/tasks/${currentTask.id}/comments`);
+        if (tareaSeleccionada.value && tareaSeleccionada.value.id === currentTask.id) {
+          tareaSeleccionada.value.comentarios = updatedComments;
+        }
 
-        const taskActual = tasks.value.find(t => t.id === tareaSeleccionada.value.id);
-        if (taskActual) {
-          await verDetalles(taskActual);
+      } catch (err) {
+        // 5. Fallo: Revertir el cambio en la UI
+        showError('❌ Error al agregar comentario: ' + err.message);
+        if (tareaSeleccionada.value && tareaSeleccionada.value.id === currentTask.id) {
+          tareaSeleccionada.value.comentarios = tareaSeleccionada.value.comentarios.filter(
+            c => c.id !== tempId
+          );
+          // Restaurar el texto para que el usuario no lo pierda
+          nuevoComentario.value = commentText;
+        }
+      }
+    };
+
+    const puedeEliminarComentario = (comment) => {
+      if (!user.value || !comment) return false;
+      if (user.value.role === 'admin') return true;
+      return user.value.id === comment.autor_id;
+    };
+
+    const eliminarComentario = async (commentId) => {
+      if (!window.confirm('¿Estás seguro de que quieres eliminar este comentario?')) {
+        return;
+      }
+      try {
+        await API.delete(`/api/comments/${commentId}`);
+        showSuccess('Comentario eliminado');
+        if (tareaSeleccionada.value) {
+          tareaSeleccionada.value.comentarios = tareaSeleccionada.value.comentarios.filter(
+            c => c.id !== commentId
+          );
         }
       } catch (err) {
-        showError('❌ Error al agregar comentario: ' + err.message);
+        showError('Error al eliminar el comentario: ' + (err.message || 'Error desconocido'));
       }
     };
     const getLabelsArray = (task) => {
@@ -1256,7 +1302,11 @@ createApp({
       openCompleteModal,
       handleCompletionFile,
       cancelCompletion,
-      confirmCompletion
+      confirmCompletion,
+
+      // Eliminar Comentarios
+      puedeEliminarComentario,
+      eliminarComentario
     }
 
   }

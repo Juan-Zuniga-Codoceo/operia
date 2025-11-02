@@ -899,4 +899,34 @@ router.post('/tasks/:id/complete', authenticateToken, upload.single('completion_
 });
 
 
+// 💣 ELIMINAR UN COMENTARIO (NUEVA RUTA)
+router.delete('/comments/:id', authenticateToken, (req, res) => {
+  const commentId = req.params.id;
+  const userId = req.userId;
+
+  // 1. Verificar que el comentario existe y obtener el autor
+  db.get("SELECT autor_id FROM comments WHERE id = ?", [commentId], (err, comment) => {
+    if (err) {
+      return res.status(500).json({ error: 'Error al verificar el comentario.' });
+    }
+    if (!comment) {
+      return res.status(404).json({ error: 'Comentario no encontrado.' });
+    }
+
+    // 2. Verificar permisos: solo el autor o un admin puede borrar
+    if (comment.autor_id !== userId && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'No tienes permiso para eliminar este comentario.' });
+    }
+
+    // 3. Eliminar el comentario (se asume ON DELETE CASCADE para los adjuntos)
+    db.run("DELETE FROM comments WHERE id = ?", [commentId], function(err) {
+      if (err) {
+        return res.status(500).json({ error: 'Error al eliminar el comentario.' });
+      }
+      res.status(200).json({ success: true, message: 'Comentario eliminado' });
+      broadcast({ type: 'TASKS_UPDATED' }); // Notificamos para refrescar
+    });
+  });
+});
+
 module.exports = router;
