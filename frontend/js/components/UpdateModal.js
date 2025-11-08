@@ -1,85 +1,70 @@
 // /js/components/UpdateModal.js
 const UpdateModal = {
-  name: 'UpdateModal',
   props: {
-    show: {
-      type: Boolean,
-      default: false
-    }
+    show: Boolean
   },
   emits: ['close'],
-  data() {
+  setup(props, { emit }) {
+    const noMostrarMas = ref(false);
+
+    const closeModal = () => {
+      // Pasa el valor del checkbox al evento 'close'
+      emit('close', noMostrarMas.value);
+    };
+
     return {
-      noMostrarMas: false
-    }
-  },
-  methods: {
-    handleClose() {
-      if (this.noMostrarMas) {
-        localStorage.setItem('ocultarModalActualizacion', 'true');
-      }
-      this.$emit('close');
-    }
+      noMostrarMas,
+      closeModal
+    };
   },
   template: `
-    <div class="modal" v-if="show" @click.self="handleClose">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2>
-            <i class="fa-solid fa-rocket"></i>
-            ¡Novedades en Operia!
-          </h2>
-          <button @click="handleClose" class="btn-close-modal">&times;</button>
+    <div class="modal" v-if="show">
+      <div class="modal-content" style="max-width: 550px;">
+        
+        <div class="update-modal-header">
+          <i class="fa-solid fa-rocket"></i>
+          <h2>¡Novedades en Operia!</h2>
         </div>
         
         <div class="modal-body">
           <p>Hemos lanzado una gran actualización con nuevas funciones y un diseño renovado:</p>
           
-          <ul>
+          <ul class="update-list">
+            
             <li>
               <i class="fa-solid fa-book-atlas"></i>
-              <div>
-                <strong>Nueva Biblioteca de Fichas Técnicas:</strong>
-                <p>Accede a una nueva sección dedicada para subir, buscar y gestionar todas las fichas técnicas de productos en formato PDF.</p>
-              </div>
+              <strong>Nueva Biblioteca de Fichas Técnicas:</strong>
+              <span class="update-description">Accede a una nueva sección dedicada para subir, buscar y gestionar todas las fichas técnicas de productos en formato PDF.</span>
             </li>
-            
+
             <li>
               <i class="fa-solid fa-wand-magic-sparkles"></i>
-              <div>
-                <strong>Rediseño de Interfaz y Navegación:</strong>
-                <p>Hemos unificado el header y mejorado el diseño general de la aplicación para una experiencia más limpia y profesional.</p>
-              </div>
+              <strong>Rediseño de Interfaz y Navegación:</strong>
+              <span class="update-description">Hemos unificado el header y mejorado el diseño general de la aplicación para una experiencia más limpia y profesional.</span>
             </li>
             
             <li>
-              <i class="fa-solid fa-clipboard-check"></i>
-              <div>
-                <strong>Finalización de Tareas Mejorada:</strong>
-                <p>Ahora puedes adjuntar un archivo como comprobante y añadir una nota de cierre al finalizar una tarea.</p>
-              </div>
+               <i class="fa-solid fa-clipboard-check"></i>
+               <strong>Finalización de Tareas Mejorada:</strong>
+              <span class="update-description">Ahora puedes adjuntar un archivo como comprobante y añadir una nota de cierre al finalizar una tarea.</span>
             </li>
             
             <li>
-              <i class="fa-solid fa-at"></i>
-              <div>
-                <strong>Menciones en Comentarios:</strong>
-                <p>Etiqueta a tus compañeros usando "@Nombre" para enviarles una notificación directa.</p>
-              </div>
+               <i class="fa-solid fa-at"></i>
+               <strong>Menciones en Comentarios:</strong>
+               <span class="update-description">Etiqueta a tus compañeros usando "@Nombre" para enviarles una notificación directa.</span>
             </li>
           </ul>
-          
-          <p style="margin-top: 8px; color: #4A5568; font-size: 14px;">¡Esperamos que estas mejoras te sean de gran utilidad!</p>
+          <p>¡Esperamos que estas mejoras te sean de gran utilidad!</p>
         </div>
         
         <div class="modal-footer">
-          <label>
-            <input type="checkbox" v-model="noMostrarMas" />
-            No volver a mostrar
-          </label>
-          <button @click="handleClose">
-            <i class="fa-solid fa-check"></i>
-            Entendido
+          <div class="dont-show-again">
+            <input type="checkbox" id="no-mostrar-mas" v-model="noMostrarMas">
+            <label for="no-mostrar-mas">No volver a mostrar</label>
+          </div>
+          <button @click="closeModal" class="btn-create">
+            <i class="fa-solid fa-check"></i> Entendido
           </button>
         </div>
       </div>
