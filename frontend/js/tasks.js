@@ -1305,6 +1305,7 @@ createApp({
       showStateDropdown,
       toggleStateDropdown,
       avanzarEstado,
+      moverACamino: (id) => cambiarEstadoTarea(id, 'en_camino'),
       retrocederEstado,
       handleNotificationClick,
 
