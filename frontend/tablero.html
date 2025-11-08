@@ -131,74 +131,72 @@
       </div>
     </main>
 
-    <!-- MODAL NUEVA TAREA -->
+    <!-- MODAL NUEVA TAREA (DISEÑO BIOCARE) -->
     <div class="modal" v-if="showModal" @click.self="showModal = false">
-      <div class="modal-content large">
+      <div class="modal-content biocare-modal">
         <div class="modal-header">
-          <h2><i class="fa-solid fa-plus"></i> Nueva Tarea</h2>
+          <h2><i class="fa-solid fa-plus-circle"></i> Crear Nueva Tarea</h2>
           <button @click="showModal = false" class="btn-close-modal"><i class="fa-solid fa-xmark"></i></button>
         </div>
-        <div class="modal-body detail-grid-layout">
-          <div class="main-content">
+        
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="title">Título de la tarea</label>
+            <input id="title" type="text" class="form-control" v-model="newTask.title" placeholder="Ej: Revisar el informe trimestral" required />
+          </div>
+          <div class="form-group">
+            <label for="description">Descripción</label>
+            <textarea id="description" class="form-control" v-model="newTask.description" rows="4" placeholder="Añade más detalles sobre la tarea..."></textarea>
+          </div>
+
+          <div class="form-grid">
             <div class="form-group">
-              <label for="title">Título *</label>
-              <input id="title" type="text" class="form-control" v-model="newTask.title" required />
+              <label for="new-task-datepicker">Fecha de Entrega</label>
+              <input id="new-task-datepicker" class="form-control" type="text" v-model="newTask.due_date" placeholder="Seleccionar fecha...">
             </div>
             <div class="form-group">
-              <label for="description">Descripción</label>
-              <textarea id="description" class="form-control" v-model="newTask.description" rows="5"></textarea>
-            </div>
-            <div class="form-group">
-              <label for="comentario_inicial">Comentario Inicial</label>
-              <textarea id="comentario_inicial" class="form-control" v-model="newTask.comentario_inicial"
-                rows="3"></textarea>
-            </div>
-            <div class="form-group">
-              <label>Adjuntar Archivos</label>
-              <label for="new-task-files" class="btn btn-secondary" style="cursor: pointer;">
-                <i class="fa-solid fa-paperclip"></i> Adjuntar Archivos
-              </label>
-              <input type="file" id="new-task-files" multiple @change="handleNewTaskAttachment" style="display: none;">
-              <div class="attachment-previews" v-if="newTask.files && newTask.files.length > 0"
-                style="margin-top: 15px;">
-                <div v-for="(file, index) in newTask.files" :key="index" class="attachment-preview-item">
-                  <i class="fa-solid fa-file-lines"></i>
-                  <span class="file-name">{{ file.name }}</span>
-                  <button @click.prevent="removeNewTaskFile(index)" class="btn-remove-preview"
-                    title="Quitar archivo">&times;</button>
-                </div>
-              </div>
+              <label for="priority">Prioridad</label>
+              <select id="priority" class="form-control" v-model="newTask.priority">
+                <option value="baja">Baja</option>
+                <option value="media">Media</option>
+                <option value="alta">Alta</option>
+              </select>
             </div>
           </div>
-          <div class="sidebar">
-            <div class="detail-section">
-              <h3>Detalles</h3>
-              <div class="form-group">
-                <label for="new-task-datepicker">Fecha de Entrega</label>
-                <input id="new-task-datepicker" class="form-control" type="text" v-model="newTask.due_date"
-                  placeholder="Seleccionar fecha...">
-              </div>
-              <div class="form-group">
-                <label for="priority">Prioridad</label>
-                <select id="priority" class="form-control" v-model="newTask.priority">
-                  <option value="baja">Baja</option>
-                  <option value="media">Media</option>
-                  <option value="alta">Alta</option>
-                </select>
-              </div>
+
+          <div class="form-group">
+            <label>Asignar a</label>
+            <select @change="addUserToNewTask($event.target.value)" class="form-control">
+              <option value="" disabled selected>Añadir miembro del equipo...</option>
+              <option v-for="user in availableUsersInNew" :key="user.id" :value="user.id">{{ user.name }}</option>
+            </select>
+            <!-- Aquí irían los avatares de usuarios asignados -->
+          </div>
+
+          <div class="form-group">
+            <label for="comentario_inicial">Comentario Inicial</label>
+            <textarea id="comentario_inicial" class="form-control" v-model="newTask.comentario_inicial" rows="2" placeholder="Añade un comentario para iniciar la conversación..."></textarea>
+          </div>
+
+          <div class="form-group attachment-area">
+            <label>Archivos Adjuntos</label>
+            <div class="attachment-dropzone">
+              <label for="new-task-files" class="attachment-label">
+                <i class="fa-solid fa-paperclip"></i>
+                <span>Adjuntar archivos (o arrastrar y soltar)</span>
+              </label>
+              <input type="file" id="new-task-files" multiple @change="handleNewTaskAttachment" class="attachment-input">
             </div>
-            <div class="detail-section">
-              <h3>Personas</h3>
-              <div class="form-group">
-                <label>Asignar a</label>
-                <select @change="addUserToNewTask($event.target.value)" class="form-control">
-                  <option value="" disabled selected>Añadir usuario...</option>
-                  <option v-for="user in availableUsersInNew" :key="user.id" :value="user.id">{{ user.name }}</option>
-                </select>
+            <div class="attachment-previews" v-if="newTask.files && newTask.files.length > 0">
+              <div v-for="(file, index) in newTask.files" :key="index" class="attachment-preview-item">
+                <i class="fa-solid fa-file-lines"></i>
+                <span class="file-name">{{ file.name }}</span>
+                <button @click.prevent="removeNewTaskFile(index)" class="btn-remove-preview" title="Quitar archivo">&times;</button>
               </div>
             </div>
           </div>
         </div>
+
         <div class="modal-footer">
           <button class="btn btn-secondary" @click="showModal = false">Cancelar</button>
           <button class="btn-primary-action" @click="crearTarea" :disabled="creandoTarea">

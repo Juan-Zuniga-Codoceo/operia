@@ -456,3 +456,129 @@ html, body {
   white-space: nowrap;
   padding-left: 10px;
 }
+
+/* =============================================
+   NUEVO MODAL DE TAREA - ESTILO BIOCARE
+   ============================================= */
+
+.modal-content.biocare-modal {
+  max-width: 680px; /* Ancho más compacto */
+  width: 95%;
+}
+
+.biocare-modal .modal-header h2 {
+  font-size: 18px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--color-primary);
+}
+
+.biocare-modal .modal-body {
+  padding: 20px 30px; /* Ajuste de padding */
+  display: flex;
+  flex-direction: column;
+  gap: 18px; /* Espacio entre grupos de formulario */
+}
+
+.biocare-modal .form-group {
+  margin-bottom: 0; /* Eliminamos el margen inferior para usar gap */
+}
+
+.biocare-modal .form-group label {
+  display: block;
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 8px;
+  color: var(--color-text-primary);
+}
+
+.biocare-modal .form-control {
+  width: 100%;
+  padding: 10px 14px; /* Padding más generoso */
+  border-radius: var(--radius-md); /* Bordes más redondeados */
+  border: 1px solid #CFD8DC; /* Borde más sutil */
+  background-color: #ECEFF1; /* Fondo ligeramente gris */
+  font-size: 15px;
+  transition: var(--transition);
+}
+
+.biocare-modal .form-control::placeholder {
+  color: #90A4AE;
+}
+
+.biocare-modal .form-control:focus {
+  border-color: var(--color-accent);
+  background-color: var(--color-bg-surface);
+  box-shadow: 0 0 0 3px rgba(139, 195, 74, 0.2);
+}
+
+.biocare-modal .form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+/* Área de Archivos Adjuntos */
+.biocare-modal .attachment-area {
+  margin-top: 10px;
+}
+
+.biocare-modal .attachment-dropzone {
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  background-color: #f8f9fa;
+  transition: var(--transition);
+}
+
+.biocare-modal .attachment-dropzone:hover {
+  border-color: var(--color-accent);
+  background-color: #f1f5f1;
+}
+
+.biocare-modal .attachment-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.biocare-modal .attachment-label i {
+  font-size: 18px;
+}
+
+.biocare-modal .attachment-input {
+  display: none;
+}
+
+.biocare-modal .attachment-previews {
+  margin-top: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Footer con botones alineados */
+.biocare-modal .modal-footer {
+  justify-content: flex-end; /* Alinea botones a la derecha */
+  background-color: var(--color-bg-body);
+}
+
+.biocare-modal .btn-secondary {
+  background-color: #E2E8F0;
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+.biocare-modal .btn-secondary:hover {
+  background-color: #CFD8DC;
+}
+
+.biocare-modal .btn-primary-action {
+  font-weight: 600;
+}
