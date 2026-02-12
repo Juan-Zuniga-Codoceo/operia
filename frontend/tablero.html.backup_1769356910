@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BiocareTask - Tablero</title>
+
+  <link rel="stylesheet" href="/css/tablero.css" />
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/assets/logo.png" type="image/png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_blue.css">
+
+</head>
+
+<body>
+  <div id="app">
+    <div class="overlay" v-if="mostrarNotificaciones" @click="toggleNotifications"></div>
+    <header class="header">
+      <div class="header-left">
+        <div class="logo">
+          <img src="/assets/logo.png" alt="Biocare Logo" />
+          <h1><span class="biocare">Biocare</span><span class="task">Task</span></h1>
+        </div>
+      </div>
+
+      <div class="main-nav-container">
+        <nav class="main-nav">
+          <a href="/tablero.html" class="nav-link active" title="Tablero"><i class="fa-solid fa-table-columns"></i>
+            <span>Tablero</span></a>
+          <a href="/fichas.html" class="nav-link" title="Fichas Técnicas"><i class="fa-solid fa-book-atlas"></i>
+            <span>Fichas</span></a>
+        </nav>
+      </div>
+
+
+      <div class="header-right">
+        <div class="user-actions">
+          <div class="notifications">
+            <button class="btn-icon" @click="toggleNotifications" title="Notificaciones">
+              <i class="fa-solid fa-bell"></i>
+              <span class="notification-badge" v-if="notificacionesPendientes > 0">
+                {{ notificacionesPendientes }}
+              </span>
+            </button>
+            <div class="notifications-panel" v-if="mostrarNotificaciones">
+              <div class="notifications-header">
+                <h3>Notificaciones</h3>
+                <button class="btn-mark-all-read" @click="marcarTodasComoLeidas" v-if="notificacionesPendientes > 0">
+                  Marcar todas como leídas
+                </button>
+                <button @click="mostrarNotificaciones = false" class="btn-close-modal">×</button>
+              </div>
+              <div class="notifications-list">
+                <div v-for="notificacion in notificaciones" :key="notificacion.id" class="notification-item"
+                  :class="{'unread': !notificacion.leida}" @click="handleNotificationClick(notificacion)"
+                  style="cursor: pointer;">
+                  <div class="notification-content">
+                    <p>{{ notificacion.mensaje }}</p>
+                    <small>{{ formatDate(notificacion.fecha_creacion) }}</small>
+                  </div>
+                  <div class="notification-actions">
+                    <button v-if="!notificacion.leida" @click.stop="marcarComoLeida(notificacion.id)"
+                      class="btn-icon-action" title="Marcar como leída">
+                      <i class="fa-solid fa-check"></i>
+                    </button>
+                    <button @click.stop="eliminarNotificacion(notificacion.id)" class="btn-icon-action danger"
+                      title="Eliminar">
+                      <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                  </div>
+                </div>
+                <p v-if="notificaciones.length === 0" class="empty">No hay notificaciones</p>
+              </div>
+            </div>
+          </div>
+
+          <button class="btn-icon" @click="showConfigModal = true" title="Configurar Etiquetas" style="margin: 0 10px;">
+            <i class="fa-solid fa-gear"></i>
+          </button>
+
+          <div class="user-menu">
+            <div class="dropdown">
+              <button class="btn-icon" @click="toggleDropdown" title="Menú">
+                <i class="fa-solid fa-user-gear" v-if="user && user.role === 'admin'"></i>
+                <i class="fa-solid fa-user" v-else></i>
+              </button>
+              <div class="dropdown-menu" v-if="showDropdown">
+                <button @click="toggleDropdown" class="btn-close-overlay">&times;</button>
+                <a href="/perfil.html"><i class="fa-solid fa-user"></i> Mi Perfil</a>
+                <a href="/archivadas.html"><i class="fa-solid fa-box-archive"></i> Tareas Archivadas</a>
+                <a href="/admin" v-if="user && user.role === 'admin'"><i class="fa-solid fa-users-cog"></i>
+                  Administración</a>
+                <a href="javascript:void(0)" @click="logout()"><i class="fa-solid fa-right-from-bracket"></i> Cerrar
+                  sesión</a>
+              </div>
+            </div>
+            <span v-if="user" class="user-name">{{ user.name }}</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="controls-bar">
+      <div class="filters">
+        <label for="filtro-fecha" class="filter-label">Vencimiento:</label>
+        <input type="date" id="filtro-fecha" v-model="filtroFecha" />
+
+        <label class="filter-checkbox">
+          <input type="checkbox" v-model="misTareas" /> Mis Tareas
+        </label>
+      </div>
+      <button class="btn-create" @click="tareaSeleccionada = null; showModal = true">
+        <i class="fa-solid fa-plus"></i> Nueva Tarea
+      </button>
+    </div>
+
+    <main class="dashboard">
+      <div class="summary">
+        <div class="summary-card">
+          <div class="card-icon total"><i class="fa-solid fa-list-check"></i></div>
+          <div class="card-content">
+            <span class="card-value">{{ resumen.total_pendientes }}</span>
+            <span class="card-label">Pendientes</span>
+          </div>
+        </div>
+        <div class="summary-card">
+          <div class="card-icon proximas"><i class="fa-solid fa-calendar-day"></i></div>
+          <div class="card-content">
+            <span class="card-value">{{ resumen.proximas }}</span>
+            <span class="card-label">Próximas</span>
+          </div>
+        </div>
+        <div class="summary-card" v-if="resumen.vencidas > 0">
+          <div class="card-icon vencidas"><i class="fa-solid fa-triangle-exclamation"></i></div>
+          <div class="card-content">
+            <span class="card-value">{{ resumen.vencidas }}</span>
+            <span class="card-label">Vencidas</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="kanban-board">
+        <div class="kanban-column column-pending">
+          <h2 class="column-title">
+            <i class="fa-regular fa-clock"></i> Pendientes
+          </h2>
+          <div class="task-list">
+            <div v-for="task in tareasPendientes" :key="task.id" class="task-card" :data-task-id="task.id"
+              :class="{ 'vence-hoy': esTareaParaHoy(task.due_date), 'vencida': esTareaVencida(task.due_date, task.title) }"
+              @click="verDetalles(task)">
+              <div class="task-header-badges">
+                <span v-if="task.human_id" class="id-badge">{{ task.human_id }}</span>
+                <span v-if="task.shipping_type" class="courier-badge"><i class="fa-solid fa-truck-fast"></i> {{
+                  task.shipping_type }}</span>
+              </div>
+              <h3>{{ task.title }}</h3>
+
+              <!-- Bloque Cliente -->
+              <div v-if="hasClientInfo(task.client_snapshot)" class="client-info-block"
+                style="background: #f8f9fa; padding: 5px; font-size: 0.85em; margin-top: 5px; border-radius: 4px; color: #333;">
+                <div v-if="typeof task.client_snapshot === 'string'">
+                  <strong>👤 {{ JSON.parse(task.client_snapshot).name }}</strong><br>
+                  📞 {{ JSON.parse(task.client_snapshot).phone || 'S/N' }}<br>
+                  📍 {{ JSON.parse(task.client_snapshot).address_street || '' }} {{
+                  JSON.parse(task.client_snapshot).commune || '' }}
+                </div>
+                <div v-else>
+                  <strong>👤 {{ task.client_snapshot.name }}</strong><br>
+                  📞 {{ task.client_snapshot.phone || 'S/N' }}<br>
+                  📍 {{ task.client_snapshot.address_street || '' }} {{ task.client_snapshot.commune || '' }}
+                </div>
+              </div>
+              <p>{{ task.description }}</p>
+              <div class="task-badge-container"></div>
+              <div class="task-meta">
+                <span class="due-date"><i class="fa-regular fa-calendar"></i> {{ formatDate(task.due_date) }}</span>
+                <div class="labels">
+                  <span v-for="label in getLabelsArray(task)" :key="label" class="label-tag"
+                    :style="{ backgroundColor: getColor(label) }">{{ label }}</span>
+                </div>
+              </div>
+
+              <div class="task-footer">
+                <span class="assigned-to" title="Observadores"><i class="fa-solid fa-users-viewfinder"></i> {{
+                  task.assigned_names || 'Sin observadores' }}</span>
+
+                <span class="responsible-user" v-if="task.responsible_user_name"
+                  :title="'Responsable: ' + task.responsible_user_name">
+                  <i class="fa-solid fa-user-shield"></i>
+                  {{ task.responsible_user_name.split(' ')[0] }}
+                </span>
+
+                <button @click.stop="moverACamino(task.id)" class="btn-action">En Camino <i
+                    class="fa-solid fa-arrow-right"></i></button>
+              </div>
+            </div>
+            <p class="empty" v-if="tareasPendientes.length === 0">No hay tareas pendientes</p>
+          </div>
+        </div>
+        <div class="kanban-column column-progress">
+          <h2 class="column-title">
+            <i class="fa-solid fa-truck-fast"></i> En Camino
+          </h2>
+          <div class="task-list">
+            <div v-for="task in tareasEnCamino" :key="task.id" class="task-card" :data-task-id="task.id"
+              @click="verDetalles(task)">
+              <div class="task-header-badges">
+                <span v-if="task.human_id" class="id-badge">{{ task.human_id }}</span>
+                <span v-if="task.shipping_type" class="courier-badge"><i class="fa-solid fa-truck-fast"></i> {{
+                  task.shipping_type }}</span>
+              </div>
+              <h3>{{ task.title }}</h3>
+
+              <!-- Bloque Cliente -->
+              <div v-if="hasClientInfo(task.client_snapshot)" class="client-info-block"
+                style="background: #f8f9fa; padding: 5px; font-size: 0.85em; margin-top: 5px; border-radius: 4px; color: #333;">
+                <div v-if="typeof task.client_snapshot === 'string'">
+                  <strong>👤 {{ JSON.parse(task.client_snapshot).name }}</strong><br>
+                  📞 {{ JSON.parse(task.client_snapshot).phone || 'S/N' }}<br>
+                  📍 {{ JSON.parse(task.client_snapshot).address_street || '' }} {{
+                  JSON.parse(task.client_snapshot).commune || '' }}
+                </div>
+                <div v-else>
+                  <strong>👤 {{ task.client_snapshot.name }}</strong><br>
+                  📞 {{ task.client_snapshot.phone || 'S/N' }}<br>
+                  📍 {{ task.client_snapshot.address_street || '' }} {{ task.client_snapshot.commune || '' }}
+                </div>
+              </div>
+              <p>{{ task.description }}</p>
+              <div class="task-badge-container"></div>
+              <div class="task-meta">
+                <span class="due-date"><i class="fa-regular fa-calendar"></i> {{ formatDate(task.due_date) }}</span>
+                <div class="labels">
+                  <span v-for="label in getLabelsArray(task)" :key="label" class="label-tag"
+                    :style="{ backgroundColor: getColor(label) }">{{ label }}</span>
+                </div>
+              </div>
+
+              <div class="task-footer">
+                <span class="assigned-to" title="Observadores"><i class="fa-solid fa-users-viewfinder"></i> {{
+                  task.assigned_names || 'Sin observadores' }}</span>
+
+                <span class="responsible-user" v-if="task.responsible_user_name"
+                  :title="'Responsable: ' + task.responsible_user_name">
+                  <i class="fa-solid fa-user-shield"></i>
+                  {{ task.responsible_user_name.split(' ')[0] }}
+                </span>
+
+                <button @click.stop="openCompleteModal(task)" class="btn-action green">Completar <i
+                    class="fa-solid fa-check"></i></button>
+              </div>
+            </div>
+            <p class="empty" v-if="tareasEnCamino.length === 0">No hay tareas en camino</p>
+          </div>
+        </div>
+        <div class="kanban-column column-done">
+          <h2 class="column-title">
+            <i class="fa-solid fa-flag-checkered"></i> Completadas ({{ tareasCompletadas.length }})
+          </h2>
+          <div class="task-list">
+            <div v-for="task in tareasCompletadas" :key="task.id" class="task-card completed" :data-task-id="task.id"
+              @click="verDetalles(task)">
+              <div class="task-header-badges">
+                <span v-if="task.human_id" class="id-badge">{{ task.human_id }}</span>
+                <span v-if="task.shipping_type" class="courier-badge"><i class="fa-solid fa-truck-fast"></i> {{
+                  task.shipping_type }}</span>
+              </div>
+              <h3>{{ task.title }}</h3>
+
+              <!-- Bloque Cliente -->
+              <div v-if="hasClientInfo(task.client_snapshot)" class="client-info-block"
+                style="background: #f8f9fa; padding: 5px; font-size: 0.85em; margin-top: 5px; border-radius: 4px; color: #333;">
+                <div v-if="typeof task.client_snapshot === 'string'">
+                  <strong>👤 {{ JSON.parse(task.client_snapshot).name }}</strong><br>
+                  📞 {{ JSON.parse(task.client_snapshot).phone || 'S/N' }}<br>
+                  📍 {{ JSON.parse(task.client_snapshot).address_street || '' }} {{
+                  JSON.parse(task.client_snapshot).commune || '' }}
+                </div>
+                <div v-else>
+                  <strong>👤 {{ task.client_snapshot.name }}</strong><br>
+                  📞 {{ task.client_snapshot.phone || 'S/N' }}<br>
+                  📍 {{ task.client_snapshot.address_street || '' }} {{ task.client_snapshot.commune || '' }}
+                </div>
+              </div>
+
+              <p>{{ task.description }}</p>
+              <div class="task-badge-container"></div>
+              <div class="task-meta">
+                <small>Completado el {{ formatDate(task.completed_at) }}</small>
+              </div>
+              <div class="task-footer">
+                <span class="assigned-to" title="Observadores"><i class="fa-solid fa-users-viewfinder"></i> {{
+                  task.assigned_names || 'Sin observadores' }}</span>
+              </div>
+            </div>
+            <p class="empty" v-if="tareasCompletadas.length === 0">No hay tareas completadas</p>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <div class="modal" v-if="showModal" @click.self="showModal = false">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2><i class="fa-solid fa-plus"></i> Crear Nueva Tarea</h2>
+          <button @click="showModal = false" class="btn-close-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <!-- SECCIÓN 1: DATOS DEL CLIENTE -->
+          <div class="form-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+              <h3 style="margin: 0;"><i class="fa-solid fa-user"></i> Datos del Cliente</h3>
+              <div class="checkbox-wrapper-internal">
+                <label style="display: flex; align-items: center; cursor: pointer; font-weight: 500; color: #666;">
+                  <input type="checkbox" v-model="newTask.is_internal" style="margin-right: 8px; width: auto;">
+                  Tarea Interna (Sin Cliente)
+                </label>
+              </div>
+            </div>
+
+            <div v-if="!newTask.is_internal">
+
+              <div class="form-group">
+                <label>Buscar Cliente Frecuente</label>
+                <div class="dropdown-container">
+                  <input type="text" v-model="clientSearchTerm" @input="searchClients"
+                    placeholder="Buscar por RUT o Nombre..." class="search-input" />
+                  <div class="label-dropdown" v-if="suggestedClients.length > 0">
+                    <div v-for="client in suggestedClients" :key="client.id" @mousedown="selectClient(client)">
+                      <strong>{{ client.name }}</strong> ({{ client.rut }})
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>RUT</label>
+                  <input type="text" v-model="newTask.client.rut" placeholder="12.345.678-9" />
+                </div>
+                <div class="form-group">
+                  <label>Nombre Completo</label>
+                  <input type="text" v-model="newTask.client.name" placeholder="Juan Pérez" />
+                </div>
+              </div>
+
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Email</label>
+                  <input type="email" v-model="newTask.client.email" placeholder="cliente@email.com" />
+                </div>
+                <div class="form-group">
+                  <label>Teléfono</label>
+                  <input type="text" v-model="newTask.client.phone" placeholder="+569..." />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="client_address_street">Dirección (Calle, Número, Depto)</label>
+                <input type="text" id="client_address_street" v-model="newTask.client.address_street"
+                  placeholder="Av. Siempre Viva 742" />
+              </div>
+
+              <div class="form-group">
+                <label for="client_address_reference">Referencia (Opcional)</label>
+                <input type="text" id="client_address_reference" v-model="newTask.client.reference"
+                  placeholder="Casa azul, esquina, etc." />
+              </div>
+
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Comuna</label>
+                  <input type="text" v-model="newTask.client.commune" placeholder="Valparaíso" />
+                </div>
+                <div class="form-group">
+                  <label>Región</label>
+                  <input type="text" v-model="newTask.client.region" placeholder="Valparaíso" />
+                </div>
+              </div>
+
+              <div class="form-group checkbox-group">
+                <label>
+                  <input type="checkbox" v-model="saveAsFrequent" /> Guardar como Cliente Frecuente
+                </label>
+              </div>
+            </div>
+
+            <!-- SECCIÓN 2: LOGÍSTICA -->
+            <div class="form-section" v-if="!newTask.is_internal">
+              <h3><i class="fa-solid fa-truck"></i> Logística</h3>
+
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Origen</label>
+                  <select v-model="newTask.origin">
+                    <option value="Valparaíso">Valparaíso</option>
+                    <option value="Quilpué">Quilpué</option>
+                    <option value="Viña del Mar">Viña del Mar</option>
+                    <option value="Bodega">Bodega</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Courier / Método</label>
+                  <select v-model="newTask.shipping_type">
+                    <option value="Starken">Starken</option>
+                    <option value="BlueExpress">BlueExpress</option>
+                    <option value="Chilexpress">Chilexpress</option>
+                    <option value="Retiro Tienda">Retiro Tienda</option>
+                    <option value="Entrega Programada">Entrega Programada</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Estado del Pago (Envío)</label>
+                <div class="radio-group">
+                  <label><input type="radio" v-model="newTask.payment_status" value="pagado"> Pagado</label>
+                  <label><input type="radio" v-model="newTask.payment_status" value="por_pagar"> Por Pagar</label>
+                </div>
+              </div>
+            </div>
+
+            <!-- SECCIÓN 3: DETALLES DE LA TAREA -->
+            <div class="form-section">
+              <h3><i class="fa-solid fa-clipboard-list"></i> Detalles de la Tarea</h3>
+
+              <div class="form-group">
+                <label for="title">Título *</label>
+                <input id="title" type="text" v-model="newTask.title" placeholder="Ej: Envío Pedido #1234" required />
+              </div>
+
+              <div class="form-group">
+                <label for="description">Descripción</label>
+                <textarea id="description" v-model="newTask.description"
+                  placeholder="Detalles adicionales..."></textarea>
+              </div>
+
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="new-task-datepicker">Fecha de Entrega *</label>
+                  <div class="date-input-wrapper">
+                    <input id="new-task-datepicker" type="text" v-model="newTask.due_date"
+                      placeholder="Selecciona una fecha y hora...">
+                    <i class="fa-regular fa-calendar-alt"></i>
+                  </div>
+                  <div class="quick-dates">
+                    <button @click.prevent="setQuickDate(0)">Hoy</button>
+                    <button @click.prevent="setQuickDate(1)">Mañana</button>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="priority">Prioridad</label>
+                  <select id="priority" v-model="newTask.priority">
+                    <option value="baja">Baja</option>
+                    <option value="media" selected>Media</option>
+                    <option value="alta">Alta</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="responsible_user">Responsable Principal</label>
+                <select id="responsible_user" v-model="newTask.responsible_user_id" class="user-select-add">
+                  <option :value="null">-- Sin Responsable --</option>
+                  <option v-for="user in users" :key="user.id" :value="user.id">
+                    {{ user.name }}
+                  </option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Observa (Opcional)</label>
+                <div class="pills-container user-pills">
+                  <span v-for="user in selectedUsersInNew" :key="user.id" class="pill user-pill">
+                    {{ user.name }}
+                    <button @click="removeUserFromNewTask(user.id)" class="remove-pill">&times;</button>
+                  </span>
+                  <span v-if="selectedUsersInNew.length === 0" class="empty-pills">Nadie como observador</span>
+                </div>
+                <select @change="addUserToNewTask($event.target.value)" class="user-select-add" id="task-observer">
+                  <option value="" disabled selected>Añadir observador...</option>
+                  <option v-for="user in availableUsersInNew" :key="user.id" :value="user.id">
+                    {{ user.name }}
+                  </option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Etiquetas</label>
+                <div class="pills-container">
+                  <span v-for="label in selectedLabelsInNew" :key="label.id" class="pill"
+                    :style="{ backgroundColor: getColor(label.name) }">
+                    {{ label.name }}
+                    <button @click="toggleLabelInNew(label.id)" class="remove-pill">&times;</button>
+                  </span>
+                </div>
+                <div class="dropdown-container">
+                  <input type="text" v-model="labelSearchTerm" placeholder="Añadir etiqueta..."
+                    @focus="showNewLabelDropdown = true" @blur="showNewLabelDropdown = false" class="label-input" />
+                  <div class="label-dropdown" v-if="showNewLabelDropdown">
+                    <div v-for="label in availableLabelsInNew" :key="label.id" @mousedown="toggleLabelInNew(label.id)">
+                      {{ label.name }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group create-label-group">
+                <input type="text" v-model="nuevaEtiqueta" placeholder="O crea una nueva etiqueta..."
+                  @keyup.enter="crearEtiqueta" />
+                <button @click="crearEtiqueta" class="btn-create-label">Crear</button>
+              </div>
+
+              <div class="form-group">
+                <label for="fileInput">Adjuntar Archivo</label>
+                <input type="file" @change="handleFileUpload" class="file-input" id="fileInput" multiple />
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button @click="showModal = false" class="btn-cancel">Cancelar</button>
+            <button @click="crearTarea" class="btn-create" :disabled="creandoTarea">
+              <i class="fa-solid fa-check"></i> {{ creandoTarea ? 'Creando...' : 'Crear Tarea' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal de Configuración -->
+      <div class="modal" v-if="showConfigModal" @click.self="showConfigModal = false">
+        <div class="modal-content" style="max-width: 700px;">
+          <div class="modal-header">
+            <h2><i class="fa-solid fa-gear"></i> Configuración de Etiquetas</h2>
+            <button @click="showConfigModal = false" class="btn-close-modal">&times;</button>
+          </div>
+          <div class="modal-body">
+            <div class="form-section">
+              <h3>Datos del Remitente</h3>
+              <p class="help-text">Estos datos aparecerán en las etiquetas de envío.</p>
+
+              <div class="form-group">
+                <label>Logo de la Empresa</label>
+                <input type="file" @change="handleLogoUpload" accept="image/*" class="file-input" id="logo-upload" />
+                <p style="font-size: 0.85rem; color: #666; margin-top: 5px;">O ingresa una URL del logo:</p>
+                <input type="text" v-model="senderConfig.logoUrl" placeholder="https://ejemplo.com/logo.png" />
+                <div v-if="senderConfig.logoUrl"
+                  style="margin-top: 15px; text-align: center; padding: 10px; background: #f5f5f5; border-radius: 8px;">
+                  <img :src="senderConfig.logoUrl" style="max-height: 100px; max-width: 100%;"
+                    alt="Vista previa logo" />
+                </div>
+              </div>
+
+              <div class="form-grid" style="grid-template-columns: 2fr 1fr;">
+                <div class="form-group">
+                  <label>Nombre / Razón Social</label>
+                  <input type="text" v-model="senderConfig.name" placeholder="IMPORTADORA BIOCARE LTDA." />
+                </div>
+                <div class="form-group">
+                  <label>RUT Empresa</label>
+                  <input type="text" v-model="senderConfig.rut" placeholder="76.143.373-3" />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Dirección Completa</label>
+                <input type="text" v-model="senderConfig.address" placeholder="BLANCO 1023, L3" />
+              </div>
+
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Comuna</label>
+                  <input type="text" v-model="senderConfig.commune" placeholder="QUILPUE" />
+                </div>
+                <div class="form-group">
+                  <label>Región</label>
+                  <input type="text" v-model="senderConfig.region" placeholder="REGIÓN DE VALPARAÍSO" />
+                </div>
+              </div>
+
+              <h3 style="margin-top: 25px;">Contacto</h3>
+
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Persona de Contacto</label>
+                  <input type="text" v-model="senderConfig.contactPerson" placeholder="PATRICIO HERNÁNDEZ" />
+                </div>
+                <div class="form-group">
+                  <label>RUT Contacto</label>
+                  <input type="text" v-model="senderConfig.contactRut" placeholder="10.738.733-1" />
+                </div>
+              </div>
+
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Teléfono</label>
+                  <input type="text" v-model="senderConfig.phone" placeholder="322 922 506" />
+                </div>
+                <div class="form-group">
+                  <label>Email</label>
+                  <input type="email" v-model="senderConfig.email" placeholder="ventas@ibiocare.cl" />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Sitio Web</label>
+                <input type="text" v-model="senderConfig.website" placeholder="www.ibiocare.cl" />
+              </div>
+
+              <div class="form-group">
+                <label>Mensaje de Agradecimiento (Opcional)</label>
+                <input type="text" v-model="senderConfig.thankYouMessage" placeholder="GRACIAS POR PREFERIRNOS!!!!" />
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button @click="showConfigModal = false" class="btn-cancel">Cancelar</button>
+            <button @click="saveSenderConfig" class="btn-create">
+              <i class="fa-solid fa-save"></i> Guardar Configuración
+            </button>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="modal" v-if="tareaSeleccionada" @click.self="tareaSeleccionada = null">
+        <div class="modal-content large" :class="{ 'vence-hoy': esTareaParaHoy(tareaSeleccionada.due_date) }">
+          <div class="modal-header">
+            <h2>
+              <span>{{ tareaSeleccionada.title }}</span>
+              <span v-if="esTareaParaHoy(tareaSeleccionada.due_date)" class="due-today-badge">
+                <i class="fa-solid fa-fire"></i> VENCE HOY
+              </span>
+            </h2>
+            <button @click="tareaSeleccionada = null" class="btn-close-modal">&times;</button>
+          </div>
+
+          <!-- Modal anidado para cambiar creador -->
+          <div class="modal" v-if="mostrandoSelectorCreador">
+            <div class="modal-content" style="max-width: 500px;">
+              <div class="modal-header">
+                <h2><i class="fa-solid fa-user-pen"></i> Cambiar Creador de Tarea</h2>
+                <button @click="mostrandoSelectorCreador = false" class="btn-close-modal">&times;</button>
+              </div>
+              <div class="modal-body">
+                <p>Selecciona el nuevo usuario que será el creador de la tarea "<strong>{{ tareaSeleccionada.title
+                    }}</strong>".</p>
+                <div class="form-group">
+                  <label for="user-selector">Usuarios Disponibles</label>
+                  <select id="user-selector" v-model="nuevoCreadorId" class="user-select-add">
+                    <option :value="null" disabled>-- Selecciona un usuario --</option>
+                    <option v-for="u in users" :key="u.id" :value="u.id">
+                      {{ u.name }} (ID: {{ u.id }})
+                    </option>
+                  </select>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button @click="mostrandoSelectorCreador = false" class="btn-cancel">Cancelar</button>
+                <button @click="confirmarCambioDeCreador" class="btn-create">
+                  <i class="fa-solid fa-save"></i> Guardar Cambio
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal" v-if="showEditModal" @click.self="showEditModal = false">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h2><i class="fa-solid fa-pencil"></i> Editar Tarea</h2>
+              <button @click="showEditModal = false" class="btn-close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+
+              <!-- SECCIÓN: DATOS DEL CLIENTE -->
+              <div class="form-section">
+                <h3><i class="fa-solid fa-user"></i> Datos del Cliente</h3>
+
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label>RUT</label>
+                    <input type="text" v-model="editTask.client.rut" placeholder="12.345.678-9" />
+                  </div>
+                  <div class="form-group">
+                    <label>Nombre Completo</label>
+                    <input type="text" v-model="editTask.client.name" placeholder="Juan Pérez" />
+                  </div>
+                </div>
+
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" v-model="editTask.client.email" placeholder="cliente@email.com" />
+                  </div>
+                  <div class="form-group">
+                    <label>Teléfono</label>
+                    <input type="text" v-model="editTask.client.phone" placeholder="+569..." />
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>Dirección (Calle, Número, Depto)</label>
+                  <input type="text" v-model="editTask.client.address_street" placeholder="Av. Siempre Viva 742" />
+                </div>
+
+                <div class="form-group">
+                  <label>Referencia (Opcional)</label>
+                  <input type="text" v-model="editTask.client.reference" placeholder="Casa azul, esquina, etc." />
+                </div>
+
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label>Comuna</label>
+                    <input type="text" v-model="editTask.client.commune" placeholder="Valparaíso" />
+                  </div>
+                  <div class="form-group">
+                    <label>Región</label>
+                    <input type="text" v-model="editTask.client.region" placeholder="Valparaíso" />
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Título *</label>
+                <input type="text" v-model="editTask.title" required />
+              </div>
+
+              <div class="form-group">
+                <label>Descripción</label>
+                <textarea v-model="editTask.description"></textarea>
+              </div>
+
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="edit-task-datepicker">Fecha de Entrega *</label>
+                  <div class="date-input-wrapper">
+                    <input id="edit-task-datepicker" type="text" v-model="editTask.due_date"
+                      placeholder="Selecciona una fecha y hora...">
+                    <i class="fa-regular fa-calendar-alt"></i>
+                  </div>
+                  <div class="quick-dates">
+                    <button @click.prevent="setQuickEditDate(0)">Hoy</button>
+                    <button @click.prevent="setQuickEditDate(1)">Mañana</button>
+                    <button @click.prevent="setQuickEditDate('eod')">Fin del Día</button>
+                    <button @click.prevent="setQuickEditDate(7)">En 7 días</button>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>Prioridad</label>
+                  <select v-model="editTask.priority">
+                    <option value="baja">Baja</option>
+                    <option value="media">Media</option>
+                    <option value="alta">Alta</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Observa</label>
+                <div class="pills-container user-pills">
+                  <span v-for="user in selectedUsersInEdit" :key="user.id" class="pill user-pill">
+                    {{ user.name }}
+                    <button @click="removeUserFromEditTask(user.id)" class="remove-pill">&times;</button>
+                  </span>
+                  <span v-if="selectedUsersInEdit.length === 0" class="empty-pills">Nadie como observador</span>
+                </div>
+
+                <select @change="addUserToEditTask($event.target.value)" class="user-select-add">
+                  <option value="" disabled selected>Añadir observador...</option>
+                  <option v-for="user in availableUsersInEdit" :key="user.id" :value="user.id">
+                    {{ user.name }}
+                  </option>
+                </select>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="edit_responsible_user">Responsable Principal</label>
+                <select id="edit_responsible_user" v-model="editTask.responsible_user_id" class="user-select-add">
+                  <option :value="null">-- Sin Responsable --</option>
+                  <option v-for="user in users" :key="user.id" :value="user.id">
+                    {{ user.name }}
+                  </option>
+                </select>
+              </div>
+              <!--<div class="form-group">
+            <label>Etiquetas</label>
+          </div>-->
+
+              <div class="form-group">
+                <label>Etiquetas</label>
+                <div class="pills-container">
+                  <span v-for="label in selectedLabelsInEdit" :key="label.id" class="pill"
+                    :style="{ backgroundColor: getColor(label.name) }">
+                    {{ label.name }}
+                    <button @click="toggleLabelInEdit(label.id)" class="remove-pill">&times;</button>
+                  </span>
+                </div>
+                <div class="dropdown-container">
+                  <input type="text" v-model="labelSearchTerm" placeholder="Añadir etiqueta..."
+                    @focus="showLabelDropdown = true" @blur="showLabelDropdown = false" class="label-input" />
+                  <div class="label-dropdown" v-if="showLabelDropdown">
+                    <div v-for="label in availableLabelsInEdit" :key="label.id"
+                      @mousedown="toggleLabelInEdit(label.id)">
+                      {{ label.name }}
+                    </div>
+                    <div v-if="availableLabelsInEdit.length === 0" class="empty-dropdown">
+                      No hay más etiquetas para añadir.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Archivos Adjuntos</label>
+
+                <div class="comment-attachments-grid" v-if="editTask.attachments && editTask.attachments.length > 0">
+                  <div v-for="att in editTask.attachments" :key="att.id" class="attachment-pill"
+                    :class="{ 'marked-for-deletion': adjuntosParaBorrar.includes(att.id) }"
+                    :title="adjuntosParaBorrar.includes(att.id) ? 'Marcado para eliminar' : att.file_name">
+
+                    <i class="fa-solid fa-file-zipper"></i>
+                    <span class="attachment-pill-name">{{ att.file_name }}</span>
+                    <button @click="marcarParaBorrar(att.id)" class="remove-pill-btn">&times;</button>
+                  </div>
+                </div>
+                <p v-else class="empty-pills">Esta tarea no tiene archivos adjuntos.</p>
+              </div>
+
+              <div class="form-group">
+                <label for="editFileInput">Añadir Nuevos Archivos</label>
+                <input type="file" @change="handleFileUploadEnEdicion" class="file-input" id="editFileInput" multiple />
+
+                <div v-if="archivosParaSubirEnEdicion.length > 0" class="comment-attachments-grid"
+                  style="margin-top: 12px;">
+                  <div v-for="(file, index) in archivosParaSubirEnEdicion" :key="index" class="attachment-pill preview">
+                    <i class="fa-solid fa-file-arrow-up"></i>
+                    <span class="attachment-pill-name">{{ file.name }}</span>
+                    <button @click="quitarDeLaListaDeSubida(index)" class="remove-pill-btn"
+                      title="Quitar archivo">&times;</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group create-label-group">
+                <input type="text" v-model="nuevaEtiqueta" placeholder="O crea una nueva etiqueta..."
+                  @keyup.enter="crearEtiqueta" />
+                <button @click="crearEtiqueta" class="btn-create-label">Crear</button>
+              </div>
+
+            </div>
+            <div class="modal-footer">
+              <button @click="showEditModal = false" class="btn-cancel">Cancelar</button>
+              <button @click="guardarCambiosTarea" class="btn-create">
+                <i class="fa-solid fa-save"></i> Guardar Cambios
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="modal" v-if="showDeleteConfirm">
+          <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+              <h2><i class="fa-solid fa-triangle-exclamation"></i> Confirmar Eliminación</h2>
+            </div>
+            <div class="modal-body" style="background-color: var(--c-panel-bg);">
+              <p>¿Estás seguro de que deseas eliminar la tarea "<strong>{{ tareaSeleccionada.title }}</strong>"?</p>
+              <p style="color: var(--c-danger); font-weight: 600;">Esta acción no se puede deshacer.</p>
+            </div>
+            <div class="modal-footer">
+              <button @click="showDeleteConfirm = false" class="btn-cancel">Cancelar</button>
+              <button @click="eliminarTarea" class="btn-delete">
+                <i class="fa-solid fa-trash-can"></i> Sí, eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <update-modal :show="showUpdateModal" @close="closeUpdateModal"></update-modal>
+
+        <div class="modal" v-if="showCompleteModal" @click.self="cancelCompletion">
+          <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+              <h2><i class="fa-solid fa-flag-checkered"></i> Finalizar Tarea</h2>
+              <button @click="cancelCompletion" class="btn-close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+              <p>Estás a punto de completar la tarea: <strong>"{{ taskToComplete?.title }}"</strong></p>
+
+              <div class="form-group" style="margin-top: 20px;">
+                <label for="completion-file">Adjuntar Prueba de Finalización (Opcional)</label>
+                <input type="file" @change="handleCompletionFile" class="file-input" id="completion-file" />
+                <div v-if="completionFile" class="attachment-pill preview"
+                  style="margin-top: 12px; max-width: fit-content;">
+                  <i class="fa-solid fa-file-arrow-up"></i>
+                  <span class="attachment-pill-name">{{ completionFile.name }}</span>
+                  <button @click="completionFile = null" class="remove-pill-btn" title="Quitar archivo">&times;</button>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="closing-note">Añadir Nota de Cierre (Opcional)</label>
+                <textarea id="closing-note" v-model="closingNote"
+                  placeholder="Ej: Entregado a Juan Pérez, CI 12.345.678-9..."></textarea>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button @click="cancelCompletion" class="btn-cancel">Cancelar</button>
+              <button @click="confirmCompletion" class="btn-create" :disabled="isCompleting">
+                <i class="fa-solid fa-check"></i>
+                {{ isCompleting ? 'Finalizando...' : (completionFile ? 'Finalizar y Adjuntar' : 'Finalizar Tarea') }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+
+
+      </div> <!-- Cierre de #app -->
+
+      <!-- Áreas de impresión (ocultas) -->
+      <div id="print-area-internal" style="display: none;"></div>
+      <div id="print-area-courier" style="display: none;"></div>
+
+      <script src="https://cdn.jsdelivr.net/npm/vue@3.4.10/dist/vue.global.prod.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+      <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
+      <script src="/js/api.js"></script>
+
+      <script src="/js/components/UpdateModal.js"></script>
+
+      <script src="/js/tasks.js"></script>
+
+      <!-- Áreas de impresión (ocultas) -->
+      <div id="print-area-internal" style="display: none;"></div>
+      <div id="print-area-courier" style="display: none;"></div>
+
+</body>
+
+</html>

@@ -1,11 +1,9 @@
 // frontend/js/api.js
 
-// <-- INICIO DE LA CORRECCIÓN
 // Detectamos si estamos en desarrollo local o en producción.
 const IS_LOCAL = window.location.hostname.includes('localhost') || window.location.hostname === '127.0.0.1';
 const API_BASE_URL = IS_LOCAL ? 'http://localhost:3000' : '';
 // En local, usará 'http://localhost:3000'. En producción, será '' para usar rutas relativas.
-// <-- FIN DE LA CORRECCIÓN
 
 class API {
   static async request(url, options = {}) {
@@ -24,14 +22,12 @@ class API {
         ...options.headers
       }
     };
-
     try {
-      // <-- CORRECCIÓN: Anteponemos la URL base a la petición.
       const response = await fetch(API_BASE_URL + url, mergedOptions);
       
       if (response.status === 401) {
         sessionStorage.removeItem('auth_token');
-        sessionStorage.removeItem('operia_user');
+        sessionStorage.removeItem('biocare_user');
         window.location.href = '/login';
         throw new Error('Sesión expirada');
       }
@@ -76,10 +72,37 @@ class API {
     });
   }
 
+  // --- ✨ NUEVO MÉTODO AÑADIDO ---
+  static async requestBlob(url) {
+    const token = sessionStorage.getItem('auth_token');
+    try {
+      const response = await fetch(API_BASE_URL + url, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (response.status === 401) {
+        sessionStorage.removeItem('auth_token');
+        sessionStorage.removeItem('biocare_user');
+        window.location.href = '/login';
+        throw new Error('Sesión expirada');
+      }
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Error ${response.status}`);
+      }
+      
+      return await response.blob();
+    } catch (error) {
+      console.error('API requestBlob failed:', error);
+      throw error;
+    }
+  }
+  // --- FIN DE MÉTODO AÑADIDO ---
+
   static async upload(url, formData) {
     const token = sessionStorage.getItem('auth_token')
     
-    // <-- CORRECCIÓN: Anteponemos la URL base también a la subida de archivos.
     return fetch(API_BASE_URL + url, {
       method: 'POST',
       headers: {
@@ -90,7 +113,8 @@ class API {
     }).then(async response => {
       if (response.status === 401) {
         sessionStorage.removeItem('auth_token');
-        sessionStorage.removeItem('operia_user');
+        sessionStorage.removeItem('biocare_user');
+        
         window.location.href = '/login';
         throw new Error('Sesión expirada');
       }
@@ -103,7 +127,6 @@ class API {
   }
 
   static showNotification(message, type = 'info') {
-    // ... (El resto de la función de notificación no cambia)
     const existing = Array.from(document.querySelectorAll('.api-notification'))
       .find(el => el.textContent === message);
     if (existing) return;
@@ -137,6 +160,7 @@ class API {
       notification.style.opacity = '1';
       notification.style.transform = 'translateX(0)';
     }, 100);
+
     const remove = () => {
       if (!notification.parentNode) return;
       notification.style.opacity = '0';

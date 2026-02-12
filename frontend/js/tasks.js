@@ -1,13 +1,13 @@
-const { createApp, ref, computed, onMounted, watch } = Vue;
+const { createApp, ref, computed, onMounted, watch, reactive } = Vue;
 
 createApp({
   components: {
     'update-modal': UpdateModal
   },
   setup() {
-    // ====================================================== 
-    // 1. ESTADO REACTIVO (refs) 
-    // ====================================================== 
+    // ======================================================
+    // 1. ESTADO REACTIVO (refs)
+    // ======================================================
     const user = ref(null);
     const tasks = ref([]);
     const users = ref([]);
@@ -16,7 +16,106 @@ createApp({
     const misTareas = ref(false);
     const filtroFecha = ref('');
     const showModal = ref(false);
+    const showConfigModal = ref(false); // Nuevo modal de configuración
     const tareaSeleccionada = ref(null);
+
+    // Configuración del Remitente (Cargar desde API)
+    const defaultSender = {
+      name: 'IMPORTADORA BIOCARE LTDA.',
+      rut: '76.143.373-3',
+      address: 'BLANCO 1023, L3',
+      commune: 'QUILPUE',
+      region: 'REGIÓN DE VALPARAÍSO',
+      contactPerson: 'PATRICIO HERNÁNDEZ',
+      contactRut: '10.738.733-1',
+      phone: '322 922 506',
+      email: 'ventas@ibiocare.cl',
+      website: 'www.ibiocare.cl',
+      thankYouMessage: 'GRACIAS POR PREFERIRNOS!!!!',
+      logoUrl: ''
+    };
+
+    const senderConfig = ref({ ...defaultSender });
+
+    // Cargar configuración desde el servidor
+    const loadSenderConfig = async () => {
+      try {
+        const response = await API.get('/api/sender-config');
+        if (response && response.name) {
+          // Mapear logo_path a logoUrl para compatibilidad
+          senderConfig.value = {
+            ...response,
+            logoUrl: response.logo_path || ''
+          };
+        }
+      } catch (err) {
+        console.warn('No se pudo cargar configuración del remitente, usando valores por defecto:', err);
+      }
+    };
+
+    const handleLogoUpload = async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      // Validar que sea una imagen
+      if (!file.type.startsWith('image/')) {
+        alert('Por favor selecciona un archivo de imagen válido.');
+        return;
+      }
+
+      // Subir logo al servidor
+      try {
+        const formData = new FormData();
+        formData.append('logo', file);
+
+        const response = await API.upload('/api/sender-config/logo', formData);
+
+        if (response && response.logoPath) {
+          senderConfig.value.logoUrl = response.logoPath;
+          alert('Logo actualizado exitosamente');
+        }
+      } catch (err) {
+        console.error('Error al subir logo:', err);
+        alert('Error al subir el logo. Por favor intenta nuevamente.');
+      }
+    };
+
+    const saveSenderConfig = async () => {
+      try {
+        const configToSave = {
+          name: senderConfig.value.name,
+          rut: senderConfig.value.rut,
+          address: senderConfig.value.address,
+          commune: senderConfig.value.commune,
+          region: senderConfig.value.region,
+          phone: senderConfig.value.phone,
+          email: senderConfig.value.email,
+          website: senderConfig.value.website,
+          contact_person: senderConfig.value.contactPerson,
+          contact_rut: senderConfig.value.contactRut,
+          thank_you_message: senderConfig.value.thankYouMessage
+        };
+
+        const response = await API.post('/api/sender-config', configToSave);
+
+        if (response && response.success) {
+          showConfigModal.value = false;
+          Object.assign(SENDER_INFO, senderConfig.value);
+          alert('Configuración guardada exitosamente');
+        }
+      } catch (err) {
+        console.error('Error al guardar configuración:', err);
+        alert('Error al guardar la configuración. Por favor intenta nuevamente.');
+      }
+    };
+
+    // Variable global para usar en impresión (reactiva a cambios)
+    const SENDER_INFO = reactive({ ...senderConfig.value });
+
+    // Watch para mantener sincronizado SENDER_INFO si cambia senderConfig
+    watch(senderConfig, (newVal) => {
+      Object.assign(SENDER_INFO, newVal);
+    }, { deep: true });
     const creandoTarea = ref(false);
     const loading = ref(true);
     const error = ref('');
@@ -38,10 +137,27 @@ createApp({
     const showStateDropdown = ref(false);
     const archivosParaSubirEnEdicion = ref([]);
     const adjuntosParaBorrar = ref([]);
+    const labelSearchTerm = ref('');
+    const clientSearchTerm = ref('');
+    const suggestedClients = ref([]);
+    const saveAsFrequent = ref(false);
+
+    // ======================================================
+    // 2. PROPIEDADES COMPUTADAS (computed)
+    // ======================================================
+    const notificacionesPendientes = computed(() => notificaciones.value.filter(n => !n.leida).length);
+    // ... (otras computed) ...
+
     const newTask = ref({
       title: '', description: '', due_date: '', priority: 'media',
       assigned_to: [], label_ids: [], comentario_inicial: '',
-      files: []
+      responsible_user_id: null,
+      origin: 'Valparaíso', shipping_type: 'Starken', payment_status: 'por_pagar',
+      is_internal: false,
+      client: {
+        rut: '', name: '', email: '', phone: '',
+        address_street: '', commune: '', region: '', reference: ''
+      }
     });
     const keywordToLabelMap = {
       'factura': 'Factura', 'facturas': 'Factura', 'boleta': 'Factura',
@@ -61,21 +177,19 @@ createApp({
     const mentionQuery = ref('');
     const mentionNavIndex = ref(-1);
     const showUpdateModal = ref(false);
-    const APP_VERSION = "1.4.0";
+    const APP_VERSION = "1.5.2";
     const showCompleteModal = ref(false);
     const taskToComplete = ref(null);
     const completionFile = ref(null);
     const closingNote = ref('');
     const isCompleting = ref(false);
-
-    // ====================================================== 
-    // 2. PROPIEDADES COMPUTADAS (computed) 
-    // ====================================================== 
-    const notificacionesPendientes = computed(() => notificaciones.value.filter(n => !n.leida).length);
+    // ======================================================
+    // 2. PROPIEDADES COMPUTADAS (computed)
+    // ======================================================
     const selectedLabelsInNew = computed(() => labels.value.filter(l => newTask.value.label_ids.includes(l.id)));
-    const availableLabelsInNew = computed(() => labels.value.filter(l => !newTask.value.label_ids.includes(l.id)));
+    const availableLabelsInNew = computed(() => labels.value.filter(l => !newTask.value.label_ids.includes(l.id) && l.name.toLowerCase().includes(labelSearchTerm.value.toLowerCase())));
     const selectedLabelsInEdit = computed(() => labels.value.filter(l => editTask.value.label_ids.includes(l.id)));
-    const availableLabelsInEdit = computed(() => labels.value.filter(l => !editTask.value.label_ids.includes(l.id)));
+    const availableLabelsInEdit = computed(() => labels.value.filter(l => !editTask.value.label_ids.includes(l.id) && l.name.toLowerCase().includes(labelSearchTerm.value.toLowerCase())));
     const tareasFiltradas = computed(() => {
       if (!Array.isArray(tasks.value)) return [];
       return tasks.value.filter(t => {
@@ -99,41 +213,50 @@ createApp({
     const availableUsersInEdit = computed(() => users.value.filter(u => !editTask.value.assigned_to.includes(u.id)));
 
     const puedeEditarTarea = computed(() => {
-      if (!tareaSeleccionada.value || !user.value) return false;
+      if (!user.value || !tareaSeleccionada.value) return false;
 
-      const esAdmin = user.value.role === 'admin';
-      const esCreador = tareaSeleccionada.value.created_by === user.value.id;
+      // 1. Admin puede editar
+      if (user.value.role === 'admin') {
+        return true;
+      }
+      // 2. Creador puede editar
+      if (user.value.id === tareaSeleccionada.value.created_by) {
+        return true;
+      }
 
-      // Convertir assigned_ids de string a array si existe
-      const assignedIds = tareaSeleccionada.value.assigned_ids
-        ? tareaSeleccionada.value.assigned_ids.split(',').map(Number)
-        : [];
+      // 3. ✨ MODIFICACIÓN: El Responsable también puede editar
+      if (user.value.id === tareaSeleccionada.value.responsible_user_id) {
+        return true;
+      }
 
-      const estaAsignado = assignedIds.includes(user.value.id);
-
-      return esAdmin || esCreador || estaAsignado;
+      // 4. Observador puede editar
+      const assignedIds = tareaSeleccionada.value.assigned_ids?.split(',') || [];
+      return assignedIds.includes(user.value.id.toString());
     });
+
 
     const puedeEliminarTarea = computed(() => {
-      if (!tareaSeleccionada.value || !user.value) return false;
+      if (!user.value || !tareaSeleccionada.value) return false;
 
-      const esAdmin = user.value.role === 'admin';
-      const esCreador = tareaSeleccionada.value.created_by === user.value.id;
+      // Si el usuario es 'admin', siempre tiene permiso para eliminar.
+      if (user.value.role === 'admin') {
+        return true;
+      }
 
-      return esAdmin || esCreador;
+      // Si no, solo el creador original puede eliminar.
+      return user.value.id === tareaSeleccionada.value.created_by;
     });
 
-
-    // ====================================================== 
-    // 3. OBSERVADORES (watch) 
-    // ====================================================== 
+    // ======================================================
+    // 3. OBSERVADORES (watch)
+    // ======================================================
     watch(() => [newTask.value.title, newTask.value.description], ([newTitle, newDesc]) => {
       if (labels.value.length === 0) return;
       const text = newTitle + ' ' + newDesc;
       if (!text.trim()) { suggestedLabels.value = []; return; }
       const foundLabelNames = new Set();
       for (const keyword in keywordToLabelMap) {
-        const regex = new RegExp(`\b${keyword}\b`, 'i');
+        const regex = new RegExp(`\\b${keyword}\\b`, 'i');
         if (regex.test(text)) { foundLabelNames.add(keywordToLabelMap[keyword]); }
       }
       const alreadySelectedNames = new Set(selectedLabelsInNew.value.map(l => l.name));
@@ -148,7 +271,7 @@ createApp({
       if (!text.trim()) { suggestedLabels.value = []; return; }
       const foundLabelNames = new Set();
       for (const keyword in keywordToLabelMap) {
-        const regex = new RegExp(`\b${keyword}\b`, 'i');
+        const regex = new RegExp(`\\b${keyword}\\b`, 'i');
         if (regex.test(text)) { foundLabelNames.add(keywordToLabelMap[keyword]); }
       }
       const alreadySelectedNames = new Set(selectedLabelsInEdit.value.map(l => l.name));
@@ -203,9 +326,9 @@ createApp({
       }
     });
 
-    // ====================================================== 
-    // 4. FUNCIONES 
-    // ====================================================== 
+    // ======================================================
+    // 4. FUNCIONES
+    // ======================================================
     const toggleDropdown = () => {
       showDropdown.value = !showDropdown.value;
       // Lógica para bloquear/desbloquear el scroll
@@ -215,6 +338,61 @@ createApp({
         document.body.classList.remove('overlay-active');
       }
     };
+
+    const getClientName = (snapshot) => {
+      if (!snapshot) return '';
+      try {
+        const client = typeof snapshot === 'string' ? JSON.parse(snapshot) : snapshot;
+        return client.name || '';
+      } catch { return ''; }
+    };
+
+    const getClientPhone = (snapshot) => {
+      if (!snapshot) return '';
+      try {
+        const client = typeof snapshot === 'string' ? JSON.parse(snapshot) : snapshot;
+        return client.phone || '';
+      } catch { return ''; }
+    };
+
+    const getClientAddress = (snapshot) => {
+      if (!snapshot) return '';
+      try {
+        const client = typeof snapshot === 'string' ? JSON.parse(snapshot) : snapshot;
+        const formatAddress = (client) => {
+          if (!client) return 'Sin dirección';
+          return `${client.address_street || ''} ${client.commune || ''}`.trim();
+        };
+        return formatAddress(client);
+      } catch { return ''; }
+    };
+
+    const getGoogleMapsLink = (snapshot) => {
+      if (!snapshot) return null;
+      try {
+        const client = typeof snapshot === 'string' ? JSON.parse(snapshot) : snapshot;
+        if (!client || !client.address_street) return null;
+        const fullAddress = `${client.address_street || ''}, ${client.commune || ''}, ${client.region || ''}, Chile`;
+        return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress.trim())}`;
+      } catch { return null; }
+    };
+
+    const getClientReference = (snapshot) => {
+      if (!snapshot) return '';
+      try {
+        const client = typeof snapshot === 'string' ? JSON.parse(snapshot) : snapshot;
+        return client.reference || '';
+      } catch { return ''; }
+    };
+
+    const hasClientInfo = (snapshot) => {
+      if (!snapshot) return false;
+      try {
+        const client = typeof snapshot === 'string' ? JSON.parse(snapshot) : snapshot;
+        return !!(client.name && client.name.trim() !== '');
+      } catch { return false; }
+    };
+
     const handleNotificationClick = async (notificacion) => {
       // Cierra el panel si está abierto
       if (mostrarNotificaciones.value) {
@@ -245,7 +423,8 @@ createApp({
     const toggleStateDropdown = () => {
       showStateDropdown.value = !showStateDropdown.value;
     };
-    const setQuickDate = (daysToAdd) => {
+    const setQuickDate = (daysToAdd, event) => {
+      if (event) event.preventDefault();
       const date = new Date();
       if (daysToAdd === 'eod') {
         date.setHours(18, 0, 0, 0);
@@ -257,7 +436,8 @@ createApp({
         newTaskFp.value.setDate(date, false);
       }
     };
-    const setQuickEditDate = (daysToAdd) => {
+    const setQuickEditDate = (daysToAdd, event) => {
+      if (event) event.preventDefault();
       const date = new Date();
       if (daysToAdd === 'eod') {
         date.setHours(18, 0, 0, 0);
@@ -268,22 +448,6 @@ createApp({
       if (editTaskFp.value) {
         editTaskFp.value.setDate(date, false);
       }
-    };
-
-    const getAssignees = (task) => {
-      if (!task.assigned_ids || !users.value.length) {
-        return [];
-      }
-      const ids = task.assigned_ids.split(',').map(Number);
-      return users.value.filter(u => ids.includes(u.id));
-    };
-
-    // Genera el estilo para el avatar de un usuario
-    const getAvatarStyle = (assignee) => {
-      if (assignee && assignee.avatar_url) {
-        return { 'background-image': `url(${assignee.avatar_url})` };
-      }
-      return {}; // Devuelve objeto vacío si no hay avatar
     };
 
     const setupWebSocket = () => {
@@ -324,6 +488,23 @@ createApp({
       };
     };
 
+    onMounted(() => {
+      const userData = sessionStorage.getItem('biocare_user');
+      if (!userData) {
+        window.location.href = '/login.html';
+        return;
+      }
+      user.value = JSON.parse(userData);
+      cargarDatos();
+      setupWebSocket();
+
+      // Verificar si mostrar el modal de actualización
+      const lastSeenVersion = localStorage.getItem('lastUpdateSeen');
+      if (lastSeenVersion !== APP_VERSION) {
+        showUpdateModal.value = true;
+      }
+    });
+
     const highlightTask = (taskId) => {
       // nextTick se asegura de que la interfaz se haya actualizado antes de buscar el elemento
       Vue.nextTick(() => {
@@ -349,7 +530,8 @@ createApp({
         loading.value = true;
         const [tasksData, usersData, labelsData, resumenData, notifData] = await Promise.all([
           API.get('/api/tasks'), API.get('/api/users'), API.get('/api/labels'),
-          API.get('/api/tasks/resumen'), API.get('/api/notifications').catch(() => [])
+          API.get('/api/tasks/resumen'), API.get('/api/notifications').catch(() => []),
+          loadSenderConfig() // Cargar configuración del remitente
         ]);
         tasks.value = tasksData || [];
         users.value = usersData || [];
@@ -371,121 +553,125 @@ createApp({
       return text.replace(/\n/g, '<br>');
     };
 
-    const userData = sessionStorage.getItem('operia_user');
-    if (!userData) { window.location.href = '/login'; }
-    else { user.value = JSON.parse(userData); }
+    // Eliminado bloque redundante de autenticación y onMounted
+    // const userData = sessionStorage.getItem('biocare_user');
+    // if (!userData) { window.location.href = '/login'; }
+    // else { user.value = JSON.parse(userData); }
 
     const logout = () => {
-      sessionStorage.removeItem('operia_user');
+      sessionStorage.removeItem('biocare_user');
       sessionStorage.removeItem('auth_token');
       window.location.href = '/login';
     };
 
-    const abrirModalEditar = async () => {
-      console.log('🔧 abrirModalEditar LLAMADO');
-      console.log('Tarea seleccionada:', tareaSeleccionada.value);
-      console.log('Puede editar?:', puedeEditarTarea.value);
-      if (!tareaSeleccionada.value) {
-        console.error('❌ No hay tarea seleccionada');
+    const abrirModalEditar = () => {
+      if (!tareaSeleccionada.value) return;
+
+      // Parsear client_snapshot si existe
+      let clientData = {
+        rut: '', name: '', email: '', phone: '',
+        address_street: '', commune: '', region: '', reference: ''
+      };
+
+      if (tareaSeleccionada.value.client_snapshot) {
+        try {
+          const parsed = typeof tareaSeleccionada.value.client_snapshot === 'string'
+            ? JSON.parse(tareaSeleccionada.value.client_snapshot)
+            : tareaSeleccionada.value.client_snapshot;
+          clientData = { ...clientData, ...parsed };
+        } catch (e) {
+          console.error('Error parsing client_snapshot:', e);
+        }
+      }
+
+      editTask.value = {
+        id: tareaSeleccionada.value.id,
+        title: tareaSeleccionada.value.title,
+        description: tareaSeleccionada.value.description,
+        due_date: tareaSeleccionada.value.due_date,
+        priority: tareaSeleccionada.value.priority,
+        assigned_to: tareaSeleccionada.value.assigned_ids ? tareaSeleccionada.value.assigned_ids.split(',').map(Number) : [],
+        label_ids: tareaSeleccionada.value.label_ids ? tareaSeleccionada.value.label_ids.split(',').map(Number) : [],
+        responsible_user_id: tareaSeleccionada.value.responsible_user_id,
+        origin: tareaSeleccionada.value.origin || 'Valparaíso',
+        shipping_type: tareaSeleccionada.value.shipping_type || 'Starken',
+        payment_status: tareaSeleccionada.value.payment_status || 'por_pagar',
+        attachments: tareaSeleccionada.value.attachments || [],
+        client: clientData
+      };
+
+      archivosParaSubirEnEdicion.value = [];
+      adjuntosParaBorrar.value = [];
+      labelSearchTerm.value = '';
+      tareaSeleccionada.value = null;
+      showEditModal.value = true;
+    };
+
+    const guardarCambiosTarea = async () => {
+      if (!editTask.value.title || !editTask.value.due_date) {
+        alert('Por favor completa título y fecha límite.');
         return;
       }
 
-      // Clonamos la tarea seleccionada para editarla
-      editTask.value = JSON.parse(JSON.stringify(tareaSeleccionada.value));
-      console.log('✅ editTask DESPUÉS de asignar:', editTask.value);
-      console.log('✅ editTask.description:', editTask.value.description);
+      try {
+        // 1. Actualizar datos de la tarea (incluyendo client)
+        const taskData = {
+          title: editTask.value.title,
+          description: editTask.value.description || '',
+          due_date: editTask.value.due_date,
+          priority: editTask.value.priority,
+          assigned_to: editTask.value.assigned_to,
+          label_ids: editTask.value.label_ids,
+          responsible_user_id: editTask.value.responsible_user_id || null,
+          origin: editTask.value.origin || '',
+          shipping_type: editTask.value.shipping_type || '',
+          payment_status: editTask.value.payment_status || '',
+          client: editTask.value.client
+        };
 
-      // Obtenemos los nombres de asignados y etiquetas
-      const assignmentNames = tasks.value.find(t => t.id === editTask.value.id)?.assigned_names;
-      const labelNames = tasks.value.find(t => t.id === editTask.value.id)?.label_names;
+        await API.put(`/api/tasks/${editTask.value.id}`, taskData);
 
-      const assignmentNameArray = assignmentNames ? assignmentNames.split(',') : [];
-      const labelNameArray = labelNames ? labelNames.split(',') : [];
+        // 2. Manejar archivos adjuntos si hay cambios
+        if (adjuntosParaBorrar.value.length > 0) {
+          await Promise.all(
+            adjuntosParaBorrar.value.map(id => API.delete(`/api/attachments/${id}`))
+          );
+        }
 
-      // Convertimos nombres a IDs
-      editTask.value.assigned_to = users.value.filter(u => assignmentNameArray.includes(u.name)).map(u => u.id);
-      editTask.value.label_ids = labels.value.filter(l => labelNameArray.includes(l.name)).map(l => l.id);
+        // 3. Subir nuevos archivos si los hay
+        if (archivosParaSubirEnEdicion.value.length > 0) {
+          const formData = new FormData();
+          formData.append('task_id', editTask.value.id.toString());
+          archivosParaSubirEnEdicion.value.forEach(file => {
+            formData.append('files', file);
+          });
+          await API.upload('/api/upload', formData);
+        }
 
-      // Reseteamos archivos
-      archivosParaSubirEnEdicion.value = [];
-      adjuntosParaBorrar.value = [];
-
-      // Cerramos el modal de detalles y abrimos el de edición
-      tareaSeleccionada.value = null;
-      showEditModal.value = true;
-      console.log('✅ Modal de edición abierto');
+        showEditModal.value = false;
+        tareaSeleccionada.value = null;
+        // Los datos se actualizarán automáticamente vía WebSocket
+      } catch (err) {
+        console.error(err);
+        alert('No se pudo actualizar la tarea: ' + (err.message || ''));
+      }
     };
 
-
-
-  const guardarCambiosTarea = async () => {
-  try {
-    console.log('💾 Guardando cambios de tarea:', editTask.value);
-    
-    // 1. Guardar cambios principales de la tarea
-    await API.put(`/api/tasks/${editTask.value.id}`, editTask.value);
-    console.log('✅ Tarea actualizada');
-    
-    // 2. Eliminar adjuntos marcados
-    if (adjuntosParaBorrar.value.length > 0) {
-      await Promise.all(
-        adjuntosParaBorrar.value.map(id => API.delete(`/api/attachments/${id}`))
-      );
-      console.log('✅ Adjuntos eliminados');
-    }
-    
-    // 3. Subir nuevos archivos
-    if (archivosParaSubirEnEdicion.value && archivosParaSubirEnEdicion.value.length > 0) {
-      console.log('📤 Subiendo', archivosParaSubirEnEdicion.value.length, 'archivos...');
-      
-      const formData = new FormData();
-      
-      // IMPORTANTE: Agregar archivos PRIMERO
-      for (const file of archivosParaSubirEnEdicion.value) {
-        formData.append('files', file);
-      }
-      
-      // Agregar taskid DESPUÉS de los archivos
-      formData.append('taskid', editTask.value.id);
-      
-      console.log('📋 FormData con taskid:', editTask.value.id);
-      
-      // Llamar a upload SIN el taskid en la URL
-      await API.upload('/api/upload', formData);
-      console.log('✅ Archivos subidos correctamente');
-    }
-    
-    showEditModal.value = false;
-    showSuccess('Tarea actualizada correctamente');
-    await cargarDatos();
-    
-  } catch (err) {
-    console.error('❌ Error completo:', err);
-    showError('Error al guardar: ' + (err.response?.data?.message || err.message));
-  }
-};
-
-
-
     const abrirConfirmarEliminar = () => {
-      console.log('🗑️ abrirConfirmarEliminar LLAMADO');
-      console.log('Puede eliminar?:', puedeEliminarTarea.value);
       showDeleteConfirm.value = true;
     };
 
     const eliminarTarea = async () => {
-      console.log('💥 eliminarTarea INICIADO');
-      console.log('ID a eliminar:', tareaSeleccionada.value?.id);
       try {
         await API.delete(`/api/tasks/${tareaSeleccionada.value.id}`);
-        console.log('✅ Tarea eliminada del backend');
         showDeleteConfirm.value = false;
         tareaSeleccionada.value = null;
+        showSuccess('🗑️ Tarea eliminada correctamente');
       } catch (err) {
-        console.error('❌ Error al eliminar:', err);
-        showError('Error al eliminar la tarea: ' + err.message);
+        showError('❌ Error al eliminar la tarea: ' + err.message);
       }
     };
+
     const crearTarea = async () => {
       if (!newTask.value.title.trim()) {
         return showError('El título es obligatorio');
@@ -493,19 +679,40 @@ createApp({
       if (!newTask.value.due_date) {
         return showError('La fecha de entrega es obligatoria');
       }
+
       creandoTarea.value = true;
       try {
-        const result = await API.post('/api/tasks', newTask.value);
-        if (newTask.value.files && newTask.value.files.length > 0 && result.id) {
+        // 1. Guardar cliente si es necesario
+        if (saveAsFrequent.value && newTask.value.client.rut) {
+          try {
+            await API.post('/api/clients', newTask.value.client);
+          } catch (err) {
+            console.warn('Error al guardar cliente frecuente (puede que ya exista):', err);
+            // No bloqueamos la creación de la tarea, pero avisamos
+            if (err.message.includes('ya existe')) {
+              showError('El cliente ya existe, se usará el existente.');
+            }
+          }
+        }
+
+        // 2. Preparar payload
+        const payload = {
+          ...newTask.value,
+          client_snapshot: newTask.value.client // Enviamos el objeto cliente como snapshot
+        };
+
+        const result = await API.post('/api/tasks', payload);
+
+        if (archivosAdjuntos.value.length > 0 && result.id) {
           const formData = new FormData();
           formData.append('task_id', result.id.toString());
-          for (const file of newTask.value.files) {
+          for (const file of archivosAdjuntos.value) {
             formData.append('files', file);
           }
           await API.upload('/api/upload', formData);
         }
         showModal.value = false;
-        showSuccess('✅ Tarea creada exitosamente');
+        showSuccess(`✅ Tarea creada: ${result.human_id || 'ID generado'}`);
       } catch (err) {
         showError('❌ Error al crear la tarea: ' + (err.message || ''));
       } finally {
@@ -571,36 +778,22 @@ createApp({
       newTask.value = {
         title: '', description: '', due_date: '', priority: 'media',
         assigned_to: [], label_ids: [], comentario_inicial: '',
-        files: []
+        responsible_user_id: null,
+        origin: 'Valparaíso', shipping_type: 'Starken', payment_status: 'por_pagar',
+        client: {
+          rut: '', name: '', email: '', phone: '',
+          address_street: '', commune: '', region: ''
+        }
       };
+      clientSearchTerm.value = '';
+      suggestedClients.value = [];
+      saveAsFrequent.value = false;
+
       nuevaEtiqueta.value = '';
       nuevoComentario.value = '';
       archivosAdjuntos.value = [];
-      const fileInput = document.getElementById('new-task-files');
-      if (fileInput) fileInput.value = '';
-    };
-
-    const handleNewTaskAttachment = (event) => {
-      const files = Array.from(event.target.files);
-      if (files.length > 0) {
-        if ((newTask.value.files.length + files.length) > 5) {
-          showError('Puedes subir un máximo de 5 archivos.');
-          event.target.value = '';
-          return;
-        }
-        for (const file of files) {
-          if (file.size > 10 * 1024 * 1024) { // 10MB
-            showError(`El archivo "${file.name}" excede los 10MB.`);
-            continue;
-          }
-          newTask.value.files.push(file);
-        }
-      }
-    };
-
-    const removeNewTaskFile = (index) => {
-      newTask.value.files.splice(index, 1);
-      const fileInput = document.getElementById('new-task-files');
+      labelSearchTerm.value = '';
+      const fileInput = document.getElementById('fileInput');
       if (fileInput) fileInput.value = '';
     };
 
@@ -665,6 +858,29 @@ createApp({
       document.getElementById('fileInput').value = '';
     };
 
+    const searchClients = async () => {
+      if (clientSearchTerm.value.length < 2) {
+        suggestedClients.value = [];
+        return;
+      }
+      try {
+        const results = await API.get(`/api/clients?search=${clientSearchTerm.value}`);
+        suggestedClients.value = results;
+      } catch (err) {
+        console.error('Error buscando clientes:', err);
+      }
+    };
+
+    const selectClient = (client) => {
+      newTask.value.client = { ...client };
+      clientSearchTerm.value = ''; // Limpiar búsqueda
+      suggestedClients.value = []; // Ocultar sugerencias
+    };
+
+    const toggleSaveAsFrequent = () => {
+      saveAsFrequent.value = !saveAsFrequent.value;
+    };
+
     const crearEtiqueta = async () => {
       if (!nuevaEtiqueta.value.trim()) {
         return showError('El nombre de la etiqueta es obligatorio');
@@ -681,7 +897,8 @@ createApp({
         showError('❌ No se pudo crear la etiqueta: ' + (err.message || ''));
       }
     };
-    const cambiarEstadoTarea = async (id, nuevoEstado) => {
+    const cambiarEstadoTarea = async (id, nuevoEstado, event) => {
+      if (event) event.stopPropagation();
       try {
         await API.put(`/api/tasks/${id}/status`, { status: nuevoEstado });
         tareaSeleccionada.value = null;
@@ -699,12 +916,24 @@ createApp({
         ]);
         task.attachments = attachments;
         task.comentarios = comments;
+        console.log('Detalles actualizados para tarea', task.id, { attachments, comments });
       } catch (err) {
         console.error('Error al cargar detalles:', err);
         task.attachments = [];
         task.comentarios = [];
       }
       tareaSeleccionada.value = task;
+    };
+
+    const downloadFile = async (attachment) => {
+      try {
+        const blob = await API.requestBlob(`/api/download/${attachment.file_path}`);
+        const url = window.URL.createObjectURL(blob);
+        Utils.downloadFile(url, attachment.file_name);
+        window.URL.revokeObjectURL(url);
+      } catch (err) {
+        showError('❌ Error al descargar archivo: ' + err.message);
+      }
     };
 
     const handleCommentAttachment = (event) => {
@@ -723,114 +952,73 @@ createApp({
       }
     };
 
-    const removeCommentAttachment = () => {
-      commentAttachments.value = [];
-      document.getElementById('comment-attachment-input').value = '';
+    const removeCommentAttachment = (index) => {
+      if (typeof index === 'number') {
+        commentAttachments.value.splice(index, 1);
+      } else {
+        commentAttachments.value = [];
+      }
+      const fileInput = document.getElementById('comment-file');
+      if (fileInput) fileInput.value = '';
     };
 
     const removeCommentAttachmentFile = (index) => {
       // Elimina el archivo de la lista por su índice
       commentAttachments.value.splice(index, 1);
       // Resetea el input para poder volver a seleccionar los mismos archivos si es necesario
-      document.getElementById('comment-attachment-input').value = '';
+      document.getElementById('comment-file').value = '';
     };
 
     const agregarComentario = async () => {
       if ((!nuevoComentario.value.trim() && commentAttachments.value.length === 0) || !tareaSeleccionada.value) {
         return;
       }
-
-      const currentTask = tareaSeleccionada.value;
-      const tempId = Date.now(); // ID temporal para el comentario optimista
-      const commentText = nuevoComentario.value.trim();
-
-      // 1. Crear objeto de comentario optimista
-      const optimisticComment = {
-        id: tempId,
-        contenido: commentText,
-        autor_nombre: user.value.name,
-        autor_avatar_url: user.value.avatar_url,
-        fecha_creacion: new Date().toISOString(),
-        comentarios: [] // Aseguramos que la propiedad exista
-      };
-
-      // 2. Actualizar la UI inmediatamente
-      if (!currentTask.comentarios) { currentTask.comentarios = []; }
-      currentTask.comentarios.push(optimisticComment);
-      nuevoComentario.value = '';
-      // La gestión de archivos adjuntos no será optimista por su complejidad
-      const attachmentsToUpload = [...commentAttachments.value];
-      removeCommentAttachment();
-
-      // 3. Intentar enviar al servidor
       try {
         const formData = new FormData();
-        formData.append('task_id', currentTask.id);
-        formData.append('contenido', commentText);
+        formData.append('task_id', tareaSeleccionada.value.id);
+        formData.append('contenido', nuevoComentario.value.trim());
 
-        // Lógica de menciones
+
+        // 1. Encontrar todas las menciones que sigan el formato @Nombre Completo
         const mentionRegex = /@([A-Za-z0-9_ Á-Úá-ú]+)/g;
-        const mentions = commentText.match(mentionRegex);
+        const mentions = nuevoComentario.value.match(mentionRegex);
+        const mentionedUserIds = new Set();
+
         if (mentions) {
-          const mentionedUserIds = new Set();
           mentions.forEach(mention => {
-            const username = mention.substring(1).trim();
+            const username = mention.substring(1).trim(); // Quitar el '@' y espacios extra
+            // Buscamos el usuario en nuestra lista de usuarios cargada (insensible a mayúsculas)
             const foundUser = users.value.find(u => u.name.toLowerCase() === username.toLowerCase());
-            if (foundUser) { mentionedUserIds.add(foundUser.id); }
+            if (foundUser) {
+              mentionedUserIds.add(foundUser.id);
+            }
           });
-          if (mentionedUserIds.size > 0) {
-            formData.append('mentioned_user_ids', JSON.stringify(Array.from(mentionedUserIds)));
-          }
         }
 
-        // Lógica de adjuntos
-        if (attachmentsToUpload.length > 0) {
-          for (const file of attachmentsToUpload) {
+        // 2. Si encontramos IDs, los añadimos al FormData como un string JSON
+        if (mentionedUserIds.size > 0) {
+          formData.append('mentioned_user_ids', JSON.stringify(Array.from(mentionedUserIds)));
+        }
+
+
+        if (commentAttachments.value.length > 0) {
+          for (const file of commentAttachments.value) {
             formData.append('attachments', file);
           }
         }
 
         await API.upload('/api/tasks/comments', formData);
 
-        // 4. Éxito: Refrescar los comentarios desde el servidor para obtener IDs reales
-        const updatedComments = await API.get(`/api/tasks/${currentTask.id}/comments`);
-        if (tareaSeleccionada.value && tareaSeleccionada.value.id === currentTask.id) {
-          tareaSeleccionada.value.comentarios = updatedComments;
-        }
+        nuevoComentario.value = '';
+        removeCommentAttachment();
+        showSuccess('💬 Comentario agregado');
 
+        const taskActual = tasks.value.find(t => t.id === tareaSeleccionada.value.id);
+        if (taskActual) {
+          await verDetalles(taskActual);
+        }
       } catch (err) {
-        // 5. Fallo: Revertir el cambio en la UI
         showError('❌ Error al agregar comentario: ' + err.message);
-        if (tareaSeleccionada.value && tareaSeleccionada.value.id === currentTask.id) {
-          tareaSeleccionada.value.comentarios = tareaSeleccionada.value.comentarios.filter(
-            c => c.id !== tempId
-          );
-          // Restaurar el texto para que el usuario no lo pierda
-          nuevoComentario.value = commentText;
-        }
-      }
-    };
-
-    const puedeEliminarComentario = (comment) => {
-      if (!user.value || !comment) return false;
-      if (user.value.role === 'admin') return true;
-      return user.value.id === comment.autor_id;
-    };
-
-    const eliminarComentario = async (commentId) => {
-      if (!window.confirm('¿Estás seguro de que quieres eliminar este comentario?')) {
-        return;
-      }
-      try {
-        await API.delete(`/api/comments/${commentId}`);
-        showSuccess('Comentario eliminado');
-        if (tareaSeleccionada.value) {
-          tareaSeleccionada.value.comentarios = tareaSeleccionada.value.comentarios.filter(
-            c => c.id !== commentId
-          );
-        }
-      } catch (err) {
-        showError('Error al eliminar el comentario: ' + (err.message || 'Error desconocido'));
       }
     };
     const getLabelsArray = (task) => {
@@ -847,7 +1035,8 @@ createApp({
       }
     };
 
-    const marcarComoLeida = async (id) => {
+    const marcarComoLeida = async (id, event) => {
+      if (event) event.stopPropagation();
       try {
         await API.put(`/api/notifications/${id}/read`);
         const notif = notificaciones.value.find(n => n.id === id);
@@ -868,7 +1057,8 @@ createApp({
       }
     };
 
-    const eliminarNotificacion = async (id) => {
+    const eliminarNotificacion = async (id, event) => {
+      if (event) event.stopPropagation();
       try {
         await API.delete(`/api/notifications/${id}`);
         notificaciones.value = notificaciones.value.filter(n => n.id !== id);
@@ -887,44 +1077,25 @@ createApp({
     };
 
     // --- VERSIÓN DE DEPURACIÓN ---
-    const esTareaVencida = (dateString, taskTitle) => {
+    const esTareaVencida = (dateString) => {
       if (!dateString) return false;
-
-      // 1. Corregimos el formato de la fecha
       const isoDateString = dateString.replace(' ', 'T');
       const fechaTarea = new Date(isoDateString);
       const hoy = new Date();
-
-      // 2. Comprobamos si la fecha es válida
-      if (isNaN(fechaTarea.getTime())) {
-        console.error(`[DEPURACIÓN] Fecha inválida para la tarea "${taskTitle}":`, dateString);
-        return false;
-      }
-
-      // 3. Comparamos y mostramos en consola el resultado
-      const estaVencida = fechaTarea < hoy;
-      // console.log(`[DEPURACIÓN] Tarea: "${taskTitle}" | Fecha Tarea: ${fechaTarea.toLocaleString()} | ¿Está Vencida?: ${estaVencida}`);
-
-      return estaVencida;
+      if (isNaN(fechaTarea.getTime())) return false;
+      return fechaTarea < hoy;
     };
 
-    const formatDate = (isoDate, isCompact = false) => {
+    const formatDate = (isoDate) => {
       if (!isoDate) return 'No especificada';
       try {
-        const date = new Date(isoDate);
-        if (isCompact) {
-          // Formato corto para la tarjeta: "21 oct"
-          return date.toLocaleDateString('es-CL', {
-            month: 'short', day: 'numeric'
-          });
-        }
-        // Formato largo para modales y detalles
-        return date.toLocaleString('es-CL', {
+        return new Date(isoDate).toLocaleString('es-CL', {
           day: 'numeric', month: 'long', year: 'numeric',
           hour: '2-digit', minute: '2-digit'
         });
       } catch { return isoDate; }
     };
+
     const formatCommentContent = (text) => {
       if (!text) return '';
       // Convierte saltos de línea a <br> y resalta las menciones con una clase CSS
@@ -934,6 +1105,7 @@ createApp({
     };
 
     const getColor = (labelName) => {
+      if (!labelName) return '#7F8C8D';
       const predefinedColors = {
         'Entrega': '#049DD9', 'Express': '#3498DB', 'Factura': '#97BF04',
         'Valparaíso': '#F39C12', 'Viña del Mar': '#E67E22', 'Quilpué': '#16A085',
@@ -959,37 +1131,7 @@ createApp({
     };
 
 
-    const downloadFile = async (attachment) => {
-      try {
-        const token = sessionStorage.getItem('auth_token');
 
-        // ✨ CORRECCIÓN: La URL debe apuntar a la ruta relativa de la API.
-        // El proxy de Netlify/Render se encargará del resto.
-        const downloadUrl = `/api/download/${attachment.file_path}`;
-
-        const response = await fetch(downloadUrl, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'No se pudo iniciar la descarga.');
-        }
-
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = attachment.file_name;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        window.URL.revokeObjectURL(url);
-
-      } catch (err) {
-        showError('❌ Error al descargar archivo: ' + err.message);
-      }
-    };
 
     const abrirSelectorDeCreador = () => {
       if (!tareaSeleccionada.value) return;
@@ -1083,7 +1225,8 @@ createApp({
       showUpdateModal.value = false;
     };
 
-    const openCompleteModal = (task) => {
+    const openCompleteModal = (task, event) => {
+      if (event) event.stopPropagation();
       taskToComplete.value = task;
       completionFile.value = null;
       closingNote.value = '';
@@ -1095,6 +1238,45 @@ createApp({
         const fileInput = document.getElementById('completion-file');
         if (fileInput) fileInput.value = '';
       });
+    };
+
+    const closeCompleteModal = () => {
+      showCompleteModal.value = false;
+      taskToComplete.value = null;
+      completionFile.value = null;
+      closingNote.value = '';
+    };
+
+    const confirmCompleteTask = async () => {
+      if (!taskToComplete.value) return;
+
+      isCompleting.value = true;
+      try {
+        // 1. Subir archivo si existe
+        if (completionFile.value) {
+          const formData = new FormData();
+          formData.append('task_id', taskToComplete.value.id);
+          formData.append('files', completionFile.value);
+          await API.upload('/api/upload', formData);
+        }
+
+        // 2. Agregar comentario de cierre si existe
+        if (closingNote.value.trim()) {
+          const formData = new FormData();
+          formData.append('task_id', taskToComplete.value.id);
+          formData.append('contenido', '🏁 Nota de cierre: ' + closingNote.value);
+          await API.upload('/api/tasks/comments', formData);
+        }
+
+        // 3. Cambiar estado a completada
+        await cambiarEstadoTarea(taskToComplete.value.id, 'completada');
+
+        closeCompleteModal();
+      } catch (err) {
+        showError('Error al completar la tarea: ' + err.message);
+      } finally {
+        isCompleting.value = false;
+      }
     };
 
     const handleCompletionFile = (event) => {
@@ -1159,9 +1341,183 @@ createApp({
       }
     };
 
-    // ====================================================== 
-    // 5. Carga Inicial (Lifecycle Hook) - VERSIÓN CORREGIDA 
-    // ====================================================== 
+    // Función auxiliar para imprimir en ventana nueva (evita hoja en blanco)
+    const printInNewWindow = (content) => {
+      const printWindow = window.open('', '_blank', 'height=600,width=800');
+      if (!printWindow) {
+        alert('Por favor, permite las ventanas emergentes para imprimir.');
+        return;
+      }
+
+      printWindow.document.write('<html><head><title>Imprimir Etiqueta</title>');
+      printWindow.document.write(`<base href="${window.location.origin}">`);
+      printWindow.document.write('<style>');
+      printWindow.document.write(`
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+        .label-internal {
+          padding: 40px;
+          max-width: 400px;
+          margin: 0 auto;
+          border: 3px solid #000;
+          text-align: center;
+        }
+        .label-id {
+          font-size: 48px;
+          font-weight: bold;
+          margin: 20px 0;
+          border-bottom: 2px solid #000;
+          padding-bottom: 10px;
+        }
+        .label-meta p {
+          font-size: 18px;
+          margin: 10px 0;
+          text-align: left;
+        }
+        
+        .label-courier {
+          padding: 20px;
+          max-width: 600px;
+          margin: 0 auto;
+          border: 2px solid #000;
+        }
+        .sender-box, .recipient-box {
+          border: 1px solid #000;
+          padding: 15px;
+          margin: 15px 0;
+        }
+        .sender-box h3, .recipient-box h3 {
+          margin: 0 0 10px 0;
+          font-size: 14px;
+          border-bottom: 1px solid #000;
+          padding-bottom: 5px;
+          text-transform: uppercase;
+        }
+        .recipient-name {
+          font-size: 24px;
+          font-weight: bold;
+          margin: 10px 0;
+        }
+        .recipient-address {
+          font-size: 18px;
+          margin-top: 10px;
+        }
+        .shipping-details {
+          margin-top: 20px;
+          padding: 15px;
+          background: #f0f0f0;
+          border: 1px solid #ddd;
+        }
+        .detail-item {
+          margin: 8px 0;
+          font-size: 16px;
+          display: flex;
+          justify-content: space-between;
+          border-bottom: 1px solid #ccc;
+          padding-bottom: 5px;
+        }
+        .detail-item:last-child { border-bottom: none; }
+      `);
+      printWindow.document.write('</style>');
+      printWindow.document.write('</head><body>');
+      printWindow.document.write(content);
+      printWindow.document.write('</body></html>');
+
+      printWindow.document.close();
+      printWindow.focus();
+
+      // Esperar un momento para asegurar que los estilos carguen
+      setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+      }, 500);
+    };
+
+    const printInternalLabel = (taskId) => {
+      const task = tasks.value.find(t => t.id === taskId);
+      if (!task) return;
+
+      const content = `
+        <div class="label-internal">
+          <h1 class="label-id">${task.human_id || 'ID-' + task.id}</h1>
+          <div class="label-meta">
+            <p><strong>Creado por:</strong> ${task.created_by_name}</p>
+            <p><strong>Fecha:</strong> ${new Date(task.created_at).toLocaleDateString()}</p>
+            <p><strong>Origen:</strong> ${task.origin || 'N/A'}</p>
+          </div>
+        </div>
+      `;
+
+      printInNewWindow(content);
+    };
+
+    const printCourierLabel = (taskId) => {
+      const task = tasks.value.find(t => t.id === taskId);
+      if (!task) return;
+
+      let client = {};
+      try {
+        client = typeof task.client_snapshot === 'string'
+          ? JSON.parse(task.client_snapshot)
+          : (task.client_snapshot || {});
+      } catch (e) {
+        console.error('Error parsing client:', e);
+      }
+
+      const content = `
+        <div class="label-courier">
+          <div class="header-logo" style="text-align: center; margin-bottom: 15px;">
+            ${SENDER_INFO.logoUrl ? `<img src="${SENDER_INFO.logoUrl}" style="max-height: 80px;" />` : ''}
+          </div>
+          
+          <div class="recipient-box">
+            <h3>DESTINATARIO</h3>
+            <p class="recipient-name">${client.name || 'Cliente General'}</p>
+            <p><strong>RUT:</strong> ${client.rut || 'S/I'}</p>
+            <p><strong>Tel:</strong> ${client.phone || 'S/I'}</p>
+            ${client.email ? `<p><strong>Email:</strong> ${client.email}</p>` : ''}
+            <p class="recipient-address">
+              ${client.address_street || ''} ${client.number || ''} <br>
+              ${client.reference ? '<strong>Ref:</strong> ' + client.reference + '<br>' : ''}
+              ${client.commune || ''}, ${client.region || ''}
+            </p>
+          </div>
+          
+          <div class="sender-box">
+            <h3>REMITENTE</h3>
+            <p><strong>${SENDER_INFO.name}</strong></p>
+            ${SENDER_INFO.rut ? `<p>Rut: ${SENDER_INFO.rut}</p>` : ''}
+            <p>${SENDER_INFO.address}</p>
+            <p>${SENDER_INFO.commune}${SENDER_INFO.region ? ', ' + SENDER_INFO.region : ''}</p>
+            ${SENDER_INFO.contactPerson ? `<p><strong>${SENDER_INFO.contactPerson}</strong></p>` : ''}
+            ${SENDER_INFO.contactRut ? `<p>Rut: ${SENDER_INFO.contactRut}</p>` : ''}
+            <p>Fono: ${SENDER_INFO.phone}</p>
+            ${SENDER_INFO.website || SENDER_INFO.email ? `<p>${SENDER_INFO.website || ''} ${SENDER_INFO.email || ''}</p>` : ''}
+            ${SENDER_INFO.thankYouMessage ? `<p style="font-weight: bold; margin-top: 10px;">${SENDER_INFO.thankYouMessage}</p>` : ''}
+          </div>
+
+          <div class="shipping-details">
+            <div class="detail-item">
+              <span>Courier:</span>
+              <strong>${task.shipping_type || 'Por definir'}</strong>
+            </div>
+            <div class="detail-item">
+              <span>Pago:</span>
+              <strong>${task.payment_status === 'por_pagar' ? 'POR PAGAR' : 'PAGADO'}</strong>
+            </div>
+            <div class="detail-item">
+              <span>ID Pedido:</span>
+              <strong>${task.human_id || task.id}</strong>
+            </div>
+          </div>
+        </div>
+      `;
+
+      printInNewWindow(content);
+    };
+
+    // ======================================================
+    // 5. Carga Inicial (Lifecycle Hook) - VERSIÓN CORREGIDA
+    // ======================================================
     onMounted(() => {
       cargarDatos();
       setupWebSocket();
@@ -1183,115 +1539,146 @@ createApp({
         showUpdateModal.value = true;
       }
     });
-    // ====================================================== 
-    // 6. EXPOSICIÓN A LA PLANTILLA (return) 
-    // ====================================================== 
+    // ======================================================
+    // 6. EXPOSICIÓN A LA PLANTILLA (return)
+    // ======================================================
     // REEMPLAZA tu `return` actual con este bloque completo
 
+    const hasClientData = (task) => {
+      if (!task || !task.client_snapshot) return false;
+      try {
+        const client = typeof task.client_snapshot === 'string'
+          ? JSON.parse(task.client_snapshot)
+          : task.client_snapshot;
+        // Consideramos que hay datos si al menos el nombre tiene contenido real
+        return client.name && client.name.trim().length > 0;
+      } catch (e) {
+        return false;
+      }
+    };
+
+    // --- GESTIÓN DE CLIENTES ---
+    const showClientManager = ref(false);
+    const managedClients = ref([]);
+    const clientManagerSearch = ref('');
+    const editingClient = ref(null);
+
+    const loadClients = async () => {
+      try {
+        const query = clientManagerSearch.value.trim();
+        const url = query ? `/api/clients?search=${query}` : '/api/clients?search=';
+        const results = await API.get(url);
+        managedClients.value = results;
+      } catch (err) {
+        console.error('Error cargando clientes:', err);
+        showError('Error al cargar clientes');
+      }
+    };
+
+    const openClientManager = () => {
+      clientManagerSearch.value = '';
+      editingClient.value = null;
+      showClientManager.value = true;
+      loadClients();
+    };
+
+    const openCreateClient = () => {
+      editingClient.value = {
+        rut: '', name: '', email: '', phone: '',
+        address_street: '', commune: '', region: '', reference: ''
+      };
+    };
+
+    const editClient = (client) => {
+      editingClient.value = { ...client };
+    };
+
+    const cancelEditClient = () => {
+      editingClient.value = null;
+    };
+
+    const saveClientChanges = async () => {
+      if (!editingClient.value) return;
+      try {
+        if (editingClient.value.id) {
+          // Actualizar existente
+          await API.put(`/api/clients/${editingClient.value.id}`, editingClient.value);
+          showSuccess('Cliente actualizado correctamente');
+        } else {
+          // Crear nuevo
+          await API.post('/api/clients', editingClient.value);
+          showSuccess('Cliente creado correctamente');
+        }
+        editingClient.value = null;
+        loadClients();
+      } catch (err) {
+        console.error('Error guardando cliente:', err);
+        showError('Error al guardar cambios: ' + (err.response?.data?.error || err.message));
+      }
+    };
+
+    const deleteClient = async (client) => {
+      if (!confirm(`¿Estás seguro de eliminar al cliente ${client.name}? Esta acción no se puede deshacer.`)) return;
+      try {
+        await API.delete(`/api/clients/${client.id}`);
+        showSuccess('Cliente eliminado correctamente');
+        loadClients();
+      } catch (err) {
+        console.error('Error eliminando cliente:', err);
+        showError('Error al eliminar cliente: ' + (err.response?.data?.error || err.message));
+      }
+    };
+
+    const closeModalOnSelf = (event, modalName) => {
+      if (event.target === event.currentTarget) {
+        if (modalName === 'showModal') showModal.value = false;
+        if (modalName === 'showConfigModal') showConfigModal.value = false;
+        if (modalName === 'tareaSeleccionada') tareaSeleccionada.value = null;
+        if (modalName === 'showEditModal') showEditModal.value = false;
+        if (modalName === 'showCompleteModal') closeCompleteModal();
+        if (modalName === 'showClientManager') showClientManager.value = false;
+        if (modalName === 'showUpdateModal') closeUpdateModal();
+      }
+    };
+
     return {
-      // Estados y datos
-      user,
-      tasks,
-      users,
-      labels,
-      resumen,
-      misTareas,
-      filtroFecha,
-      showModal,
-      tareaSeleccionada,
-      creandoTarea,
-      loading,
-      error,
-      showEditModal,
-      editTask,
-      showDeleteConfirm,
-      suggestedLabels,
-      showDropdown,
-      newTask,
-      nuevaEtiqueta,
-      nuevoComentario,
-      archivosAdjuntos,
-      notificaciones,
-      mostrarNotificaciones,
-      commentAttachments,
-      showNewLabelDropdown,
-      showLabelDropdown,
-      notificacionesPendientes,
-
-      // Computed properties para labels
-      selectedLabelsInNew,
-      availableLabelsInNew,
-      selectedLabelsInEdit,
-      availableLabelsInEdit,
-
-      // Computed properties para tareas
-      tareasFiltradas,
-      tareasPendientes,
-      tareasEnCamino,
-      tareasCompletadas,
-
-      // Computed properties para usuarios
-      selectedUsersInNew,
+      user, tasks, users, labels, resumen, misTareas, filtroFecha, showModal,
+      tareaSeleccionada, creandoTarea, loading, error, showEditModal, editTask,
+      showDeleteConfirm, suggestedLabels, showDropdown, toggleDropdown, newTask,
+      showConfigModal,
+      nuevaEtiqueta, nuevoComentario, archivosAdjuntos, notificaciones,
+      mostrarNotificaciones, commentAttachments, showNewLabelDropdown, showLabelDropdown,
+      labelSearchTerm,
+      notificacionesPendientes, selectedLabelsInNew, availableLabelsInNew,
+      selectedLabelsInEdit, availableLabelsInEdit, tareasFiltradas,
+      tareasPendientes, tareasEnCamino, tareasCompletadas, selectedUsersInNew,
       availableUsersInNew,
       selectedUsersInEdit,
       availableUsersInEdit,
-
-      // ⚠️ CRÍTICO: Permisos (DEBEN ESTAR AQUÍ)
-      puedeEditarTarea,
-      puedeEliminarTarea,
-
-      // Funciones principales
-      logout,
-      cargarDatos,
-      abrirModalEditar,
-      guardarCambiosTarea,
-      abrirConfirmarEliminar,
-      eliminarTarea,
-      esTareaParaHoy,
-      esTareaVencida,
-      crearTarea,
-      toggleLabelInNew,
-      toggleLabelInEdit,
-      resetForm,
-      handleFileUpload,
-      removeFile,
-      handleNewTaskAttachment,
-      removeNewTaskFile,
-      crearEtiqueta,
-      cambiarEstadoTarea,
-      verDetalles,
-      handleCommentAttachment,
-      removeCommentAttachment,
-      removeCommentAttachmentFile,
-      agregarComentario,
-      getLabelsArray,
-      toggleNotifications,
-      marcarComoLeida,
-      marcarTodasComoLeidas,
-      eliminarNotificacion,
-      formatDate,
-      formatDescription,
-      getAssignees,
-      getAvatarStyle,
-      getColor,
-      getPriorityText,
-      getFileSize,
-      downloadFile,
-      setQuickDate,
-      setQuickEditDate,
+      logout, cargarDatos, abrirModalEditar, guardarCambiosTarea,
+      abrirConfirmarEliminar, eliminarTarea, esTareaParaHoy, esTareaVencida, crearTarea,
+      toggleLabelInNew, resetForm, handleFileUpload, removeFile, crearEtiqueta,
+      toggleLabelInEdit, cambiarEstadoTarea, verDetalles, handleCommentAttachment,
+      removeCommentAttachment, removeCommentAttachmentFile, agregarComentario, getLabelsArray, toggleNotifications,
+      marcarComoLeida, marcarTodasComoLeidas, eliminarNotificacion, formatDate,
+      getColor, getPriorityText, getFileSize, downloadFile,
+      setQuickDate, setQuickEditDate,
+      moverACamino: (id, event) => {
+        if (event) event.stopPropagation();
+        cambiarEstadoTarea(id, 'en_camino');
+      },
+      hasClientInfo,
       addUserToNewTask,
       removeUserFromNewTask,
       addUserToEditTask,
       removeUserFromEditTask,
-      toggleDropdown,
-
-      // Selector de creador
+      puedeEditarTarea,
+      puedeEliminarTarea,
       mostrandoSelectorCreador,
       nuevoCreadorId,
-      abrirSelectorDeCreador,
+      // abrirSelectorDeCreador, // Si no existe, comentar o borrar. En el original estaba.
+      // formatCommentContent, // En el original estaba.
       confirmarCambioDeCreador,
-
-      // Menciones
       showMentionList,
       filteredMentionUsers,
       handleCommentInput,
@@ -1299,43 +1686,66 @@ createApp({
       navigateMentions,
       selectMentionWithEnter,
       mentionNavIndex,
-      formatCommentContent,
-
-      // Estado de tareas
+      closeModalOnSelf,
       showStateDropdown,
       toggleStateDropdown,
       avanzarEstado,
-      moverACamino: (id) => cambiarEstadoTarea(id, 'en_camino'),
-      retrocederEstado,
+      formatDescription,
+      retrocederEstado: (id, estadoAnterior, event) => {
+        if (event) event.stopPropagation();
+        cambiarEstadoTarea(id, estadoAnterior);
+      },
       handleNotificationClick,
-
-      // Archivos en edición
       archivosParaSubirEnEdicion,
       adjuntosParaBorrar,
       handleFileUploadEnEdicion,
       quitarDeLaListaDeSubida,
       marcarParaBorrar,
-
-      // Modal de actualización
       showUpdateModal,
       closeUpdateModal,
       archivarTarea,
-
-      // Modal de completar tarea
+      APP_VERSION,
       showCompleteModal,
       taskToComplete,
       completionFile,
       closingNote,
       isCompleting,
       openCompleteModal,
+      closeCompleteModal,
       handleCompletionFile,
-      cancelCompletion,
       confirmCompletion,
-
-      // Eliminar Comentarios
-      puedeEliminarComentario,
-      eliminarComentario
-    }
-
+      clientSearchTerm,
+      suggestedClients,
+      saveAsFrequent,
+      handleClientSearch: searchClients,
+      selectClient,
+      toggleSaveAsFrequent,
+      toggleSaveAsFrequent,
+      downloadFile,
+      senderConfig,
+      handleLogoUpload,
+      saveSenderConfig,
+      printInternalLabel,
+      printCourierLabel,
+      getClientName,
+      getClientPhone,
+      getClientAddress,
+      getClientReference,
+      getGoogleMapsLink,
+      hasClientData,
+      // Gestión de Clientes
+      showClientManager,
+      managedClients,
+      clientManagerSearch,
+      editingClient,
+      openClientManager,
+      openCreateClient,
+      loadClients,
+      editClient,
+      cancelEditClient,
+      saveClientChanges,
+      deleteClient,
+      closeModalOnSelf
+    };
   }
 }).mount('#app');

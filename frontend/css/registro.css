@@ -25,18 +25,10 @@ body {
   line-height: 1.6;
   min-height: 100vh;
   display: flex;
-  flex-direction: column;
+  justify-content: center;
   align-items: center;
   padding: 20px;
   background-image: linear-gradient(135deg, rgba(4, 157, 217, 0.05) 0%, rgba(4, 178, 217, 0.05) 100%);
-}
-
-#login-app {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-grow: 1; /* <-- Esto empuja el footer hacia abajo */
-  width: 100%;
 }
 
 .register-container {
@@ -260,12 +252,10 @@ body {
 
 /* Enlaces */
 .links {
+  text-align: center;
   margin-top: 25px;
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  /* Esta es la propiedad clave que añade 16px de espacio entre los enlaces */
-  gap: 16px; 
+  padding-top: 15px;
+  border-top: 1px solid #eee;
 }
 
 .links a {
@@ -275,7 +265,6 @@ body {
   font-weight: 500;
   transition: var(--transicion);
   display: inline-block;
-  
 }
 
 .links a:hover {
@@ -365,32 +354,4 @@ body {
   .input-group select {
     padding: 12px;
   }
-}
-
-/* ================================================================== */
-/* Footer Global Synapse Dev                                          */
-/* ================================================================== */
-.main-footer {
-  padding: 24px 32px;
-  text-align: center;
-  font-size: 14px;
-  /* Usamos las variables de 'tablero.css' con un fallback (ej. #7F8C8D) 
-    para que funcione en todas las páginas (login, registro, etc.) 
-  */
-  color: var(--c-text-light, #7F8C8D);
-  background-color: var(--c-bg, #F2F2F2);
-  border-top: 1px solid var(--c-border, #EAECEE);
-  margin-top: 0; 
-  width: 100%;
-}
-
-.main-footer a {
-  color: var(--c-primary, #049DD9);
-  font-weight: 600;
-  text-decoration: none;
-  transition: all 0.2s ease;
-}
-
-.main-footer a:hover {
-  text-decoration: underline;
 }

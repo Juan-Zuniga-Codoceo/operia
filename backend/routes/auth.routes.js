@@ -3,13 +3,14 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
-const jwt = require('jsonwebtoken'); 
+const jwt = require('jsonwebtoken');
 const { sendEmail } = require('../services/email.service');
 const { createEmailTemplate } = require('../services/email-template.service');
 const { body, validationResult } = require('express-validator');
 
 // Importamos la conexión a la base de datos
 const db = require('../db');
+const { authenticateToken } = require('../middleware/auth');
 
 // --- Middleware para parsear JSON ---
 const jsonParser = express.json({ limit: '10mb' });
@@ -32,7 +33,7 @@ router.post('/login', jsonParser, [
     const { email, password } = req.body;
 
     const sql = "SELECT id, name, email, office, role, password, avatar_url, email_notifications FROM users WHERE email = ? AND is_active = 1";
- 
+
     db.get(sql, [email], async (err, user) => {
       if (err) {
         console.error('Error en consulta de login:', err);
@@ -46,7 +47,7 @@ router.post('/login', jsonParser, [
         if (!valid) {
           return res.status(401).json({ error: 'Credenciales inválidas' });
         }
-        
+
         const { password: _, ...userWithoutPassword } = user;
 
         // <-- 2. GENERAMOS EL TOKEN SEGURO
@@ -144,11 +145,11 @@ router.post('/forgot-password', jsonParser, [
 
       // 2. Usamos la plantilla para generar el HTML final
       const finalHtml = createEmailTemplate({
-          title: 'Recuperación de Contraseña',
-          recipientName: user.name,
-          mainContentHtml: mainContentHtml,
-          buttonUrl: resetLink,
-          buttonText: 'Restablecer mi Contraseña'
+        title: 'Recuperación de Contraseña',
+        recipientName: user.name,
+        mainContentHtml: mainContentHtml,
+        buttonUrl: resetLink,
+        buttonText: 'Restablecer mi Contraseña'
       });
 
       try {
@@ -184,5 +185,19 @@ router.post('/reset-password', jsonParser, [body('newPassword').isLength({ min: 
   });
 });
 
+
+// 👤 OBTENER DATOS DEL USUARIO ACTUAL
+router.get('/me', authenticateToken, (req, res) => {
+  const sql = "SELECT id, name, email, office, role, avatar_url, email_notifications FROM users WHERE id = ?";
+  db.get(sql, [req.userId], (err, user) => {
+    if (err) {
+      return res.status(500).json({ error: 'Error al obtener datos del usuario' });
+    }
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+    res.json(user);
+  });
+});
 
 module.exports = router;

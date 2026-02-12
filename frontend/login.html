@@ -36,20 +36,15 @@
         <!-- Campo de correo -->
         <div class="input-group">
           <label>Correo corporativo</label>
-          <input type="email" v-model="email" placeholder="tu@operia.cl" required autofocus />
+          <input type="email" v-model="email" placeholder="tu@empresa.cl" required autofocus />
         </div>
 
         <!-- Campo de contraseña -->
         <div class="input-group password-group">
           <label>Contraseña</label>
-          <input 
-            :type="passwordFieldType" 
-            v-model="password" 
-            placeholder="••••••••" 
-            required 
-          />
+          <input :type="passwordFieldType" v-model="password" placeholder="••••••••" required />
           <button type="button" class="toggle-password" @click="togglePasswordVisibility">
-             <i :class="passwordFieldType === 'password' ? 'fa-solid fa-eye' : 'fa-solid fa-eye-slash'"></i>
+            <i :class="passwordFieldType === 'password' ? 'fa-solid fa-eye' : 'fa-solid fa-eye-slash'"></i>
           </button>
         </div>
         <!-- Botón de acceso -->
@@ -70,7 +65,5 @@
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
   <script src="js/auth.js"></script>
 </body>
-<footer class="main-footer">
-  © 2025 Operia. Creado por <a href="https://synapsedev.cl" target="_blank" rel="noopener noreferrer">Synapse Dev</a>.
-</footer>
+
 </html>

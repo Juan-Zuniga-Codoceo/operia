@@ -14,22 +14,24 @@
 <body>
   <div id="app">
     <header class="header">
-    <div class="header-left">
+      <div class="header-left">
         <div class="logo">
-            <img src="/assets/logo.png" alt="Operia Logo" />
-            <h1><span class="operia">Operia</span><span class="task">Task</span></h1>
+          <img src="/assets/logo.png" alt="Operia Logo" />
+          <h1><span class="operia">Operia</span></h1>
         </div>
-    </div>
+      </div>
 
-    <!-- Contenedor de Navegación Central -->
-    <div class="main-nav-container">
+      <!-- Contenedor de Navegación Central -->
+      <div class="main-nav-container">
         <nav class="main-nav">
-            <a href="/tablero.html" class="nav-link" title="Tablero"><i class="fa-solid fa-table-columns"></i> <span>Tablero</span></a>
-            <a href="/fichas.html" class="nav-link" title="Fichas Técnicas"><i class="fa-solid fa-book-atlas"></i> <span>Fichas</span></a>
+          <a href="/tablero.html" class="nav-link" title="Tablero"><i class="fa-solid fa-table-columns"></i>
+            <span>Tablero</span></a>
+          <a href="/fichas.html" class="nav-link" title="Fichas Técnicas"><i class="fa-solid fa-book-atlas"></i>
+            <span>Fichas</span></a>
         </nav>
-    </div>
+      </div>
 
-    <div class="header-right">
+      <div class="header-right">
         <div class="user-actions">
           <div class="user-menu">
             <div class="dropdown">
@@ -40,15 +42,17 @@
                 <button @click="toggleDropdown" class="btn-close-overlay">&times;</button>
                 <a href="/perfil.html"><i class="fa-solid fa-user"></i> Mi Perfil</a>
                 <!-- El enlace a "Tareas Archivadas" se elimina del dropdown, ya que es la página activa -->
-                <a href="/admin" v-if="user && user.role === 'admin'"><i class="fa-solid fa-users-cog"></i> Administración</a>
-                <a href="javascript:void(0)" @click="logout()"><i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión</a>
+                <a href="/admin" v-if="user && user.role === 'admin'"><i class="fa-solid fa-users-cog"></i>
+                  Administración</a>
+                <a href="javascript:void(0)" @click="logout()"><i class="fa-solid fa-right-from-bracket"></i> Cerrar
+                  sesión</a>
               </div>
             </div>
             <span v-if="user" class="user-name">{{ user.name }}</span>
           </div>
         </div>
-    </div>
-</header>
+      </div>
+    </header>
     <main class="archived-dashboard">
       <div class="page-header">
         <h2><i class="fa-solid fa-box-archive"></i> Tareas Archivadas</h2>
@@ -66,6 +70,16 @@
             <option value="oldest">Más antiguas primero</option>
             <option value="title">Por título (A-Z)</option>
           </select>
+          <div class="view-controls">
+            <button class="btn-view" :class="{ active: viewMode === 'grid' }" @click="viewMode = 'grid'"
+              title="Vista Cuadrícula">
+              <i class="fa-solid fa-border-all"></i>
+            </button>
+            <button class="btn-view" :class="{ active: viewMode === 'list' }" @click="viewMode = 'list'"
+              title="Vista Lista">
+              <i class="fa-solid fa-list"></i>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -96,7 +110,7 @@
           <p>Las tareas completadas se archivarán automáticamente después de 2 días.</p>
         </div>
 
-        <div v-else class="task-cards">
+        <div v-else class="task-cards" :class="{ 'list-view': viewMode === 'list' }">
           <div v-for="task in filteredTasks" :key="task.id" class="archived-task-card">
             <div class="task-header">
               <h3 class="task-title">{{ task.title }}</h3>
@@ -115,7 +129,7 @@
                 <div class="task-info">
                   <span class="created-by">
                     <i class="fa-regular fa-user"></i>
-                    ID: {{ task.id }}
+                    ID: {{ task.human_id || task.id }}
                   </span>
                 </div>
 
@@ -135,48 +149,107 @@
       </div>
     </main>
 
-    <div class="modal" v-if="tareaSeleccionada" @click.self="tareaSeleccionada = null">
+    <!-- Footer -->
+    <footer class="app-footer">
+      <p>Created by <a href="https://synapsedev.cl" target="_blank">Synapse Dev</a> &copy; 2025</p>
+    </footer>
+
+    <div class="modal" v-if="tareaSeleccionada" @click="closeModalOnSelf($event, 'tareaSeleccionada')">
       <div class="modal-content large">
         <div class="modal-header">
           <h2>
             <i class="fa-solid fa-file-lines"></i>
-            Detalles de Tarea Archivada
+            {{ tareaSeleccionada.loading ? 'Cargando detalles...' : 'Detalles de Tarea Archivada' }}
           </h2>
           <button @click="tareaSeleccionada = null" class="btn-close-modal">&times;</button>
         </div>
 
         <div class="modal-body" v-if="tareaSeleccionada">
-          <div class="detail-grid">
+
+          <div v-if="tareaSeleccionada.loading" class="loading-details">
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            <p>Obteniendo información completa...</p>
+          </div>
+
+          <div class="detail-grid" v-else>
             <div class="detail-col">
               <div class="detail-section">
                 <h3><i class="fa-solid fa-heading"></i> Título</h3>
-                <p>{{ tareaSeleccionada.title }}</p>
+                <p class="detail-title">{{ tareaSeleccionada.title }}</p>
+                <div class="detail-badges">
+                  <span class="status-badge completed">Completada</span>
+                  <span class="priority-badge" :class="tareaSeleccionada.priority">{{ tareaSeleccionada.priority
+                    }}</span>
+                </div>
               </div>
 
-              <div class="detail-section" v-if="tareaSeleccionada.description">
+              <div class="detail-section">
                 <h3><i class="fa-solid fa-align-left"></i> Descripción</h3>
-                <p>{{ tareaSeleccionada.description }}</p>
+                <p class="detail-text">{{ tareaSeleccionada.description || 'Sin descripción.' }}</p>
+              </div>
+
+              <!-- Adjuntos -->
+              <div class="detail-section"
+                v-if="tareaSeleccionada.attachments && tareaSeleccionada.attachments.length > 0">
+                <h3><i class="fa-solid fa-paperclip"></i> Archivos Adjuntos</h3>
+                <ul class="attachments-list">
+                  <li v-for="file in tareaSeleccionada.attachments" :key="file.id">
+                    <span class="file-name"><i class="fa-regular fa-file"></i> {{ file.file_name }}</span>
+                    <button @click="downloadAttachment(file.file_path, file.file_name)" class="btn-download-sm"
+                      title="Descargar">
+                      <i class="fa-solid fa-download"></i>
+                    </button>
+                  </li>
+                </ul>
               </div>
             </div>
 
             <div class="detail-col">
               <div class="detail-section">
-                <h3><i class="fa-solid fa-circle-info"></i> Información</h3>
+                <h3><i class="fa-solid fa-circle-info"></i> Información General</h3>
                 <ul class="detail-list">
                   <li>
-                    <strong>Estado:</strong>
-                    <span class="status-badge completed">Completada</span>
+                    <strong>ID:</strong>
+                    <span>{{ tareaSeleccionada.human_id || '#' + tareaSeleccionada.id }}</span>
                   </li>
                   <li>
-                    <strong>Completada el:</strong>
+                    <strong>Completada:</strong>
                     <span>{{ formatDate(tareaSeleccionada.completed_at) }}</span>
                   </li>
                   <li>
-                    <strong>ID de tarea:</strong>
-                    <span>#{{ tareaSeleccionada.id }}</span>
+                    <strong>Vencimiento:</strong>
+                    <span>{{ formatDate(tareaSeleccionada.due_date) }}</span>
+                  </li>
+                  <li>
+                    <strong>Creada por:</strong>
+                    <span>{{ tareaSeleccionada.created_by_name || 'Desconocido' }}</span>
                   </li>
                 </ul>
               </div>
+
+              <!-- Logística -->
+              <div class="detail-section">
+                <h3><i class="fa-solid fa-truck"></i> Logística</h3>
+                <ul class="detail-list">
+                  <li><strong>Origen:</strong> <span>{{ tareaSeleccionada.origin || 'No especificado' }}</span></li>
+                  <li><strong>Tipo Envío:</strong> <span>{{ tareaSeleccionada.shipping_type || 'No especificado'
+                      }}</span></li>
+                  <li><strong>Pago:</strong> <span>{{ tareaSeleccionada.payment_status || 'No especificado' }}</span>
+                  </li>
+                </ul>
+              </div>
+
+              <!-- Etiquetas -->
+              <div class="detail-section" v-if="tareaSeleccionada.labels && tareaSeleccionada.labels.length > 0">
+                <h3><i class="fa-solid fa-tags"></i> Etiquetas</h3>
+                <div class="labels-container">
+                  <span v-for="label in tareaSeleccionada.labels" :key="label.name" class="task-label"
+                    :style="{ backgroundColor: label.color }">
+                    {{ label.name }}
+                  </span>
+                </div>
+              </div>
+
             </div>
           </div>
         </div>
@@ -198,7 +271,5 @@
   <script src="/js/api.js"></script>
   <script src="/js/archivadas.js"></script>
 </body>
-<footer class="main-footer">
-  © 2025 Operia. Creado por <a href="https://synapsedev.cl" target="_blank" rel="noopener noreferrer">Synapse Dev</a>.
-</footer>
+
 </html>

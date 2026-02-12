@@ -41,7 +41,7 @@
   left: 0;
   top: 5px;
   font-size: 18px;
-  color: var(--c-primary); /* Íconos en azul Operia */
+  color: var(--c-primary); /* Íconos en azul Biocare */
 }
 
 .update-list li strong {
@@ -65,10 +65,46 @@
 }
 
 .modal-footer .dont-show-again input[type="checkbox"] {
-  accent-color: var(--c-action); /* Color del check en verde Operia */
+  accent-color: var(--c-action); /* Color del check en verde Biocare */
   cursor: pointer;
 }
 
 .modal-footer .dont-show-again label {
   cursor: pointer;
+}
+
+/* 4. Estilo para resaltar la actualización principal */
+.update-list li.highlight-update {
+  
+  background-color: var(--c-col-done-bg); 
+  
+  
+  border: 1px solid var(--c-action);
+  border-left-width: 4px;
+  
+  
+  padding-top: 12px;
+  padding-bottom: 12px;
+  padding-right: 12px;
+  
+  
+  border-radius: var(--radius);
+  position: relative;
+}
+
+.update-list li.highlight-update strong {
+  
+  color: var(--c-action-dark);
+}
+
+.update-list li.highlight-update .update-description {
+  
+  color: var(--c-text);
+  font-weight: 500;
+}
+/* 5. Ajuste de color y alineación para el icono resaltado */
+.update-list li.highlight-update i {
+  color: var(--c-action-dark); 
+  top: 17px; 
+  left: 5px;
 }

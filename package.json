@@ -1,5 +1,5 @@
 {
-  "name": "Operia",
+  "name": "operia",
   "version": "1.0.0",
   "description": "Sistema de gestión de tareas para Operia",
   "main": "backend/server.js",
@@ -13,7 +13,7 @@
   "keywords": [
     "task",
     "management",
-    "Operia"
+    "operia"
   ],
   "author": "Synapse Dev - Synapsedev.cl",
   "license": "ISC",

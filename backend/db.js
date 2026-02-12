@@ -38,9 +38,36 @@ db.serialize(() => {
   )`, (err) => {
     if (err) console.error('❌ Error al crear tabla users:', err.message);
     else {
-      db.run("ALTER TABLE users ADD COLUMN email_notifications INTEGER DEFAULT 1", () => {});
-      db.run("ALTER TABLE users ADD COLUMN is_active INTEGER DEFAULT 1", () => {});
+      db.run("ALTER TABLE users ADD COLUMN email_notifications INTEGER DEFAULT 1", () => { });
+      db.run("ALTER TABLE users ADD COLUMN is_active INTEGER DEFAULT 1", () => { });
       console.log('✅ Tabla users lista');
+    }
+  });
+
+  db.run(`CREATE TABLE IF NOT EXISTS sequences (
+    prefix TEXT PRIMARY KEY,
+    last_number INTEGER DEFAULT 0
+  )`, (err) => {
+    if (err) console.error('❌ Error al crear tabla sequences:', err.message);
+    else console.log('✅ Tabla sequences lista');
+  });
+
+  db.run(`CREATE TABLE IF NOT EXISTS clients (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    rut TEXT UNIQUE,
+    name TEXT,
+    email TEXT,
+    phone TEXT,
+    address_street TEXT,
+    commune TEXT,
+    region TEXT,
+    reference TEXT,
+    created_at TEXT DEFAULT (datetime('now', 'localtime'))
+  )`, (err) => {
+    if (err) console.error('❌ Error al crear tabla clients:', err.message);
+    else {
+      db.run("ALTER TABLE clients ADD COLUMN reference TEXT", () => { });
+      console.log('✅ Tabla clients lista');
     }
   });
 
@@ -55,12 +82,40 @@ db.serialize(() => {
     created_at TEXT DEFAULT (datetime('now', 'localtime')),
     completed_at TEXT,
     is_archived INTEGER DEFAULT 0,
-    FOREIGN KEY (created_by) REFERENCES users(id)
+    responsible_user_id INTEGER,
+    human_id TEXT,
+    origin TEXT,
+    shipping_type TEXT,
+    payment_status TEXT,
+    client_snapshot TEXT,
+    client_reference TEXT,
+    FOREIGN KEY (created_by) REFERENCES users(id),
+    FOREIGN KEY (responsible_user_id) REFERENCES users(id) ON DELETE SET NULL
   )`, (err) => {
     if (err) console.error('❌ Error al crear tabla tasks:', err.message);
     else {
-      db.run("ALTER TABLE tasks ADD COLUMN is_archived INTEGER DEFAULT 0", () => {});
-      console.log('✅ Tabla tasks lista');
+      const columnsToAdd = [
+        "ALTER TABLE tasks ADD COLUMN is_archived INTEGER DEFAULT 0",
+        "ALTER TABLE tasks ADD COLUMN responsible_user_id INTEGER",
+        "ALTER TABLE tasks ADD COLUMN human_id TEXT",
+        "ALTER TABLE tasks ADD COLUMN origin TEXT",
+        "ALTER TABLE tasks ADD COLUMN shipping_type TEXT",
+        "ALTER TABLE tasks ADD COLUMN payment_status TEXT",
+        "ALTER TABLE tasks ADD COLUMN client_snapshot TEXT",
+        "ALTER TABLE tasks ADD COLUMN client_reference TEXT",
+        "ALTER TABLE tasks ADD COLUMN observer_user_id INTEGER" // Added observer_user_id here
+      ];
+
+      columnsToAdd.forEach(sql => {
+        db.run(sql, (err) => {
+          // Ignorar error si la columna ya existe
+          if (err && !err.message.includes("duplicate column name")) {
+            console.error(`❌ Error al ejecutar: ${sql}`, err.message);
+          }
+        });
+      });
+
+      console.log('✅ Tabla tasks lista y actualizada');
     }
   });
 
@@ -117,8 +172,8 @@ db.serialize(() => {
   )`, (err) => {
     if (err) console.error('❌ Error al crear tabla attachments:', err.message);
     else {
-        db.run("ALTER TABLE attachments ADD COLUMN attachment_type TEXT DEFAULT 'general'", ()=>{});
-        console.log('✅ Tabla attachments lista');
+      db.run("ALTER TABLE attachments ADD COLUMN attachment_type TEXT DEFAULT 'general'", () => { });
+      console.log('✅ Tabla attachments lista');
     }
   });
 
@@ -147,7 +202,7 @@ db.serialize(() => {
   )`, (err) => {
     if (err) console.error('❌ Error al crear tabla notifications:', err.message);
     else {
-      db.run("ALTER TABLE notifications ADD COLUMN task_id INTEGER", () => {});
+      db.run("ALTER TABLE notifications ADD COLUMN task_id INTEGER", () => { });
       console.log('✅ Tabla notifications lista');
     }
   });
@@ -167,6 +222,7 @@ db.serialize(() => {
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     product_name TEXT NOT NULL,
     model TEXT,
+    sku TEXT, -- <-- AÑADIR ESTA LÍNEA
     category_id INTEGER,
     tags TEXT,
     file_path TEXT NOT NULL,
@@ -177,7 +233,31 @@ db.serialize(() => {
     FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE SET NULL
   )`, (err) => {
     if (err) console.error('❌ Error al crear tabla technical_sheets:', err.message);
-    else console.log('✅ Tabla technical_sheets lista');
+    else {
+      db.run("ALTER TABLE technical_sheets ADD COLUMN sku TEXT", () => { });
+      console.log('✅ Tabla technical_sheets lista');
+    }
+  });
+
+  db.run(`CREATE TABLE IF NOT EXISTS sender_config (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    rut TEXT,
+    address TEXT,
+    commune TEXT,
+    region TEXT,
+    phone TEXT,
+    email TEXT,
+    website TEXT,
+    contact_person TEXT,
+    contact_rut TEXT,
+    thank_you_message TEXT,
+    logo_path TEXT,
+    created_at TEXT DEFAULT (datetime('now', 'localtime')),
+    updated_at TEXT DEFAULT (datetime('now', 'localtime'))
+  )`, (err) => {
+    if (err) console.error('❌ Error al crear tabla sender_config:', err.message);
+    else console.log('✅ Tabla sender_config lista');
   });
 
   const defaultPassword = bcrypt.hashSync('1234', 10);

@@ -46,11 +46,11 @@ const sendDailySummaries = async () => {
       `, [user.id, user.id]);
 
       if (tareasCompletadasAyer.length > 0 || tareasPendientesHoy.length > 0) {
-        
+
         // --- CONSTRUCCIÓN DEL CONTENIDO DEL CORREO ---
         let completedYesterdayHtml = '';
         if (tareasCompletadasAyer.length > 0) {
-          const taskList = tareasCompletadasAyer.map(task => 
+          const taskList = tareasCompletadasAyer.map(task =>
             `<li style="margin-bottom: 8px; color: #34495E;">✅ ${task.title}</li>`
           ).join('');
           completedYesterdayHtml = `
@@ -58,10 +58,10 @@ const sendDailySummaries = async () => {
             <ul style="padding-left: 20px; list-style: none;">${taskList}</ul>
           `;
         }
-        
+
         let dueTodayHtml = '';
         if (tareasPendientesHoy.length > 0) {
-          const taskList = tareasPendientesHoy.map(task => 
+          const taskList = tareasPendientesHoy.map(task =>
             `<li style="margin-bottom: 8px; color: #34495E;">
                <strong style="color: ${task.priority === 'alta' ? '#E74C3C' : '#34495E'};">[${task.priority.toUpperCase()}]</strong> ${task.title}
              </li>`
@@ -77,16 +77,16 @@ const sendDailySummaries = async () => {
           ${completedYesterdayHtml}
           ${dueTodayHtml}
         `;
-        
+
         // Usamos la plantilla centralizada para generar el correo final
         const emailHtml = createEmailTemplate({
-            title: '📊 Resumen Diario de Actividad',
-            recipientName: user.name,
-            mainContentHtml: mainContentHtml,
-            buttonUrl: `${process.env.APP_URL || 'http://localhost:3000'}/tablero`,
-            buttonText: 'Ir a mi Tablero'
+          title: '📊 Resumen Diario de Actividad',
+          recipientName: user.name,
+          mainContentHtml: mainContentHtml,
+          buttonUrl: `${process.env.APP_URL || 'http://localhost:3000'}/tablero`,
+          buttonText: 'Ir a mi Tablero'
         });
-        
+
         await sendEmail(user.email, `📋 Tu resumen diario de Operia`, emailHtml);
         console.log(`✅ Correo enviado a: ${user.email}`);
       }

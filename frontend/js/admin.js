@@ -70,18 +70,18 @@ createApp({
     };
 
     // AÑADIR ESTA FUNCIÓN DENTRO DEL SETUP
-const toggleUserStatus = async (userToToggle) => {
-    const newStatus = userToToggle.is_active ? 0 : 1;
-    const actionText = newStatus ? 'activar' : 'desactivar';
+    const toggleUserStatus = async (userToToggle) => {
+      const newStatus = userToToggle.is_active ? 0 : 1;
+      const actionText = newStatus ? 'activar' : 'desactivar';
 
-    try {
+      try {
         await API.put(`/api/admin/users/${userToToggle.id}/status`, { is_active: newStatus });
         API.showNotification(`Usuario ${actionText}do.`, 'success');
         await loadUsers(); // Recargar la lista para reflejar el cambio
-    } catch (error) {
+      } catch (error) {
         API.showNotification(error.message || `No se pudo ${actionText} al usuario.`, 'error');
-    }
-};
+      }
+    };
 
     const saveUser = async () => {
       try {
@@ -119,13 +119,20 @@ const toggleUserStatus = async (userToToggle) => {
     };
 
     const logout = () => {
-      sessionStorage.removeItem('operia_user');
+      sessionStorage.removeItem('biocare_user');
       sessionStorage.removeItem('auth_token');
       window.location.href = '/login.html';
     };
 
+    const closeModalOnSelf = (event, modalName) => {
+      if (event.target === event.currentTarget) {
+        if (modalName === 'showModal') showModal.value = false;
+        if (modalName === 'showDeleteModal') showDeleteModal.value = false;
+      }
+    };
+
     onMounted(() => {
-      const userData = sessionStorage.getItem('operia_user');
+      const userData = sessionStorage.getItem('biocare_user');
       if (!userData) {
         window.location.href = '/login.html';
         return;
@@ -163,7 +170,8 @@ const toggleUserStatus = async (userToToggle) => {
       showDropdown,
       toggleDropdown,
       logout,
-      toggleUserStatus 
+      toggleUserStatus,
+      closeModalOnSelf
     };
   }
 }).mount('#admin-app');

@@ -51,7 +51,8 @@ router.post('/', authenticateToken, upload.single('sheetFile'), (req, res) => {
     return res.status(400).json({ error: 'El archivo PDF es requerido.' });
   }
 
-  const { product_name, model, category_id, tags } = req.body;
+  // ✨ MODIFICADO: Añadido 'sku'
+  const { product_name, model, category_id, tags, sku } = req.body;
 
   if (!product_name) {
     // Si falta el nombre, eliminamos el archivo subido para no dejar basura
@@ -59,10 +60,12 @@ router.post('/', authenticateToken, upload.single('sheetFile'), (req, res) => {
     return res.status(400).json({ error: 'El nombre del producto es requerido.' });
   }
 
+  // ✨ MODIFICADO: Añadido 'sku' al INSERT
   const sql = `
-    INSERT INTO technical_sheets (product_name, model, category_id, tags, file_path, file_name, uploaded_by)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO technical_sheets (product_name, model, category_id, tags, file_path, file_name, uploaded_by, sku)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `;
+  // ✨ MODIFICADO: Añadido 'sku' a los parámetros
   const params = [
     product_name,
     model || null,
@@ -70,7 +73,8 @@ router.post('/', authenticateToken, upload.single('sheetFile'), (req, res) => {
     tags || null,
     req.file.filename,
     req.file.originalname,
-    req.userId
+    req.userId,
+    sku || null
   ];
 
   db.run(sql, params, function (err) {
@@ -113,6 +117,37 @@ router.get('/:id/download', authenticateToken, (req, res) => {
 });
 
 /**
+ * @route   GET /api/sheets/:id/preview
+ * @desc    Obtiene el PDF de una ficha para vista previa (inline)
+ * @access  Privado
+ */
+router.get('/:id/preview', authenticateToken, (req, res) => {
+  const sheetId = req.params.id;
+
+  db.get(
+    "SELECT file_path, file_name FROM technical_sheets WHERE id = ?", 
+    [sheetId], 
+    (err, sheet) => {
+      if (err || !sheet) {
+        return res.status(404).json({ error: 'Ficha técnica no encontrada.' });
+      }
+
+      const filePath = path.join(uploadsDir, sheet.file_path);
+      
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ error: 'El archivo PDF no se encuentra en el servidor.' });
+      }
+
+      // ✨ NUEVO: 'inline' en lugar de 'attachment' para vista previa
+      res.setHeader('Content-Disposition', `inline; filename="${sheet.file_name}"`); 
+      res.setHeader('Content-Type', 'application/pdf');
+      fs.createReadStream(filePath).pipe(res);
+    }
+  );
+});
+
+
+/**
  * @route   GET /api/sheets
  * @desc    Obtiene y busca fichas técnicas
  * @access  Privado
@@ -130,8 +165,9 @@ router.get('/', authenticateToken, (req, res) => {
   const params = [];
 
   if (search) {
-    sql += ` AND (ts.product_name LIKE ? OR ts.model LIKE ? OR ts.tags LIKE ?)`;
-    params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+    // ✨ MODIFICADO: Añadido 'ts.sku' a la búsqueda
+    sql += ` AND (ts.product_name LIKE ? OR ts.model LIKE ? OR ts.tags LIKE ? OR ts.sku LIKE ?)`;
+    params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
   }
   if (category) {
     sql += ` AND ts.category_id = ?`;
@@ -146,6 +182,49 @@ router.get('/', authenticateToken, (req, res) => {
       return res.status(500).json({ error: 'Error al obtener las fichas técnicas.' });
     }
     res.json(sheets || []);
+  });
+});
+
+/**
+ * @route   PUT /api/sheets/:id
+ * @desc    Actualiza los metadatos de una ficha técnica (sin cambiar el archivo)
+ * @access  Privado
+ */
+router.put('/:id', authenticateToken, express.json(), (req, res) => {
+  const sheetId = req.params.id;
+  // ✨ NUEVO: Endpoint completo para editar
+  const { product_name, model, sku, category_id, tags } = req.body;
+
+  if (!product_name) {
+    return res.status(400).json({ error: 'El nombre del producto es requerido.' });
+  }
+
+  const sql = `
+    UPDATE technical_sheets 
+    SET product_name = ?, model = ?, sku = ?, category_id = ?, tags = ?
+    WHERE id = ?
+  `;
+  const params = [
+    product_name,
+    model || null,
+    sku || null,
+    category_id || null,
+    tags || null,
+    sheetId
+  ];
+
+  db.run(sql, params, function(err) {
+    if (err) {
+      console.error('❌ Error al actualizar la ficha técnica:', err.message);
+      //
+      // 👇👇👇 LÍNEA CORREGIDA 👇👇👇
+      //
+      return res.status(500).json({ error: 'Error al actualizar la ficha.' });
+    }
+    if (this.changes === 0) {
+      return res.status(404).json({ error: 'Ficha técnica no encontrada.' });
+    }
+    res.status(200).json({ success: true, message: 'Ficha actualizada correctamente.' });
   });
 });
 

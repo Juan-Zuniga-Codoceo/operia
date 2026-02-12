@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Operia - Tablero</title>
+  <title>BiocareTask - Tablero</title>
 
   <link rel="stylesheet" href="/css/tablero.css" />
   <link rel="manifest" href="/manifest.json">
@@ -20,8 +20,8 @@
     <header class="header">
       <div class="header-left">
         <div class="logo">
-          <img src="/assets/logo.png" alt="Operia Logo" />
-          <h1><span class="operia">Operia</span></h1>
+          <img src="/assets/logo.png" alt="Biocare Logo" />
+          <h1><span class="biocare">Biocare</span><span class="task">Task</span></h1>
         </div>
       </div>
 
@@ -61,11 +61,11 @@
                     <small>{{ formatDate(notificacion.fecha_creacion) }}</small>
                   </div>
                   <div class="notification-actions">
-                    <button v-if="!notificacion.leida" @click="marcarComoLeida(notificacion.id, $event)"
+                    <button v-if="!notificacion.leida" @click.stop="marcarComoLeida(notificacion.id)"
                       class="btn-icon-action" title="Marcar como leída">
                       <i class="fa-solid fa-check"></i>
                     </button>
-                    <button @click="eliminarNotificacion(notificacion.id, $event)" class="btn-icon-action danger"
+                    <button @click.stop="eliminarNotificacion(notificacion.id)" class="btn-icon-action danger"
                       title="Eliminar">
                       <i class="fa-solid fa-trash-can"></i>
                     </button>
@@ -75,10 +75,6 @@
               </div>
             </div>
           </div>
-
-          <button class="btn-icon" @click="openClientManager" title="Gestión de Clientes" style="margin: 0 10px;">
-            <i class="fa-solid fa-address-book"></i>
-          </button>
 
           <button class="btn-icon" @click="showConfigModal = true" title="Configurar Etiquetas" style="margin: 0 10px;">
             <i class="fa-solid fa-gear"></i>
@@ -156,10 +152,8 @@
               @click="verDetalles(task)">
               <div class="task-header-badges">
                 <span v-if="task.human_id" class="id-badge">{{ task.human_id }}</span>
-                <span v-if="hasClientData(task) && task.shipping_type" class="courier-badge"><i
-                    class="fa-solid fa-truck-fast"></i> {{ task.shipping_type }}</span><span
-                  v-else-if="!hasClientData(task)" class="courier-badge internal-badge"><i
-                    class="fa-solid fa-building-user"></i> Tarea Interna</span>
+                <span v-if="task.shipping_type" class="courier-badge"><i class="fa-solid fa-truck-fast"></i> {{
+                  task.shipping_type }}</span>
               </div>
               <h3>{{ task.title }}</h3>
 
@@ -198,7 +192,7 @@
                   {{ task.responsible_user_name.split(' ')[0] }}
                 </span>
 
-                <button @click="moverACamino(task.id, $event)" class="btn-action">En Camino <i
+                <button @click.stop="moverACamino(task.id)" class="btn-action">En Camino <i
                     class="fa-solid fa-arrow-right"></i></button>
               </div>
             </div>
@@ -214,10 +208,8 @@
               @click="verDetalles(task)">
               <div class="task-header-badges">
                 <span v-if="task.human_id" class="id-badge">{{ task.human_id }}</span>
-                <span v-if="hasClientData(task) && task.shipping_type" class="courier-badge"><i
-                    class="fa-solid fa-truck-fast"></i> {{ task.shipping_type }}</span><span
-                  v-else-if="!hasClientData(task)" class="courier-badge internal-badge"><i
-                    class="fa-solid fa-building-user"></i> Tarea Interna</span>
+                <span v-if="task.shipping_type" class="courier-badge"><i class="fa-solid fa-truck-fast"></i> {{
+                  task.shipping_type }}</span>
               </div>
               <h3>{{ task.title }}</h3>
 
@@ -256,11 +248,7 @@
                   {{ task.responsible_user_name.split(' ')[0] }}
                 </span>
 
-                <button @click="retrocederEstado(task.id, 'pendiente', $event)" class="btn-action secondary"
-                  style="margin-right: 5px;">
-                  <i class="fa-solid fa-arrow-left"></i> Regresar
-                </button>
-                <button @click="openCompleteModal(task, $event)" class="btn-action green">Completar <i
+                <button @click.stop="openCompleteModal(task)" class="btn-action green">Completar <i
                     class="fa-solid fa-check"></i></button>
               </div>
             </div>
@@ -276,10 +264,8 @@
               @click="verDetalles(task)">
               <div class="task-header-badges">
                 <span v-if="task.human_id" class="id-badge">{{ task.human_id }}</span>
-                <span v-if="hasClientData(task) && task.shipping_type" class="courier-badge"><i
-                    class="fa-solid fa-truck-fast"></i> {{ task.shipping_type }}</span><span
-                  v-else-if="!hasClientData(task)" class="courier-badge internal-badge"><i
-                    class="fa-solid fa-building-user"></i> Tarea Interna</span>
+                <span v-if="task.shipping_type" class="courier-badge"><i class="fa-solid fa-truck-fast"></i> {{
+                  task.shipping_type }}</span>
               </div>
               <h3>{{ task.title }}</h3>
 
@@ -307,10 +293,6 @@
               <div class="task-footer">
                 <span class="assigned-to" title="Observadores"><i class="fa-solid fa-users-viewfinder"></i> {{
                   task.assigned_names || 'Sin observadores' }}</span>
-                <button @click="retrocederEstado(task.id, 'en_camino', $event)" class="btn-action secondary"
-                  style="margin-left: auto;">
-                  <i class="fa-solid fa-arrow-left"></i> Regresar
-                </button>
               </div>
             </div>
             <p class="empty" v-if="tareasCompletadas.length === 0">No hay tareas completadas</p>
@@ -319,7 +301,7 @@
       </div>
     </main>
 
-    <div class="modal" v-if="showModal" @click="closeModalOnSelf($event, 'showModal')">
+    <div class="modal" v-if="showModal" @click.self="showModal = false">
       <div class="modal-content">
         <div class="modal-header">
           <h2><i class="fa-solid fa-plus"></i> Crear Nueva Tarea</h2>
@@ -343,7 +325,7 @@
               <div class="form-group">
                 <label>Buscar Cliente Frecuente</label>
                 <div class="dropdown-container">
-                  <input type="text" v-model="clientSearchTerm" @input="handleClientSearch"
+                  <input type="text" v-model="clientSearchTerm" @input="searchClients"
                     placeholder="Buscar por RUT o Nombre..." class="search-input" />
                   <div class="label-dropdown" v-if="suggestedClients.length > 0">
                     <div v-for="client in suggestedClients" :key="client.id" @mousedown="selectClient(client)">
@@ -355,12 +337,12 @@
 
               <div class="form-grid">
                 <div class="form-group">
-                  <label>RUT *</label>
-                  <input type="text" v-model="newTask.client.rut" placeholder="12.345.678-9" required />
+                  <label>RUT</label>
+                  <input type="text" v-model="newTask.client.rut" placeholder="12.345.678-9" />
                 </div>
                 <div class="form-group">
-                  <label>Nombre Completo *</label>
-                  <input type="text" v-model="newTask.client.name" placeholder="Juan Pérez" required />
+                  <label>Nombre Completo</label>
+                  <input type="text" v-model="newTask.client.name" placeholder="Juan Pérez" />
                 </div>
               </div>
 
@@ -370,15 +352,15 @@
                   <input type="email" v-model="newTask.client.email" placeholder="cliente@email.com" />
                 </div>
                 <div class="form-group">
-                  <label>Teléfono *</label>
-                  <input type="text" v-model="newTask.client.phone" placeholder="+569..." required />
+                  <label>Teléfono</label>
+                  <input type="text" v-model="newTask.client.phone" placeholder="+569..." />
                 </div>
               </div>
 
               <div class="form-group">
-                <label for="client_address_street">Dirección (Calle, Número, Depto) *</label>
+                <label for="client_address_street">Dirección (Calle, Número, Depto)</label>
                 <input type="text" id="client_address_street" v-model="newTask.client.address_street"
-                  placeholder="Av. Siempre Viva 742" required />
+                  placeholder="Av. Siempre Viva 742" />
               </div>
 
               <div class="form-group">
@@ -389,8 +371,8 @@
 
               <div class="form-grid">
                 <div class="form-group">
-                  <label>Ciudad/Comuna *</label>
-                  <input type="text" v-model="newTask.client.commune" placeholder="Valparaíso" required />
+                  <label>Comuna</label>
+                  <input type="text" v-model="newTask.client.commune" placeholder="Valparaíso" />
                 </div>
                 <div class="form-group">
                   <label>Región</label>
@@ -464,8 +446,8 @@
                     <i class="fa-regular fa-calendar-alt"></i>
                   </div>
                   <div class="quick-dates">
-                    <button @click="setQuickDate(0, $event)">Hoy</button>
-                    <button @click="setQuickDate(1, $event)">Mañana</button>
+                    <button @click.prevent="setQuickDate(0)">Hoy</button>
+                    <button @click.prevent="setQuickDate(1)">Mañana</button>
                   </div>
                 </div>
                 <div class="form-group">
@@ -545,462 +527,149 @@
           </div>
         </div>
       </div>
-    </div> <!-- Cierre extra para balancear -->
 
-
-    <!-- Modal de Configuración -->
-    <div class="modal" v-if="showConfigModal" @click="closeModalOnSelf($event, 'showConfigModal')">
-      <div class="modal-content" style="max-width: 700px;">
-        <div class="modal-header">
-          <h2><i class="fa-solid fa-gear"></i> Configuración de Etiquetas</h2>
-          <button @click="showConfigModal = false" class="btn-close-modal">&times;</button>
-        </div>
-        <div class="modal-body">
-          <div class="form-section">
-            <h3>Datos del Remitente</h3>
-            <p class="help-text">Estos datos aparecerán en las etiquetas de envío.</p>
-
-            <div class="form-group">
-              <label>Logo de la Empresa</label>
-              <input type="file" @change="handleLogoUpload" accept="image/*" class="file-input" id="logo-upload" />
-              <p style="font-size: 0.85rem; color: #666; margin-top: 5px;">O ingresa una URL del logo:</p>
-              <input type="text" v-model="senderConfig.logoUrl" placeholder="https://ejemplo.com/logo.png" />
-              <div v-if="senderConfig.logoUrl"
-                style="margin-top: 15px; text-align: center; padding: 10px; background: #f5f5f5; border-radius: 8px;">
-                <img :src="senderConfig.logoUrl" style="max-height: 100px; max-width: 100%;" alt="Vista previa logo" />
-              </div>
-            </div>
-
-            <div class="form-grid" style="grid-template-columns: 2fr 1fr;">
-              <div class="form-group">
-                <label>Nombre / Razón Social</label>
-                <input type="text" v-model="senderConfig.name" placeholder="IMPORTADORA BIOCARE LTDA." />
-              </div>
-              <div class="form-group">
-                <label>RUT Empresa</label>
-                <input type="text" v-model="senderConfig.rut" placeholder="76.143.373-3" />
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label>Dirección Completa</label>
-              <input type="text" v-model="senderConfig.address" placeholder="BLANCO 1023, L3" />
-            </div>
-
-            <div class="form-grid">
-              <div class="form-group">
-                <label>Comuna</label>
-                <input type="text" v-model="senderConfig.commune" placeholder="QUILPUE" />
-              </div>
-              <div class="form-group">
-                <label>Región</label>
-                <input type="text" v-model="senderConfig.region" placeholder="REGIÓN DE VALPARAÍSO" />
-              </div>
-            </div>
-
-            <h3 style="margin-top: 25px;">Contacto</h3>
-
-            <div class="form-grid">
-              <div class="form-group">
-                <label>Persona de Contacto</label>
-                <input type="text" v-model="senderConfig.contactPerson" placeholder="PATRICIO HERNÁNDEZ" />
-              </div>
-              <div class="form-group">
-                <label>RUT Contacto</label>
-                <input type="text" v-model="senderConfig.contactRut" placeholder="10.738.733-1" />
-              </div>
-            </div>
-
-            <div class="form-grid">
-              <div class="form-group">
-                <label>Teléfono</label>
-                <input type="text" v-model="senderConfig.phone" placeholder="322 922 506" />
-              </div>
-              <div class="form-group">
-                <label>Email</label>
-                <input type="email" v-model="senderConfig.email" placeholder="ventas@ibiocare.cl" />
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label>Sitio Web</label>
-              <input type="text" v-model="senderConfig.website" placeholder="www.ibiocare.cl" />
-            </div>
-
-            <div class="form-group">
-              <label>Mensaje de Agradecimiento (Opcional)</label>
-              <input type="text" v-model="senderConfig.thankYouMessage" placeholder="GRACIAS POR PREFERIRNOS!!!!" />
-            </div>
+      <!-- Modal de Configuración -->
+      <div class="modal" v-if="showConfigModal" @click.self="showConfigModal = false">
+        <div class="modal-content" style="max-width: 700px;">
+          <div class="modal-header">
+            <h2><i class="fa-solid fa-gear"></i> Configuración de Etiquetas</h2>
+            <button @click="showConfigModal = false" class="btn-close-modal">&times;</button>
           </div>
-        </div>
-        <div class="modal-footer">
-          <button @click="showConfigModal = false" class="btn-cancel">Cancelar</button>
-          <button @click="saveSenderConfig" class="btn-create">
-            <i class="fa-solid fa-save"></i> Guardar Configuración
-          </button>
-        </div>
-      </div>
-    </div>
+          <div class="modal-body">
+            <div class="form-section">
+              <h3>Datos del Remitente</h3>
+              <p class="help-text">Estos datos aparecerán en las etiquetas de envío.</p>
 
-
-    <div class="modal" v-if="tareaSeleccionada" @click="closeModalOnSelf($event, 'tareaSeleccionada')">
-      <div class="modal-content large" :class="{ 'vence-hoy': esTareaParaHoy(tareaSeleccionada.due_date) }">
-        <div class="modal-header">
-          <h2>
-            <span>{{ tareaSeleccionada.title }}</span>
-            <span v-if="esTareaParaHoy(tareaSeleccionada.due_date)" class="due-today-badge">
-              <i class="fa-solid fa-fire"></i> VENCE HOY
-            </span>
-          </h2>
-          <button @click="tareaSeleccionada = null" class="btn-close-modal">&times;</button>
-        </div>
-
-        <div class="modal-body">
-          <div class="detail-grid">
-            <!-- Columna Izquierda: Información Principal -->
-            <div class="main-info">
-
-              <!-- Sección Cliente -->
-              <div class="detail-section" v-if="hasClientData(tareaSeleccionada)">
-                <h3><i class="fa-solid fa-user"></i> Datos del Cliente</h3>
-
-                <div v-if="typeof tareaSeleccionada.client_snapshot === 'string'">
-                  <ul class="detail-list">
-                    <li>
-                      <strong>Nombre</strong>
-                      <span>{{ JSON.parse(tareaSeleccionada.client_snapshot).name }}</span>
-                    </li>
-                    <li>
-                      <strong>RUT</strong>
-                      <span>{{ JSON.parse(tareaSeleccionada.client_snapshot).rut || 'S/R' }}</span>
-                    </li>
-                    <li>
-                      <strong>Teléfono</strong>
-                      <span>{{ JSON.parse(tareaSeleccionada.client_snapshot).phone || 'S/N' }}</span>
-                    </li>
-                    <li>
-                      <strong>Email</strong>
-                      <span>{{ JSON.parse(tareaSeleccionada.client_snapshot).email || 'S/E' }}</span>
-                    </li>
-                    <li>
-                      <strong>Dirección</strong>
-                      <span style="text-align: right; max-width: 60%;">
-                        <a v-if="getGoogleMapsLink(tareaSeleccionada.client_snapshot)"
-                          :href="getGoogleMapsLink(tareaSeleccionada.client_snapshot)" target="_blank"
-                          class="address-link" title="Ver en Google Maps">
-                          {{ JSON.parse(tareaSeleccionada.client_snapshot).address_street || '' }}
-                          {{ JSON.parse(tareaSeleccionada.client_snapshot).commune || '' }}
-                          <i class="fa-solid fa-map-location-dot" style="margin-left: 6px;"></i>
-                        </a>
-                        <template v-else>
-                          {{ JSON.parse(tareaSeleccionada.client_snapshot).address_street || '' }}
-                          {{ JSON.parse(tareaSeleccionada.client_snapshot).commune || '' }}
-                        </template>
-                      </span>
-                    </li>
-                    <li v-if="JSON.parse(tareaSeleccionada.client_snapshot).reference">
-                      <strong>Referencia</strong>
-                      <span style="text-align: right; max-width: 60%;">{{
-                        JSON.parse(tareaSeleccionada.client_snapshot).reference }}</span>
-                    </li>
-                    <li>
-                      <strong>Tipo de Envío</strong>
-                      <span style="font-weight: 600; color: var(--c-primary);">{{ tareaSeleccionada.shipping_type ||
-                        'No especificado' }}</span>
-                    </li>
-                  </ul>
-                </div>
-                <div v-else>
-                  <ul class="detail-list">
-                    <li>
-                      <strong>Nombre</strong>
-                      <span>{{ tareaSeleccionada.client_snapshot.name }}</span>
-                    </li>
-                    <li>
-                      <strong>RUT</strong>
-                      <span>{{ tareaSeleccionada.client_snapshot.rut || 'S/R' }}</span>
-                    </li>
-                    <li>
-                      <strong>Teléfono</strong>
-                      <span>{{ tareaSeleccionada.client_snapshot.phone || 'S/N' }}</span>
-                    </li>
-                    <li>
-                      <strong>Email</strong>
-                      <span>{{ tareaSeleccionada.client_snapshot.email || 'S/E' }}</span>
-                    </li>
-                    <li>
-                      <strong>Dirección</strong>
-                      <span style="text-align: right; max-width: 60%;">
-                        <a v-if="getGoogleMapsLink(tareaSeleccionada.client_snapshot)"
-                          :href="getGoogleMapsLink(tareaSeleccionada.client_snapshot)" target="_blank"
-                          class="address-link" title="Ver en Google Maps">
-                          {{ tareaSeleccionada.client_snapshot.address_street || '' }}
-                          {{ tareaSeleccionada.client_snapshot.commune || '' }}
-                          <i class="fa-solid fa-map-location-dot" style="margin-left: 6px;"></i>
-                        </a>
-                        <template v-else>
-                          {{ tareaSeleccionada.client_snapshot.address_street || '' }}
-                          {{ tareaSeleccionada.client_snapshot.commune || '' }}
-                        </template>
-                      </span>
-                    </li>
-                    <li v-if="tareaSeleccionada.client_snapshot.reference">
-                      <strong>Referencia</strong>
-                      <span style="text-align: right; max-width: 60%;">{{ tareaSeleccionada.client_snapshot.reference
-                        }}</span>
-                    </li>
-                    <li>
-                      <strong>Tipo de Envío</strong>
-                      <span style="font-weight: 600; color: var(--c-primary);">{{ tareaSeleccionada.shipping_type ||
-                        'No especificado' }}</span>
-                    </li>
-                  </ul>
+              <div class="form-group">
+                <label>Logo de la Empresa</label>
+                <input type="file" @change="handleLogoUpload" accept="image/*" class="file-input" id="logo-upload" />
+                <p style="font-size: 0.85rem; color: #666; margin-top: 5px;">O ingresa una URL del logo:</p>
+                <input type="text" v-model="senderConfig.logoUrl" placeholder="https://ejemplo.com/logo.png" />
+                <div v-if="senderConfig.logoUrl"
+                  style="margin-top: 15px; text-align: center; padding: 10px; background: #f5f5f5; border-radius: 8px;">
+                  <img :src="senderConfig.logoUrl" style="max-height: 100px; max-width: 100%;"
+                    alt="Vista previa logo" />
                 </div>
               </div>
 
-              <!-- Sección Descripción -->
-              <div class="detail-section">
-                <h3><i class="fa-solid fa-align-left"></i> Descripción</h3>
-                <div
-                  style="padding: 12px; background-color: #f9f9f9; border-radius: 8px; color: var(--c-text); border: 1px solid #eee;">
-                  <p style="white-space: pre-wrap; margin-bottom: 0;">{{ tareaSeleccionada.description }}</p>
+              <div class="form-grid" style="grid-template-columns: 2fr 1fr;">
+                <div class="form-group">
+                  <label>Nombre / Razón Social</label>
+                  <input type="text" v-model="senderConfig.name" placeholder="IMPORTADORA BIOCARE LTDA." />
+                </div>
+                <div class="form-group">
+                  <label>RUT Empresa</label>
+                  <input type="text" v-model="senderConfig.rut" placeholder="76.143.373-3" />
                 </div>
               </div>
 
-              <!-- Sección Adjuntos -->
-              <div class="detail-section">
-                <h3><i class="fa-solid fa-paperclip"></i> Archivos Adjuntos</h3>
-                <div v-if="tareaSeleccionada.attachments && tareaSeleccionada.attachments.length > 0"
-                  style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
-                  <div v-for="att in tareaSeleccionada.attachments" :key="att.id"
-                    style="display: flex; align-items: center; gap: 10px; padding: 8px; background: #f8f9fa; border-radius: 6px; border: 1px solid #e9ecef;">
-                    <i class="fa-solid fa-file-lines" style="color: var(--c-primary);"></i>
-                    <a href="javascript:void(0)" @click="downloadFile(att)"
-                      style="text-decoration: none; color: var(--c-text); font-weight: 500; flex-grow: 1;">
-                      {{ att.file_name }}
-                    </a>
-                    <span style="font-size: 11px; color: #888;">{{ (att.file_size / 1024).toFixed(1) }} KB</span>
-                  </div>
-                </div>
-                <p v-else class="empty" style="padding: 10px 0; font-style: italic; color: var(--c-text-light);">No hay
-                  archivos
-                  adjuntos.</p>
-              </div> <!-- Sección Comentarios -->
-              <div class="detail-section">
-                <h3><i class="fa-solid fa-comments"></i> Comentarios</h3>
-
-                <div class="comments-list">
-                  <div v-for="comment in tareaSeleccionada.comentarios" :key="comment.id" class="comment-item">
-                    <div class="comment-avatar" :style="{ backgroundColor: getColor(comment.autor_nombre) }">
-                      {{ (comment.autor_nombre || '?').charAt(0).toUpperCase() }}
-                    </div>
-                    <div class="comment-body">
-                      <div class="comment-header">
-                        <span class="comment-author">{{ comment.autor_nombre }}</span>
-                        <span class="comment-date">{{ formatDate(comment.fecha_creacion) }}</span>
-                      </div>
-                      <div class="comment-content" v-html="comment.contenido"></div>
-                      <div v-if="comment.attachments && comment.attachments.length > 0" class="comment-attachment-list">
-                        <div v-for="att in comment.attachments" :key="att.id" class="comment-attachment">
-                          <a href="javascript:void(0)" @click="downloadFile(att)">
-                            <i class="fa-solid fa-paperclip"></i> {{ att.file_name }}
-                          </a>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <p v-if="!tareaSeleccionada.comentarios || tareaSeleccionada.comentarios.length === 0"
-                    class="empty-comments">
-                    No hay comentarios aún. ¡Sé el primero en comentar!
-                  </p>
-                </div>
-
-                <!-- Formulario Comentario -->
-                <div class="comment-form">
-                  <textarea v-model="nuevoComentario" placeholder="Escribe un comentario o actualización..."></textarea>
-
-                  <div v-if="commentAttachments.length > 0"
-                    style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
-                    <div v-for="(file, index) in commentAttachments" :key="index" class="attachment-preview">
-                      <i class="fa-solid fa-paperclip"></i> {{ file.name }}
-                      <button @click="removeCommentAttachment(index)" class="btn-remove-attachment">&times;</button>
-                    </div>
-                  </div>
-
-                  <div class="comment-form-actions">
-                    <input type="file" id="comment-file" @change="handleCommentAttachment" multiple
-                      style="display: none;">
-                    <button class="btn-icon btn-attach" onclick="document.getElementById('comment-file').click()"
-                      title="Adjuntar archivo">
-                      <i class="fa-solid fa-paperclip"></i>
-                    </button>
-                    <button @click="agregarComentario" :disabled="!nuevoComentario && commentAttachments.length === 0">
-                      Enviar
-                    </button>
-                  </div>
-                </div>
+              <div class="form-group">
+                <label>Dirección Completa</label>
+                <input type="text" v-model="senderConfig.address" placeholder="BLANCO 1023, L3" />
               </div>
-            </div>
 
-            <!-- Columna Derecha: Meta Info -->
-            <div class="meta-info">
-
-              <!-- Botones de Impresión (NUEVO) -->
-              <div class="detail-section" style="background-color: #eaf2f8; border-color: #d6eaf8;">
-                <h3><i class="fa-solid fa-print"></i> Imprimir</h3>
-                <div style="display: flex; flex-direction: column; gap: 10px;">
-                  <button @click="printInternalLabel(tareaSeleccionada.id)" class="btn-action"
-                    style="justify-content: center; width: 100%; background-color: white;">
-                    <i class="fa-solid fa-tag"></i> Etiqueta Interna
-                  </button>
-                  <button @click="printCourierLabel(tareaSeleccionada.id)" class="btn-action"
-                    style="justify-content: center; width: 100%; background-color: white;">
-                    <i class="fa-solid fa-truck-fast"></i> Etiqueta Courier
-                  </button>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Comuna</label>
+                  <input type="text" v-model="senderConfig.commune" placeholder="QUILPUE" />
+                </div>
+                <div class="form-group">
+                  <label>Región</label>
+                  <input type="text" v-model="senderConfig.region" placeholder="REGIÓN DE VALPARAÍSO" />
                 </div>
               </div>
 
-              <div class="detail-section">
-                <h3><i class="fa-solid fa-circle-info"></i> Detalles</h3>
-                <ul class="detail-list">
-                  <li>
-                    <strong>Estado</strong>
-                    <span :style="{
-                      color: tareaSeleccionada.status === 'completada' ? 'var(--c-success)' : 
-                             tareaSeleccionada.status === 'en_camino' ? 'var(--c-warning)' : 
-                             'var(--c-primary)',
-                      fontWeight: '600',
-                      textTransform: 'uppercase'
-                    }">
-                      {{ tareaSeleccionada.status === 'pendiente' ? 'PENDIENTE' :
-                      tareaSeleccionada.status === 'en_camino' ? 'EN CAMINO' :
-                      tareaSeleccionada.status === 'completada' ? 'COMPLETADA' :
-                      tareaSeleccionada.status.toUpperCase() }}
-                    </span>
-                  </li>
-                  <li>
-                    <strong>Prioridad</strong>
-                    <span :class="'badge-' + tareaSeleccionada.priority">
-                      {{ getPriorityText(tareaSeleccionada.priority) }}
-                    </span>
-                  </li>
-                  <li>
-                    <strong>Vencimiento</strong>
-                    <span :class="{ 'text-danger': esTareaVencida(tareaSeleccionada.due_date) }"
-                      style="font-weight: 500;">
-                      {{ formatDate(tareaSeleccionada.due_date) }}
-                    </span>
-                  </li>
-                </ul>
-              </div>
-              <!-- Personas -->
-              <div class="detail-section">
-                <h3><i class="fa-solid fa-users"></i> Personas</h3>
-                <ul class="detail-list">
-                  <li>
-                    <strong>Creado por</strong>
-                    <span>{{ tareaSeleccionada.created_by_name || 'Desconocido' }}</span>
-                    <button v-if="user && user.role === 'admin'" @click="editarCreador(tareaSeleccionada)"
-                      class="btn-icon-inline" title="Editar creador">
-                      <i class="fa-solid fa-pencil"></i>
-                    </button>
-                  </li>
-                  <li>
-                    <strong>Responsable</strong>
-                    <span>{{ tareaSeleccionada.responsible_user_name || 'Sin asignar' }}</span>
-                  </li>
-                  <li>
-                    <strong>Observadores</strong>
-                    <span>{{ tareaSeleccionada.assigned_names || 'Sin observadores asignados' }}</span>
-                  </li>
-                </ul>
-              </div>
+              <h3 style="margin-top: 25px;">Contacto</h3>
 
-              <div class="detail-section">
-                <h3><i class="fa-solid fa-tags"></i> Etiquetas</h3>
-                <div class="labels" style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px;">
-                  <span v-for="label in getLabelsArray(tareaSeleccionada)" :key="label" class="label-tag"
-                    :style="{ backgroundColor: getColor(label) }">
-                    {{ label }}
-                  </span>
-                  <span v-if="getLabelsArray(tareaSeleccionada).length === 0" class="text-muted"
-                    style="font-size: 13px; font-style: italic;">Sin etiquetas</span>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Persona de Contacto</label>
+                  <input type="text" v-model="senderConfig.contactPerson" placeholder="PATRICIO HERNÁNDEZ" />
+                </div>
+                <div class="form-group">
+                  <label>RUT Contacto</label>
+                  <input type="text" v-model="senderConfig.contactRut" placeholder="10.738.733-1" />
                 </div>
               </div>
 
-              <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
-                <button @click="abrirModalEditar" class="btn-create"
-                  style="width: 100%; justify-content: center; background-color: var(--c-primary); display: flex; align-items: center; gap: 8px;">
-                  <i class="fa-solid fa-pencil"></i> Editar Tarea
-                </button>
-                <button @click="abrirConfirmarEliminar" class="btn-cancel"
-                  style="width: 100%; justify-content: center; color: var(--c-danger); border-color: var(--c-danger); display: flex; align-items: center; gap: 8px;">
-                  <i class="fa-solid fa-trash"></i> Eliminar Tarea
-                </button>
-
-                <!-- Botones de Cambio de Estado -->
-                <div v-if="tareaSeleccionada.status === 'pendiente'" style="margin-top: 10px;">
-                  <button @click="cambiarEstadoTarea(tareaSeleccionada.id, 'en_camino')" class="btn-create"
-                    style="width: 100%; justify-content: center; background-color: var(--c-action); display: flex; align-items: center; gap: 8px;">
-                    <i class="fa-solid fa-truck-fast"></i> Iniciar Tarea
-                  </button>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Teléfono</label>
+                  <input type="text" v-model="senderConfig.phone" placeholder="322 922 506" />
                 </div>
-
-                <div v-if="tareaSeleccionada.status === 'en_camino'"
-                  style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
-                  <button @click="cambiarEstadoTarea(tareaSeleccionada.id, 'completada')" class="btn-create"
-                    style="width: 100%; justify-content: center; background-color: #2ECC71; display: flex; align-items: center; gap: 8px;">
-                    <i class="fa-solid fa-check-circle"></i> Completar Tarea
-                  </button>
-                  <button @click="cambiarEstadoTarea(tareaSeleccionada.id, 'pendiente')" class="btn-cancel"
-                    style="width: 100%; justify-content: center; display: flex; align-items: center; gap: 8px;">
-                    <i class="fa-solid fa-arrow-left"></i> Devolver a Pendiente
-                  </button>
+                <div class="form-group">
+                  <label>Email</label>
+                  <input type="email" v-model="senderConfig.email" placeholder="ventas@ibiocare.cl" />
                 </div>
+              </div>
 
-                <div v-if="tareaSeleccionada.status === 'completada'" style="margin-top: 10px;">
-                  <button @click="cambiarEstadoTarea(tareaSeleccionada.id, 'pendiente')" class="btn-cancel"
-                    style="width: 100%; justify-content: center; background-color: #F39C12; border-color: #F39C12; color: white; display: flex; align-items: center; gap: 8px;">
-                    <i class="fa-solid fa-undo"></i> Reabrir Tarea
-                  </button>
-                </div>
+              <div class="form-group">
+                <label>Sitio Web</label>
+                <input type="text" v-model="senderConfig.website" placeholder="www.ibiocare.cl" />
+              </div>
+
+              <div class="form-group">
+                <label>Mensaje de Agradecimiento (Opcional)</label>
+                <input type="text" v-model="senderConfig.thankYouMessage" placeholder="GRACIAS POR PREFERIRNOS!!!!" />
               </div>
             </div>
           </div>
-        </div>
-        <div class="modal" v-if="mostrandoSelectorCreador">
-          <div class="modal-content" style="max-width: 500px;">
-            <div class="modal-header">
-              <h2><i class="fa-solid fa-user-pen"></i> Cambiar Creador de Tarea</h2>
-              <button @click="mostrandoSelectorCreador = false" class="btn-close-modal">&times;</button>
-            </div>
-            <div class="modal-body">
-              <p>Selecciona el nuevo usuario que será el creador de la tarea "<strong>{{ tareaSeleccionada.title
-                  }}</strong>".</p>
-              <div class="form-group">
-                <label for="user-selector">Usuarios Disponibles</label>
-                <select id="user-selector" v-model="nuevoCreadorId" class="user-select-add">
-                  <option :value="null" disabled>-- Selecciona un usuario --</option>
-                  <option v-for="u in users" :key="u.id" :value="u.id">
-                    {{ u.name }} (ID: {{ u.id }})
-                  </option>
-                </select>
-              </div>
-            </div>
-            <div class="modal-footer">
-              <button @click="mostrandoSelectorCreador = false" class="btn-cancel">Cancelar</button>
-              <button @click="confirmarCambioDeCreador" class="btn-create">
-                <i class="fa-solid fa-save"></i> Guardar Cambio
-              </button>
-            </div>
+          <div class="modal-footer">
+            <button @click="showConfigModal = false" class="btn-cancel">Cancelar</button>
+            <button @click="saveSenderConfig" class="btn-create">
+              <i class="fa-solid fa-save"></i> Guardar Configuración
+            </button>
           </div>
         </div>
       </div>
 
+
+      <div class="modal" v-if="tareaSeleccionada" @click.self="tareaSeleccionada = null">
+        <div class="modal-content large" :class="{ 'vence-hoy': esTareaParaHoy(tareaSeleccionada.due_date) }">
+          <div class="modal-header">
+            <h2>
+              <span>{{ tareaSeleccionada.title }}</span>
+              <span v-if="esTareaParaHoy(tareaSeleccionada.due_date)" class="due-today-badge">
+                <i class="fa-solid fa-fire"></i> VENCE HOY
+              </span>
+            </h2>
+            <button @click="tareaSeleccionada = null" class="btn-close-modal">&times;</button>
+          </div>
+
+          <!-- Modal anidado para cambiar creador -->
+          <div class="modal" v-if="mostrandoSelectorCreador">
+            <div class="modal-content" style="max-width: 500px;">
+              <div class="modal-header">
+                <h2><i class="fa-solid fa-user-pen"></i> Cambiar Creador de Tarea</h2>
+                <button @click="mostrandoSelectorCreador = false" class="btn-close-modal">&times;</button>
+              </div>
+              <div class="modal-body">
+                <p>Selecciona el nuevo usuario que será el creador de la tarea "<strong>{{ tareaSeleccionada.title
+                    }}</strong>".</p>
+                <div class="form-group">
+                  <label for="user-selector">Usuarios Disponibles</label>
+                  <select id="user-selector" v-model="nuevoCreadorId" class="user-select-add">
+                    <option :value="null" disabled>-- Selecciona un usuario --</option>
+                    <option v-for="u in users" :key="u.id" :value="u.id">
+                      {{ u.name }} (ID: {{ u.id }})
+                    </option>
+                  </select>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button @click="mostrandoSelectorCreador = false" class="btn-cancel">Cancelar</button>
+                <button @click="confirmarCambioDeCreador" class="btn-create">
+                  <i class="fa-solid fa-save"></i> Guardar Cambio
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div> <!-- Fin Modal Detalles -->
 
-    <div class="modal" v-if="showEditModal" @click="closeModalOnSelf($event, 'showEditModal')">
+    <!-- Modal Editar Tarea -->
+    <div class="modal" v-if="showEditModal" @click.self="showEditModal = false">
       <div class="modal-content">
         <div class="modal-header">
           <h2><i class="fa-solid fa-pencil"></i> Editar Tarea</h2>
@@ -1056,41 +725,6 @@
             </div>
           </div>
 
-          <!-- SECCIÓN: LOGÍSTICA -->
-          <div class="form-section" v-if="editTask.client && editTask.client.name">
-            <h3><i class="fa-solid fa-truck"></i> Logística</h3>
-
-            <div class="form-grid">
-              <div class="form-group">
-                <label>Origen</label>
-                <select v-model="editTask.origin">
-                  <option value="Valparaíso">Valparaíso</option>
-                  <option value="Quilpué">Quilpué</option>
-                  <option value="Viña del Mar">Viña del Mar</option>
-                  <option value="Bodega">Bodega</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Courier / Método</label>
-                <select v-model="editTask.shipping_type">
-                  <option value="Starken">Starken</option>
-                  <option value="BlueExpress">BlueExpress</option>
-                  <option value="Chilexpress">Chilexpress</option>
-                  <option value="Retiro Tienda">Retiro Tienda</option>
-                  <option value="Entrega Programada">Entrega Programada</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label>Estado del Pago (Envío)</label>
-              <div class="radio-group">
-                <label><input type="radio" v-model="editTask.payment_status" value="pagado"> Pagado</label>
-                <label><input type="radio" v-model="editTask.payment_status" value="por_pagar"> Por Pagar</label>
-              </div>
-            </div>
-          </div>
-
           <div class="form-group">
             <label>Título *</label>
             <input type="text" v-model="editTask.title" required />
@@ -1110,10 +744,10 @@
                 <i class="fa-regular fa-calendar-alt"></i>
               </div>
               <div class="quick-dates">
-                <button @click="setQuickEditDate(0, $event)">Hoy</button>
-                <button @click="setQuickEditDate(1, $event)">Mañana</button>
-                <button @click="setQuickEditDate('eod', $event)">Fin del Día</button>
-                <button @click="setQuickEditDate(7, $event)">En 7 días</button>
+                <button @click.prevent="setQuickEditDate(0)">Hoy</button>
+                <button @click.prevent="setQuickEditDate(1)">Mañana</button>
+                <button @click.prevent="setQuickEditDate('eod')">Fin del Día</button>
+                <button @click.prevent="setQuickEditDate(7)">En 7 días</button>
               </div>
             </div>
             <div class="form-group">
@@ -1249,7 +883,7 @@
 
     <update-modal :show="showUpdateModal" @close="closeUpdateModal"></update-modal>
 
-    <div class="modal" v-if="showCompleteModal" @click="closeModalOnSelf($event, 'showCompleteModal')">
+    <div class="modal" v-if="showCompleteModal" @click.self="cancelCompletion">
       <div class="modal-content" style="max-width: 500px;">
         <div class="modal-header">
           <h2><i class="fa-solid fa-flag-checkered"></i> Finalizar Tarea</h2>
@@ -1286,113 +920,6 @@
     </div>
 
 
-
-    <!-- Modal de Gestión de Clientes -->
-    <div class="modal" v-if="showClientManager" @click="closeModalOnSelf($event, 'showClientManager')">
-      <div class="modal-content large">
-        <div class="modal-header">
-          <h2><i class="fa-solid fa-address-book"></i> Gestión de Clientes Frecuentes</h2>
-          <button @click="showClientManager = false" class="btn-close-modal">&times;</button>
-        </div>
-        <div class="modal-body">
-
-          <!-- Vista de Lista -->
-          <div v-if="!editingClient">
-            <div class="form-group" style="display: flex; gap: 10px;">
-              <input type="text" v-model="clientManagerSearch" @input="loadClients"
-                placeholder="Buscar cliente por nombre o RUT..." class="search-input" style="flex: 1;" />
-              <button @click="openCreateClient" class="btn-create" style="white-space: nowrap;">
-                <i class="fa-solid fa-user-plus"></i> Crear Nuevo
-              </button>
-            </div>
-
-            <div class="clients-table-container" style="max-height: 400px; overflow-y: auto;">
-              <table class="clients-table" style="width: 100%; border-collapse: collapse;">
-                <thead>
-                  <tr style="background: #f8f9fa; text-align: left;">
-                    <th style="padding: 10px;">Nombre</th>
-                    <th style="padding: 10px;">RUT</th>
-                    <th style="padding: 10px;">Teléfono</th>
-                    <th style="padding: 10px;">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="client in managedClients" :key="client.id" style="border-bottom: 1px solid #eee;">
-                    <td style="padding: 10px;">{{ client.name }}</td>
-                    <td style="padding: 10px;">{{ client.rut }}</td>
-                    <td style="padding: 10px;">{{ client.phone || '-' }}</td>
-                    <td style="padding: 10px;">
-                      <button @click="editClient(client)" class="btn-icon-action" title="Editar"><i
-                          class="fa-solid fa-pencil"></i></button>
-                      <button @click="deleteClient(client)" class="btn-icon-action danger" title="Eliminar"><i
-                          class="fa-solid fa-trash"></i></button>
-                    </td>
-                  </tr>
-                  <tr v-if="managedClients.length === 0">
-                    <td colspan="4" style="padding: 20px; text-align: center; color: #666;">No se encontraron clientes.
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- Vista de Edición -->
-          <div v-else>
-            <div class="form-section">
-              <h3><i :class="editingClient.id ? 'fa-solid fa-user-pen' : 'fa-solid fa-user-plus'"></i> {{
-                editingClient.id ? 'Editar Cliente: ' + editingClient.name : 'Crear Nuevo Cliente' }}</h3>
-              <div class="form-grid">
-                <div class="form-group">
-                  <label>RUT *</label>
-                  <input type="text" v-model="editingClient.rut" required />
-                </div>
-                <div class="form-group">
-                  <label>Nombre *</label>
-                  <input type="text" v-model="editingClient.name" required />
-                </div>
-              </div>
-              <div class="form-grid">
-                <div class="form-group">
-                  <label>Email (Opcional)</label>
-                  <input type="email" v-model="editingClient.email" />
-                </div>
-                <div class="form-group">
-                  <label>Teléfono *</label>
-                  <input type="text" v-model="editingClient.phone" required />
-                </div>
-              </div>
-              <div class="form-group">
-                <label>Dirección *</label>
-                <input type="text" v-model="editingClient.address_street" required />
-              </div>
-              <div class="form-grid">
-                <div class="form-group">
-                  <label>Ciudad/Comuna *</label>
-                  <input type="text" v-model="editingClient.commune" required />
-                </div>
-                <div class="form-group">
-                  <label>Región</label>
-                  <input type="text" v-model="editingClient.region" />
-                </div>
-              </div>
-              <div class="form-group">
-                <label>Referencia</label>
-                <input type="text" v-model="editingClient.reference" />
-              </div>
-            </div>
-            <div class="form-actions" style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
-              <button @click="cancelEditClient" class="btn-cancel">Cancelar</button>
-              <button @click="saveClientChanges" class="btn-create">
-                <i class="fa-solid fa-save"></i> {{ editingClient.id ? 'Guardar Cambios' : 'Crear Cliente' }}
-              </button>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  </div>
 
   </div> <!-- Cierre de #app -->
 

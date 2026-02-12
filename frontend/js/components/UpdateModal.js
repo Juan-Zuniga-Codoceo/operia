@@ -1,14 +1,12 @@
-// /js/components/UpdateModal.js
 const UpdateModal = {
   props: {
     show: Boolean
   },
   emits: ['close'],
   setup(props, { emit }) {
-    const noMostrarMas = ref(false);
+    const noMostrarMas = Vue.ref(false);
 
     const closeModal = () => {
-      // Pasa el valor del checkbox al evento 'close'
       emit('close', noMostrarMas.value);
     };
 
@@ -20,40 +18,50 @@ const UpdateModal = {
   template: `
     <div class="modal" v-if="show">
       <div class="modal-content" style="max-width: 550px;">
-        
         <div class="update-modal-header">
           <i class="fa-solid fa-rocket"></i>
-          <h2>¡Novedades en Operia!</h2>
+          <h2>¡Nuevas Funciones en Operia!</h2>
         </div>
         
         <div class="modal-body">
-          <p>Hemos lanzado una gran actualización con nuevas funciones y un diseño renovado:</p>
-          
+          <p>Hemos lanzado una actualización centrada en los roles y en la gestión de las Fichas Técnicas:</p>
           <ul class="update-list">
             
-            <li>
-              <i class="fa-solid fa-book-atlas"></i>
-              <strong>Nueva Biblioteca de Fichas Técnicas:</strong>
-              <span class="update-description">Accede a una nueva sección dedicada para subir, buscar y gestionar todas las fichas técnicas de productos en formato PDF.</span>
+            <li class="highlight-update"> 
+              <strong><i class="fa-solid fa-address-book"></i> Gestión de Clientes Frecuentes</strong>
+              <span class="update-description">Guarda tus clientes habituales y reutiliza sus datos para crear tareas mucho más rápido. ¡Adiós a escribir lo mismo una y otra vez!</span>
             </li>
 
             <li>
-              <i class="fa-solid fa-wand-magic-sparkles"></i>
-              <strong>Rediseño de Interfaz y Navegación:</strong>
-              <span class="update-description">Hemos unificado el header y mejorado el diseño general de la aplicación para una experiencia más limpia y profesional.</span>
+              <strong><i class="fa-solid fa-user-plus"></i> Nuevo Formulario de Clientes</strong>
+              <span class="update-description">Ahora puedes agregar clientes manualmente desde un formulario dedicado, facilitando la gestión de tu base de datos.</span>
             </li>
-            
+
             <li>
-               <i class="fa-solid fa-clipboard-check"></i>
-               <strong>Finalización de Tareas Mejorada:</strong>
-              <span class="update-description">Ahora puedes adjuntar un archivo como comprobante y añadir una nota de cierre al finalizar una tarea.</span>
+              <strong><i class="fa-solid fa-print"></i> Impresión de Etiquetas</strong>
+              <span class="update-description">Genera etiquetas de envío (Internas y Courier) listas para imprimir directamente desde el detalle de la tarea.</span>
             </li>
-            
+
             <li>
-               <i class="fa-solid fa-at"></i>
-               <strong>Menciones en Comentarios:</strong>
-               <span class="update-description">Etiqueta a tus compañeros usando "@Nombre" para enviarles una notificación directa.</span>
+              <strong><i class="fa-solid fa-book-atlas"></i> Mejoras en Fichas Técnicas</strong>
+              <span class="update-description">Ahora con campo <strong>SKU</strong>, edición rápida de datos y un nuevo botón de <strong>Vista Previa</strong> para ver PDFs sin descargar.</span>
             </li>
+
+            <li>
+              <strong><i class="fa-solid fa-box-archive"></i> Historial de Archivadas</strong>
+              <span class="update-description">Nueva sección para consultar tareas antiguas y restaurarlas si es necesario.</span>
+            </li>
+
+            <li>
+              <strong><i class="fa-solid fa-map-location-dot"></i> Google Maps Integrado</strong>
+              <span class="update-description">Las direcciones ahora son enlaces inteligentes que te llevan directo al mapa.</span>
+            </li>
+        
+            <li>
+              <strong><i class="fa-solid fa-sliders"></i> Mayor Control de Tareas</strong>
+              <span class="update-description">Botones para "Regresar" estados, mejor visualización de responsables/observadores y correcciones visuales generales.</span>
+            </li>
+
           </ul>
           <p>¡Esperamos que estas mejoras te sean de gran utilidad!</p>
         </div>

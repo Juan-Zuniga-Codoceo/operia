@@ -53,6 +53,31 @@ router.get('/users', authenticateToken, (req, res) => {
   });
 });
 
+// ✏️ ACTUALIZAR PERFIL DEL USUARIO (Nombre y Teléfono)
+router.put('/user/profile', jsonParser, authenticateToken, [
+  body('name').trim().notEmpty().isLength({ min: 2 }),
+  body('phone').optional().trim()
+], (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ error: 'Datos inválidos', details: errors.array() });
+  }
+
+  const { name, phone } = req.body;
+  const userId = req.userId;
+
+  db.run(
+    "UPDATE users SET name = ?, phone = ? WHERE id = ?",
+    [name, phone || '', userId],
+    function (err) {
+      if (err) {
+        return res.status(500).json({ error: 'No se pudo actualizar el perfil.' });
+      }
+      res.status(200).json({ success: true, message: 'Perfil actualizado correctamente.' });
+    }
+  );
+});
+
 // ⚙️ ACTUALIZAR PREFERENCIAS DEL USUARIO  // 
 router.put('/user/preferences', jsonParser, authenticateToken, async (req, res) => {
   const { email_notifications } = req.body;
@@ -117,15 +142,15 @@ router.post('/user/avatar', authenticateToken, uploadAvatar.single('avatar'), (r
   const avatarUrl = `/uploads/${req.file.filename}`;
   const userId = req.userId;
 
-  db.run("UPDATE users SET avatar_url = ? WHERE id = ?", [avatarUrl, userId], function(err) {
+  db.run("UPDATE users SET avatar_url = ? WHERE id = ?", [avatarUrl, userId], function (err) {
     if (err) {
       console.error("Error al actualizar el avatar en la BD:", err);
       return res.status(500).json({ error: 'No se pudo actualizar la imagen de perfil.' });
     }
-    res.status(200).json({ 
-        success: true, 
-        message: 'Avatar actualizado correctamente.',
-        avatar_url: avatarUrl 
+    res.status(200).json({
+      success: true,
+      message: 'Avatar actualizado correctamente.',
+      avatar_url: avatarUrl
     });
   });
 });

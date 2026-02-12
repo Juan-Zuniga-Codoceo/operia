@@ -14,112 +14,255 @@
 <body>
   <div id="app">
     <header class="header">
-    <div class="header-left">
+      <div class="header-left">
         <div class="logo">
-            <img src="/assets/logo.png" alt="Operia Logo" />
-            <h1><span class="operia">Operia</span><span class="task">Task</span></h1>
+          <img src="/assets/logo.png" alt="Operia Logo" />
+          <h1><span class="operia">Operia</span></h1>
         </div>
-    </div>
+      </div>
 
-    <div class="main-nav-container">
+      <div class="main-nav-container">
         <nav class="main-nav">
-            <a href="/tablero.html" class="nav-link" title="Tablero"><i class="fa-solid fa-table-columns"></i> <span>Tablero</span></a>
-            <a href="/fichas.html" class="nav-link" title="Fichas Técnicas"><i class="fa-solid fa-book-atlas"></i> <span>Fichas</span></a>
+          <a href="/tablero.html" class="nav-link" title="Tablero"><i class="fa-solid fa-table-columns"></i>
+            <span>Tablero</span></a>
+          <a href="/fichas.html" class="nav-link" title="Fichas Técnicas"><i class="fa-solid fa-book-atlas"></i>
+            <span>Fichas</span></a>
         </nav>
-    </div>
+      </div>
 
-    <div class="header-right">
+      <div class="header-right">
         <div class="user-actions">
-            <div class="user-menu">
-                <div class="dropdown">
-                    <button class="btn-icon" @click="toggleDropdown" title="Menú">
-                        <i class="fa-solid fa-user-gear"></i>
-                    </button>
-                    <div class="dropdown-menu" v-if="showDropdown">
-                        <button @click="toggleDropdown" class="btn-close-overlay">&times;</button>
-                        <a href="/archivadas.html"><i class="fa-solid fa-box-archive"></i> Tareas Archivadas</a>
-                        <a href="/admin" v-if="user && user.role === 'admin'"><i class="fa-solid fa-users-cog"></i> Administración</a>
-                        <a href="javascript:void(0)" @click="logout()"><i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión</a>
-                    </div>
-                </div>
-                <span v-if="user" class="user-name">{{ user.name }}</span>
-            </div>
-        </div>
-    </div>
-</header>
-
-    <main class="profile-dashboard">
-      <div class="profile-grid">
-
-        <div class="profile-col-left">
-          <div class="profile-card card" v-if="user">
-            <div class="avatar-container">
-              <div class="avatar" :style="avatarStyle">
-                <span v-if="!user.avatar_url">{{ user.name ? user.name.charAt(0).toUpperCase() : '' }}</span>
-              </div>
-              <label for="avatar-upload" class="avatar-upload-btn" title="Cambiar foto">
-                <i class="fa-solid fa-camera"></i>
-                <input type="file" id="avatar-upload" @change="handleAvatarUpload" accept="image/*"
-                  style="display: none;" />
-              </label>
-            </div>
-            <div class="profile-info">
-              <h2>{{ user.name }}</h2>
-              <p><i class="fa-solid fa-envelope"></i> {{ user.email }}</p>
-              <p><i class="fa-solid fa-briefcase"></i> {{ user.office }}</p>
-              <p><i class="fa-solid fa-user-shield"></i> {{ user.role }}</p>
-            </div>
-          </div>
-
-          <div class="security-card card">
-            <h3><i class="fa-solid fa-lock"></i> Seguridad</h3>
-            <div class="form-group">
-              <label for="currentPassword">Contraseña Actual</label>
-              <input type="password" id="currentPassword" v-model="passwords.current" placeholder="••••••••" />
-            </div>
-            <div class="form-group">
-              <label for="newPassword">Nueva Contraseña</label>
-              <input type="password" id="newPassword" v-model="passwords.new" placeholder="••••••••" />
-            </div>
-            <div class="form-group">
-              <label for="confirmPassword">Confirmar Nueva Contraseña</label>
-              <input type="password" id="confirmPassword" v-model="passwords.confirm" placeholder="••••••••" />
-            </div>
-            <button @click="changePassword" class="btn-primary">Cambiar Contraseña</button>
-
-            <div class="notifications-settings">
-              <h4><i class="fa-solid fa-envelope"></i> Notificaciones por Correo</h4>
-              <p>Recibir un resumen diario de tareas por la mañana.</p>
-              <label class="switch">
-                <input type="checkbox" v-model="notificationsEnabled">
-                <span class="slider round"></span>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <div class="profile-col-right">
-          <div class="stats-grid">
-            <div class="stat-card card"><span class="stat-value">{{ historial.creadas }}</span><span
-                class="stat-label">Tareas Creadas</span></div>
-            <div class="stat-card card"><span class="stat-value">{{ historial.asignadas }}</span><span
-                class="stat-label">Tareas Asignadas</span></div>
-            <div class="stat-card card"><span class="stat-value">{{ historial.completadas }}</span><span
-                class="stat-label">Completadas</span></div>
-          </div>
-
-          <div class="history-card card">
-            <h3><i class="fa-solid fa-list-check"></i> Historial de Tareas</h3>
-            <div class="task-list">
-              <div v-if="tareasAsignadas.length === 0" class="empty-history">No tienes tareas asignadas.</div>
-              <div v-for="task in tareasAsignadas" :key="task.id" class="task-item">
-                <span class="task-title">{{ task.title }}</span>
-                <span :class="'status-' + task.status">{{ task.status }}</span>
+          <div class="user-menu">
+            <div class="dropdown">
+              <button class="btn-icon" @click="toggleDropdown" title="Menú">
+                <i class="fa-solid fa-user-gear"></i>
+              </button>
+              <div class="dropdown-menu" v-if="showDropdown">
+                <button @click="toggleDropdown" class="btn-close-overlay">&times;</button>
+                <a href="/archivadas.html"><i class="fa-solid fa-box-archive"></i> Tareas Archivadas</a>
+                <a href="/admin" v-if="user && user.role === 'admin'"><i class="fa-solid fa-users-cog"></i>
+                  Administración</a>
+                <a href="javascript:void(0)" @click="logout()"><i class="fa-solid fa-right-from-bracket"></i> Cerrar
+                  sesión</a>
               </div>
             </div>
+            <span v-if="user" class="user-name">{{ user.name }}</span>
           </div>
         </div>
       </div>
+    </header>
+
+    <main class="profile-dashboard">
+
+      <!-- Banner de Cabecera -->
+      <div class="profile-header-banner">
+        <div class="banner-content">
+          <div class="avatar-container-large">
+            <div class="avatar-large" :style="avatarStyle">
+              <span v-if="!user.avatar_url">{{ user.name ? user.name.charAt(0).toUpperCase() : '' }}</span>
+            </div>
+            <label for="avatar-upload" class="avatar-upload-btn" title="Cambiar foto">
+              <i class="fa-solid fa-camera"></i>
+              <input type="file" id="avatar-upload" @change="handleAvatarUpload" accept="image/*"
+                style="display: none;" />
+            </label>
+          </div>
+          <div class="user-header-info">
+            <h1>{{ user.name }}</h1>
+            <p class="user-role-badge"><i class="fa-solid fa-shield-halved"></i> {{ user.role === 'admin' ?
+              'Administrador' : 'Usuario' }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="profile-content-container">
+
+        <!-- Navegación por Pestañas -->
+        <div class="profile-tabs">
+          <button class="tab-btn" :class="{ active: activeTab === 'resumen' }" @click="activeTab = 'resumen'">
+            <i class="fa-solid fa-id-card"></i> Resumen
+          </button>
+          <button class="tab-btn" :class="{ active: activeTab === 'seguridad' }" @click="activeTab = 'seguridad'">
+            <i class="fa-solid fa-lock"></i> Seguridad
+          </button>
+          <button class="tab-btn" :class="{ active: activeTab === 'actividad' }" @click="activeTab = 'actividad'">
+            <i class="fa-solid fa-chart-line"></i> Actividad
+          </button>
+        </div>
+
+        <!-- CONTENIDO: RESUMEN -->
+        <div class="tab-content" v-if="activeTab === 'resumen'">
+          <div class="profile-grid">
+
+            <!-- Tarjeta de Información Personal -->
+            <div class="profile-card card">
+              <div class="card-header">
+                <h3><i class="fa-solid fa-user"></i> Información Personal</h3>
+                <button class="btn-edit-profile" @click="toggleEditMode" v-if="!editMode">
+                  <i class="fa-solid fa-pencil"></i> Editar
+                </button>
+              </div>
+
+              <div class="profile-details" v-if="!editMode">
+                <div class="detail-row">
+                  <span class="label">Nombre Completo</span>
+                  <span class="value">{{ user.name }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="label">Correo Electrónico</span>
+                  <span class="value">{{ user.email }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="label">Teléfono</span>
+                  <span class="value">{{ user.phone || 'No registrado' }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="label">Sucursal</span>
+                  <span class="value"><i class="fa-solid fa-building"></i> {{ user.office }}</span>
+                </div>
+              </div>
+
+              <!-- Formulario de Edición -->
+              <div class="edit-profile-form" v-else>
+                <div class="form-group">
+                  <label>Nombre Completo</label>
+                  <input type="text" v-model="editForm.name" />
+                </div>
+                <div class="form-group">
+                  <label>Teléfono</label>
+                  <input type="text" v-model="editForm.phone" placeholder="+569..." />
+                </div>
+                <div class="edit-actions">
+                  <button class="btn-cancel" @click="cancelEdit">Cancelar</button>
+                  <button class="btn-save" @click="saveProfile">Guardar Cambios</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tarjeta de Preferencias -->
+            <div class="preferences-card card">
+              <h3><i class="fa-solid fa-sliders"></i> Preferencias</h3>
+              <div class="notifications-settings">
+                <div class="setting-item">
+                  <div class="setting-info">
+                    <h4>Notificaciones por Correo</h4>
+                    <p>Recibir un resumen diario de tareas pendientes.</p>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" v-model="notificationsEnabled">
+                    <span class="slider round"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- CONTENIDO: SEGURIDAD -->
+        <div class="tab-content" v-if="activeTab === 'seguridad'">
+          <div class="security-card card" style="max-width: 600px; margin: 0 auto;">
+            <h3><i class="fa-solid fa-key"></i> Cambiar Contraseña</h3>
+            <p class="security-desc">Asegúrate de usar una contraseña segura que no uses en otros sitios.</p>
+
+            <div class="form-group">
+              <label for="currentPassword">Contraseña Actual</label>
+              <div class="password-input-wrapper">
+                <input :type="showCurrentPassword ? 'text' : 'password'" id="currentPassword"
+                  v-model="passwords.current" placeholder="••••••••" />
+                <button class="btn-toggle-password" @click="showCurrentPassword = !showCurrentPassword">
+                  <i :class="showCurrentPassword ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"></i>
+                </button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="newPassword">Nueva Contraseña</label>
+              <div class="password-input-wrapper">
+                <input :type="showNewPassword ? 'text' : 'password'" id="newPassword" v-model="passwords.new"
+                  placeholder="••••••••" />
+                <button class="btn-toggle-password" @click="showNewPassword = !showNewPassword">
+                  <i :class="showNewPassword ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"></i>
+                </button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="confirmPassword">Confirmar Nueva Contraseña</label>
+              <div class="password-input-wrapper">
+                <input :type="showConfirmPassword ? 'text' : 'password'" id="confirmPassword"
+                  v-model="passwords.confirm" placeholder="••••••••" />
+                <button class="btn-toggle-password" @click="showConfirmPassword = !showConfirmPassword">
+                  <i :class="showConfirmPassword ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"></i>
+                </button>
+              </div>
+            </div>
+            <button @click="changePassword" class="btn-primary btn-update-password">
+              Actualizar Contraseña
+            </button>
+          </div>
+        </div>
+
+        <!-- CONTENIDO: ACTIVIDAD -->
+        <div class="tab-content" v-if="activeTab === 'actividad'">
+
+          <div class="stats-grid">
+            <div class="stat-card card">
+              <div class="stat-icon blue"><i class="fa-solid fa-plus-circle"></i></div>
+              <div class="stat-info">
+                <span class="stat-value">{{ historial.creadas }}</span>
+                <span class="stat-label">Tareas Creadas</span>
+              </div>
+            </div>
+            <div class="stat-card card">
+              <div class="stat-icon orange"><i class="fa-solid fa-eye"></i></div>
+              <div class="stat-info">
+                <span class="stat-value">{{ historial.asignadas }}</span>
+                <span class="stat-label">Observando</span>
+              </div>
+            </div>
+            <div class="stat-card card">
+              <div class="stat-icon green"><i class="fa-solid fa-check-circle"></i></div>
+              <div class="stat-info">
+                <span class="stat-value">{{ historial.completadas }}</span>
+                <span class="stat-label">Completadas</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="history-card card">
+            <h3><i class="fa-solid fa-list-check"></i> Tareas que Observas</h3>
+
+            <div class="table-responsive">
+              <table class="tasks-history-table">
+                <thead>
+                  <tr>
+                    <th>Tarea</th>
+                    <th>Estado</th>
+                    <th>Prioridad</th>
+                    <th>Fecha Límite</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="task in tareasAsignadas" :key="task.id">
+                    <td class="task-title-cell">{{ task.title }}</td>
+                    <td><span :class="'status-badge status-' + task.status">{{ formatStatus(task.status) }}</span></td>
+                    <td><span :class="'priority-dot ' + task.priority"></span> {{ formatPriority(task.priority) }}</td>
+                    <td>{{ formatDate(task.due_date) }}</td>
+                  </tr>
+                  <tr v-if="tareasAsignadas.length === 0">
+                    <td colspan="4" class="empty-cell">No estás observando ninguna tarea actualmente.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Footer -->
+      <footer class="app-footer">
+        <p>Created by <a href="https://synapsedev.cl" target="_blank">Synapse Dev</a> &copy; 2025</p>
+      </footer>
     </main>
   </div>
 
@@ -127,7 +270,5 @@
   <script src="/js/api.js"></script>
   <script src="/js/perfil.js"></script>
 </body>
-<footer class="main-footer">
-  © 2025 Operia. Creado por <a href="https://synapsedev.cl" target="_blank" rel="noopener noreferrer">Synapse Dev</a>.
-</footer>
+
 </html>
