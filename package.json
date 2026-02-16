@@ -1,41 +1,44 @@
 {
-  "name": "operia",
-  "version": "1.0.0",
-  "description": "Sistema de gestión de tareas para Operia",
-  "main": "backend/server.js",
+  "name": "operia-saas",
+  "version": "2.0.0-postgres",
+  "description": "Operia - Multi-tenant Task Management SaaS (PostgreSQL)",
+  "main": "backend/server-postgres.js",
   "scripts": {
-    "start": "node start-server.js",
+    "start": "node backend/server.js",
+    "start:postgres": "node backend/server-postgres.js",
     "dev": "nodemon backend/server.js",
-    "init-db": "node backend/db.js",
-    "notify-update": "node scripts/send-update-email.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev:postgres": "nodemon backend/server-postgres.js",
+    "init:db": "node backend/db-postgres.js",
+    "migrate": "node scripts/migrate-sqlite-to-postgres.js",
+    "test": "echo \"Tests coming soon\" && exit 0"
   },
   "keywords": [
-    "task",
-    "management",
-    "operia"
+    "task-management",
+    "saas",
+    "multi-tenant",
+    "postgresql"
   ],
-  "author": "Synapse Dev - Synapsedev.cl",
-  "license": "ISC",
-  "type": "commonjs",
+  "author": "SynapseDev",
+  "license": "MIT",
   "dependencies": {
+    "axios": "^1.13.5",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
-    "dotenv": "^17.2.1",
+    "crypto-js": "^4.2.0",
+    "dotenv": "^16.0.3",
     "express": "^4.18.2",
-    "express-validator": "^6.15.0",
+    "express-validator": "^7.0.1",
     "jsonwebtoken": "^9.0.2",
     "multer": "^1.4.5-lts.1",
-    "node-cron": "^4.2.1",
+    "node-cron": "^3.0.3",
     "node-schedule": "^2.1.1",
-    "nodemailer": "^7.0.5",
-    "sqlite3": "^5.1.6",
-    "ws": "^8.18.3"
-  },
-  "engines": {
-    "node": ">=14.0.0"
+    "nodemailer": "^8.0.1",
+    "pg": "^8.11.3",
+    "resend": "^3.1.0",
+    "sqlite3": "^5.1.7",
+    "ws": "^8.16.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.0.3"
   }
 }

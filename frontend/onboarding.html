@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bienvenido a Operia - Onboarding</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/onboarding.css">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+</head>
+
+<body>
+    <div id="app">
+        <!-- Progress Indicator -->
+        <div class="onboarding-progress">
+            <div class="progress-bar">
+                <div class="progress-fill" :style="{ width: progressPercentage + '%' }"></div>
+            </div>
+            <div class="progress-steps">
+                <div v-for="s in 5" :key="s" class="progress-step"
+                    :class="{ active: currentStep === s, completed: currentStep > s }">
+                    <span class="step-number">{{ s }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step Container -->
+        <div class="onboarding-container">
+
+            <!-- STEP 1: Welcome -->
+            <div v-show="currentStep === 1" class="step-content fade-in">
+                <div class="welcome-hero">
+                    <div class="hero-icon">🎉</div>
+                    <h1>¡Bienvenido a Operia!</h1>
+                    <p class="subtitle">Tu cuenta ha sido creada exitosamente</p>
+                </div>
+
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">📋</div>
+                        <h3>Gestión de Tareas</h3>
+                        <p>Organiza y asigna tareas a tu equipo</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">👥</div>
+                        <h3>Clientes</h3>
+                        <p>Administra tu cartera de clientes</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🤝</div>
+                        <h3>Colaboración</h3>
+                        <p>Trabaja en equipo en tiempo real</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">📄</div>
+                        <h3>Documentación</h3>
+                        <p>Organiza fichas técnicas y archivos</p>
+                    </div>
+                </div>
+
+                <div class="trial-info">
+                    <p>🎁 <strong>Trial Gratuito:</strong> {{ trialDaysLeft }} días restantes</p>
+                    <p class="plan-info">Plan: <strong>{{ planName }}</strong></p>
+                </div>
+
+                <div class="step-actions">
+                    <button class="btn-primary" @click="nextStep">Comenzar ¡Vamos!</button>
+                </div>
+            </div>
+
+            <!-- STEP 2: Invite Team -->
+            <div v-show="currentStep === 2" class="step-content fade-in">
+                <h2>Invita a tu Equipo</h2>
+                <p class="step-description">Agrega a los miembros de tu equipo para empezar a colaborar</p>
+
+                <div class="user-limit-info">
+                    <p>👥 {{ usersInvited }} de {{ maxUsers }} usuarios disponibles</p>
+                </div>
+
+                <div class="invitation-form">
+                    <div v-for="(inv, index) in invitations" :key="index" class="invitation-row">
+                        <input type="email" v-model="inv.email" placeholder="email@ejemplo.com" class="form-input">
+                        <select v-model="inv.role" class="form-select">
+                            <option value="user">Usuario</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                        <input type="text" v-model="inv.office" placeholder="Oficina (opcional)" class="form-input">
+                        <button @click="removeInvitation(index)" class="btn-remove">✕</button>
+                    </div>
+                </div>
+
+                <button @click="addInvitation" class="btn-secondary" :disabled="invitations.length >= maxUsers - 1">
+                    + Agregar otro
+                </button>
+
+                <div v-if="invitationError" class="error-message">
+                    {{ invitationError }}
+                </div>
+
+                <div class="step-actions">
+                    <button class="btn-secondary" @click="skipStep(2)">Saltar por ahora</button>
+                    <button class="btn-primary" @click="sendInvitations" :disabled="!canSendInvitations">
+                        Enviar Invitaciones
+                    </button>
+                </div>
+            </div>
+
+            <!-- STEP 3: First Task -->
+            <div v-show="currentStep === 3" class="step-content fade-in">
+                <h2>Crea tu Primera Tarea</h2>
+                <p class="step-description">Comienza a organizar tu trabajo creando una tarea de ejemplo</p>
+
+                <div class="task-form">
+                    <div class="form-group">
+                        <label>Título de la tarea</label>
+                        <input type="text" v-model="newTask.title" placeholder="Ej: Revisar propuesta de proyecto XYZ"
+                            class="form-input">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Descripción</label>
+                        <textarea v-model="newTask.description" placeholder="Describe los detalles de la tarea..."
+                            class="form-textarea" rows="4"></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Prioridad</label>
+                            <select v-model="newTask.priority" class="form-select">
+                                <option value="baja">Baja</option>
+                                <option value="media">Media</option>
+                                <option value="alta">Alta</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Origen</label>
+                            <input type="text" v-model="newTask.origin" placeholder="Valparaíso" class="form-input">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Fecha de vencimiento</label>
+                        <input type="date" v-model="newTask.due_date" class="form-input">
+                    </div>
+                </div>
+
+                <div class="step-actions">
+                    <button class="btn-secondary" @click="skipStep(3)">Saltar por ahora</button>
+                    <button class="btn-primary" @click="createFirstTask" :disabled="!newTask.title">
+                        Crear Tarea
+                    </button>
+                </div>
+            </div>
+
+            <!-- STEP 4: Branding -->
+            <div v-show="currentStep === 4" class="step-content fade-in">
+                <h2>Personaliza tu Espacio</h2>
+                <p class="step-description">Dale a tu workspace tu toque personal</p>
+
+                <div v-if="!isProfessionalPlan" class="upgrade-notice">
+                    <div class="upgrade-icon">⭐</div>
+                    <h3>Funcionalidad Premium</h3>
+                    <p>La personalización de branding está disponible en los planes Professional y superiores</p>
+                    <button class="btn-upgrade">Ver Planes</button>
+                </div>
+
+                <div v-else class="branding-form">
+                    <div class="form-group">
+                        <label>Logo de tu Empresa</label>
+                        <div class="logo-upload">
+                            <input type="file" @change="handleLogoUpload" accept="image/*" id="logo-input">
+                            <label for="logo-input" class="upload-label">
+                                <div v-if="branding.logo_url" class="logo-preview">
+                                    <img :src="branding.logo_url" alt="Logo">
+                                </div>
+                                <div v-else class="upload-placeholder">
+                                    <span class="upload-icon">📁</span>
+                                    <span>Subir Logo</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Color Principal</label>
+                        <div class="color-picker-wrapper">
+                            <input type="color" v-model="branding.primary_color" class="color-input">
+                            <span class="color-value">{{ branding.primary_color }}</span>
+                        </div>
+                    </div>
+
+                    <div class="branding-preview">
+                        <h4>Vista Previa</h4>
+                        <div class="preview-box" :style="{ borderColor: branding.primary_color }">
+                            <div class="preview-header" :style="{ backgroundColor: branding.primary_color }">
+                                <img v-if="branding.logo_url" :src="branding.logo_url" alt="Logo" class="preview-logo">
+                                <span v-else style="color: white; font-weight: bold;">Tu Empresa</span>
+                            </div>
+                            <div class="preview-content">
+                                <p>Así se verá tu workspace personalizado</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step-actions">
+                    <button class="btn-secondary" @click="skipStep(4)">Usar Configuración Por Defecto</button>
+                    <button v-if="isProfessionalPlan" class="btn-primary" @click="saveBranding">
+                        Guardar Personalización
+                    </button>
+                    <button v-else class="btn-primary" @click="nextStep">
+                        Continuar
+                    </button>
+                </div>
+            </div>
+
+            <!-- STEP 5: Product Tour -->
+            <div v-show="currentStep === 5" class="step-content fade-in">
+                <h2>Tour Interactivo</h2>
+                <p class="step-description">Te mostramos las funciones clave de Operia</p>
+
+                <div class="tour-slides">
+                    <div class="tour-slide" v-show="tourStep === 1">
+                        <div class="tour-image">📋</div>
+                        <h3>Tablero de Tareas</h3>
+                        <p>Aquí encontrarás todas tus tareas organizadas por columnas: Pendiente, En Camino y
+                            Completadas. Usa los filtros para encontrar lo que necesitas rápidamente.</p>
+                    </div>
+
+                    <div class="tour-slide" v-show="tourStep === 2">
+                        <div class="tour-image">👥</div>
+                        <h3>Gestión de Clientes</h3>
+                        <p>Administra tu cartera de clientes, registra información de contacto y vincula tareas a cada
+                            cliente para un mejor seguimiento.</p>
+                    </div>
+
+                    <div class="tour-slide" v-show="tourStep === 3">
+                        <div class="tour-image">🔔</div>
+                        <h3>Notificaciones</h3>
+                        <p>Recibe actualizaciones en tiempo real sobre cambios en tareas, menciones y asignaciones.
+                            Nunca te pierdas nada importante.</p>
+                    </div>
+
+                    <div class="tour-slide" v-show="tourStep === 4">
+                        <div class="tour-image">📊</div>
+                        <h3>Fichas Técnicas</h3>
+                        <p>Organiza y comparte documentación técnica, manuales y archivos PDF con tu equipo de forma
+                            centralizada.</p>
+                    </div>
+
+                    <div class="tour-slide" v-show="tourStep === 5">
+                        <div class="tour-image">⚙️</div>
+                        <h3>Configuración</h3>
+                        <p>Personaliza tu perfil, gestiona notificaciones y ajusta las configuraciones de tu cuenta
+                            desde el menú de usuario.</p>
+                    </div>
+                </div>
+
+                <div class="tour-navigation">
+                    <div class="tour-dots">
+                        <span v-for="t in 5" :key="t" class="tour-dot" :class="{ active: tourStep === t }"
+                            @click="tourStep = t"></span>
+                    </div>
+                    <p class="tour-counter">{{ tourStep }} de 5</p>
+                </div>
+
+                <div class="step-actions">
+                    <button v-if="tourStep < 5" class="btn-secondary" @click="skipTour">Saltar Tour</button>
+                    <button v-if="tourStep < 5" class="btn-primary" @click="tourStep++">Siguiente</button>
+                    <button v-if="tourStep === 5" class="btn-primary" @click="completeOnboarding">
+                        ¡Ir al Tablero! 🚀
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    currentStep: 1,
+                    tourStep: 1,
+                    tenant: {},
+                    user: {},
+                    planName: 'Starter',
+                    trialDaysLeft: 14,
+                    maxUsers: 10,
+                    usersInvited: 1, // Admin already exists
+
+                    invitations: [
+                        { email: '', role: 'user', office: '' }
+                    ],
+                    invitationError: '',
+
+                    newTask: {
+                        title: '',
+                        description: '',
+                        priority: 'media',
+                        origin: '',
+                        due_date: ''
+                    },
+
+                    branding: {
+                        logo_url: '',
+                        logo_file: null,
+                        primary_color: '#006837'
+                    },
+
+                    isProfessionalPlan: false
+                };
+            },
+            computed: {
+                progressPercentage() {
+                    return (this.currentStep / 5) * 100;
+                },
+                canSendInvitations() {
+                    return this.invitations.some(inv => inv.email && inv.email.includes('@'));
+                }
+            },
+            methods: {
+                async nextStep() {
+                    if (this.currentStep < 5) {
+                        this.currentStep++;
+                        // Update step in backend
+                        await this.updateStep(this.currentStep);
+                    }
+                },
+
+                async updateStep(step) {
+                    try {
+                        const token = localStorage.getItem('token');
+                        await fetch('/api/onboarding/step', {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify({ step })
+                        });
+                    } catch (err) {
+                        console.error('Error al actualizar paso:', err);
+                    }
+                },
+
+                async skipStep(step) {
+                    try {
+                        const token = localStorage.getItem('token');
+                        await fetch('/api/onboarding/skip-step', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify({ step })
+                        });
+                    } catch (err) {
+                        console.error('Error al saltar paso:', err);
+                    }
+                    this.nextStep();
+                },
+
+                addInvitation() {
+                    if (this.invitations.length < this.maxUsers - 1) {
+                        this.invitations.push({ email: '', role: 'user', office: '' });
+                    }
+                },
+
+                removeInvitation(index) {
+                    this.invitations.splice(index, 1);
+                },
+
+                async sendInvitations() {
+                    this.invitationError = '';
+                    const validInvitations = this.invitations.filter(inv => inv.email);
+
+                    if (validInvitations.length === 0) {
+                        this.invitationError = 'Agrega al menos un email válido';
+                        return;
+                    }
+
+                    try {
+                        const token = localStorage.getItem('token');
+                        const response = await fetch('/api/onboarding/invite-users', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify({ invitations: validInvitations })
+                        });
+
+                        const data = await response.json();
+
+                        if (response.ok) {
+                            alert(`¡Genial! Se enviaron ${data.total_sent} invitaciones exitosamente`);
+                            this.nextStep();
+                        } else {
+                            this.invitationError = data.message || data.error;
+                        }
+                    } catch (err) {
+                        this.invitationError = 'Error al enviar invitaciones';
+                        console.error(err);
+                    }
+                },
+
+                async createFirstTask() {
+                    try {
+                        const token = localStorage.getItem('token');
+                        const response = await fetch('/api/tasks', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify(this.newTask)
+                        });
+
+                        if (response.ok) {
+                            alert('¡Tarea creada exitosamente!');
+                            this.nextStep();
+                        } else {
+                            alert('Error al crear tarea');
+                        }
+                    } catch (err) {
+                        console.error('Error al crear tarea:', err);
+                        alert('Error al crear tarea');
+                    }
+                },
+
+                handleLogoUpload(event) {
+                    const file = event.target.files[0];
+                    if (file) {
+                        // Validate file size (max 5MB)
+                        if (file.size > 5 * 1024 * 1024) {
+                            alert('El archivo es muy grande. Máximo 5MB.');
+                            return;
+                        }
+
+                        // Validate file type
+                        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/svg+xml'];
+                        if (!allowedTypes.includes(file.type)) {
+                            alert('Tipo de archivo no permitido. Solo se aceptan imágenes (JPEG, PNG, GIF, SVG).');
+                            return;
+                        }
+
+                        // Store file for upload
+                        this.branding.logo_file = file;
+
+                        // Preview
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            this.branding.logo_url = e.target.result;
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                },
+
+                async saveBranding() {
+                    try {
+                        const token = localStorage.getItem('token');
+
+                        // 1. Upload logo if exists
+                        if (this.branding.logo_file) {
+                            const formData = new FormData();
+                            formData.append('logo', this.branding.logo_file);
+
+                            const logoResponse = await fetch('/api/sender-config/logo', {
+                                method: 'POST',
+                                headers: {
+                                    'Authorization': `Bearer ${token}`
+                                },
+                                body: formData
+                            });
+
+                            if (!logoResponse.ok) {
+                                throw new Error('Error al subir logo');
+                            }
+
+                            const logoData = await logoResponse.json();
+                            console.log('Logo subido:', logoData.logoPath);
+                        }
+
+                        // 2. Save branding configuration (color, name, etc.)
+                        const configResponse = await fetch('/api/sender-config', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify({
+                                name: this.tenant.name || 'Mi Empresa',
+                                primary_color: this.branding.primary_color
+                            })
+                        });
+
+                        if (!configResponse.ok) {
+                            throw new Error('Error al guardar configuración');
+                        }
+
+                        alert('✅ Personalización guardada exitosamente!');
+                        this.nextStep();
+                    } catch (err) {
+                        console.error('Error al guardar branding:', err);
+                        alert('Error al guardar personalización. Puedes configurarlo después desde el panel de administración.');
+                        this.nextStep();
+                    }
+                },
+
+                skipTour() {
+                    this.skipStep(5);
+                    this.completeOnboarding();
+                },
+
+                async completeOnboarding() {
+                    try {
+                        const token = localStorage.getItem('token');
+                        await fetch('/api/onboarding/complete', {
+                            method: 'PUT',
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+
+                        // Redirect to dashboard
+                        window.location.href = '/tablero';
+                    } catch (err) {
+                        console.error('Error al completar onboarding:', err);
+                        window.location.href = '/tablero';
+                    }
+                },
+
+                async loadOnboardingStatus() {
+                    try {
+                        const token = localStorage.getItem('token');
+                        const response = await fetch('/api/onboarding/status', {
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            this.maxUsers = data.stats.max_users;
+                            this.usersInvited = data.stats.users;
+                            this.planName = data.plan.charAt(0).toUpperCase() + data.plan.slice(1);
+                            this.isProfessionalPlan = ['professional', 'enterprise', 'custom'].includes(data.plan.toLowerCase());
+
+                            // Resume from last step if not completed
+                            if (!data.completed && data.current_step > 0) {
+                                this.currentStep = data.current_step;
+                            }
+                        }
+                    } catch (err) {
+                        console.error('Error al cargar estado:', err);
+                    }
+                }
+            },
+            mounted() {
+                // Check if user is authenticated
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    window.location.href = '/login';
+                    return;
+                }
+
+                this.loadOnboardingStatus();
+            }
+        }).mount('#app');
+    </script>
+</body>
+
+</html>

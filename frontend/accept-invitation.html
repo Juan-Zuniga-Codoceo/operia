@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aceptar Invitación - Operia</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/login.css">
+</head>
+
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <h1>🎉 ¡Bienvenido a Operia!</h1>
+                <p id="invitation-message">Crea tu cuenta para unirte al equipo</p>
+            </div>
+
+            <div id="loading" class="spinner" style="display: none;"></div>
+
+            <div id="error-message" class="alert alert-error" style="display: none;"></div>
+            <div id="success-message" class="alert alert-success" style="display: none;"></div>
+
+            <form id="accept-invitation-form" style="display: none;">
+                <div class="form-group">
+                    <label for="name">Nombre Completo</label>
+                    <input type="text" id="name" name="name" required placeholder="Juan Pérez" class="form-input">
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" readonly class="form-input"
+                        style="background-color: #f5f7fa;">
+                    <small style="color: #7f8c8d;">Este email fue invitado por tu equipo</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Contraseña</label>
+                    <input type="password" id="password" name="password" required placeholder="Mínimo 6 caracteres"
+                        class="form-input">
+                </div>
+
+                <div class="form-group">
+                    <label for="confirm-password">Confirmar Contraseña</label>
+                    <input type="password" id="confirm-password" name="confirm-password" required
+                        placeholder="Repite tu contraseña" class="form-input">
+                </div>
+
+                <button type="submit" class="btn-primary" style="width: 100%; margin-top: 20px;">
+                    Crear Cuenta y Unirme
+                </button>
+            </form>
+
+            <div id="expired-message" style="display: none; text-align: center; padding: 40px 20px;">
+                <div style="font-size: 64px; margin-bottom: 20px;">⏰</div>
+                <h2 style="margin-bottom: 10px;">Invitación Expirada</h2>
+                <p style="color: #7f8c8d; margin-bottom: 20px;">
+                    Esta invitación ha expirado o ya fue utilizada.
+                </p>
+                <p style="color: #7f8c8d;">
+                    Por favor, solicita una nueva invitación a tu administrador.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get token from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+
+        const form = document.getElementById('accept-invitation-form');
+        const loading = document.getElementById('loading');
+        const errorMessage = document.getElementById('error-message');
+        const successMessage = document.getElementById('success-message');
+        const expiredMessage = document.getElementById('expired-message');
+        const invitationMessage = document.getElementById('invitation-message');
+
+        // Validate token exists
+        if (!token) {
+            showError('Token de invitación no válido');
+            expiredMessage.style.display = 'block';
+        } else {
+            // Show form
+            form.style.display = 'block';
+        }
+
+        // Handle form submission
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const name = document.getElementById('name').value.trim();
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+
+            // Validate passwords match
+            if (password !== confirmPassword) {
+                showError('Las contraseñas no coinciden');
+                return;
+            }
+
+            // Validate password length
+            if (password.length < 6) {
+                showError('La contraseña debe tener al menos 6 caracteres');
+                return;
+            }
+
+            loading.style.display = 'block';
+            errorMessage.style.display = 'none';
+            successMessage.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/onboarding/accept-invitation', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        token: token,
+                        name: name,
+                        password: password
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Save token
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+
+                    // Show success message
+                    showSuccess('¡Cuenta creada exitosamente! Redirigiendo...');
+
+                    // Redirect to onboarding or dashboard
+                    setTimeout(() => {
+                        window.location.href = '/onboarding';
+                    }, 1500);
+                } else {
+                    if (response.status === 404 || response.status === 400) {
+                        // Invitation expired or not found
+                        form.style.display = 'none';
+                        expiredMessage.style.display = 'block';
+                    } else {
+                        showError(data.message || data.error || 'Error al crear la cuenta');
+                    }
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showError('Error de conexión. Por favor, intenta nuevamente.');
+            } finally {
+                loading.style.display = 'none';
+            }
+        });
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+            successMessage.style.display = 'none';
+        }
+
+        function showSuccess(message) {
+            successMessage.textContent = message;
+            successMessage.style.display = 'block';
+            errorMessage.style.display = 'none';
+        }
+
+        // Optional: Fetch invitation details to show company name
+        async function loadInvitationDetails() {
+            if (!token) return;
+
+            try {
+                // You could create an endpoint to get invitation details without accepting it
+                // For now, we'll just show a generic message
+                invitationMessage.textContent = 'Crea tu cuenta para unirte al equipo';
+            } catch (error) {
+                console.error('Error loading invitation details:', error);
+            }
+        }
+
+        loadInvitationDetails();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crear Cuenta - Operia</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        :root {
+            --primary-color: #006837;
+            --primary-dark: #004d28;
+            --accent-color: #00a651;
+            --error-color: #e74c3c;
+            --success-color: #27ae60;
+            --text-dark: #2c3e50;
+            --text-light: #7f8c8d;
+            --bg-light: #ecf0f1;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #006837 0%, #004d28 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .signup-container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+            padding: 40px;
+            animation: slideUp 0.4s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo h1 {
+            margin: 0;
+            color: var(--primary-color);
+            font-size: 32px;
+            font-weight: 700;
+        }
+
+        .logo p {
+            margin: 5px 0 0;
+            color: var(--text-light);
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: all 0.2s;
+            box-sizing: border-box;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 104, 55, 0.1);
+        }
+
+        .subdomain-group {
+            position: relative;
+        }
+
+        .subdomain-input-wrapper {
+            display: flex;
+            align-items: center;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: all 0.2s;
+        }
+
+        .subdomain-input-wrapper:focus-within {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 104, 55, 0.1);
+        }
+
+        .subdomain-input-wrapper input {
+            flex: 1;
+            border: none;
+            padding: 12px 16px;
+        }
+
+        .subdomain-input-wrapper input:focus {
+            box-shadow: none;
+        }
+
+        .subdomain-suffix {
+            padding: 12px 16px;
+            background: var(--bg-light);
+            color: var(--text-light);
+            font-size: 15px;
+            white-space: nowrap;
+        }
+
+        .subdomain-status {
+            margin-top: 8px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .subdomain-status.checking {
+            color: var(--text-light);
+        }
+
+        .subdomain-status.available {
+            color: var(--success-color);
+        }
+
+        .subdomain-status.unavailable {
+            color: var(--error-color);
+        }
+
+        .subdomain-status .icon {
+            width: 16px;
+            height: 16px;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 14px 24px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 104, 55, 0.3);
+        }
+
+        .btn-primary:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        .error-message {
+            background: #fdecea;
+            color: var(--error-color);
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .login-link {
+            text-align: center;
+            margin-top: 24px;
+            color: var(--text-light);
+            font-size: 14px;
+        }
+
+        .login-link a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+
+        .plan-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: #e8f5e9;
+            color: var(--primary-color);
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="signup-container">
+        <div class="logo">
+            <h1>Operia</h1>
+            <p>Inicia tu prueba gratuita de 14 días</p>
+            <span class="plan-badge">✨ Plan Starter incluido</span>
+        </div>
+
+        <div class="error-message" id="errorMessage"></div>
+
+        <form id="signupForm">
+            <div class="form-group">
+                <label for="companyName">Nombre de tu Empresa</label>
+                <input type="text" id="companyName" name="company_name" required placeholder="Ej: Distribuidora Acme"
+                    minlength="2" autocomplete="organization">
+            </div>
+
+            <div class="form-group subdomain-group">
+                <label for="subdomain">Elige tu Subdomain</label>
+                <div class="subdomain-input-wrapper">
+                    <input type="text" id="subdomain" name="subdomain" required placeholder="tu-empresa"
+                        pattern="[a-z0-9-]+" minlength="3" maxlength="50" autocomplete="off">
+                    <span class="subdomain-suffix">.operia.app</span>
+                </div>
+                <div class="subdomain-status" id="subdomainStatus">
+                    <span class="icon"></span>
+                    <span class="message">Tu URL única para acceder al sistema</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="fullName">Tu Nombre Completo</label>
+                <input type="text" id="fullName" name="full_name" required placeholder="Ej: Juan Pérez" minlength="2"
+                    autocomplete="name">
+            </div>
+
+            <div class="form-group">
+                <label for="email">Correo Electrónico</label>
+                <input type="email" id="email" name="email" required placeholder="tu@email.com" autocomplete="email">
+            </div>
+
+            <div class="form-group">
+                <label for="password">Contraseña</label>
+                <input type="password" id="password" name="password" required placeholder="Mínimo 6 caracteres"
+                    minlength="6" autocomplete="new-password">
+            </div>
+
+            <div class="form-group">
+                <label for="office">Oficina / Ubicación (Opcional)</label>
+                <input type="text" id="office" name="office" placeholder="Ej: Valparaíso" autocomplete="address-level2">
+            </div>
+
+            <button type="submit" class="btn-primary" id="submitBtn">
+                Crear mi Cuenta Gratis
+            </button>
+        </form>
+
+        <div class="login-link">
+            ¿Ya tienes cuenta? <a href="/login.html">Inicia sesión aquí</a>
+        </div>
+    </div>
+
+    <script src="js/signup.js"></script>
+</body>
+
+</html>

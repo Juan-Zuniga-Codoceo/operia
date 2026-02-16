@@ -18,9 +18,9 @@ const tasksRoutes = require('./routes/tasks.routes');
 const usersRoutes = require('./routes/users.routes');
 const { initScheduledJobs } = require('./jobs/in-app-jobs');
 const adminRoutes = require('./routes/admin.routes.js');
-const categoriesRoutes = require('./routes/categories.routes.js');
-const sheetsRoutes = require('./routes/sheets.routes.js');
-const clientsRoutes = require('./routes/clients.routes.js');
+const categoriesRoutes = require('./routes/categories.routes-postgres.js');
+const sheetsRoutes = require('./routes/sheets.routes-postgres.js');
+const clientsRoutes = require('./routes/clients.routes-postgres.js');
 const senderRoutes = require('./routes/sender.routes.js');
 
 const app = express();

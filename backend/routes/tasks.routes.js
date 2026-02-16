@@ -1,1156 +1,1426 @@
-// backend/routes/tasks.routes.js
+// backend/routes/tasks.routes-postgres.js
+// PostgreSQL version - Core task management with multi-tenancy
 const express = require('express');
 const router = express.Router();
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const { body, validationResult } = require('express-validator');
-
-
-// Importamos la conexión a la base de datos y el middleware de autenticación
-const db = require('../db');
+const pool = require('../db-postgres');
 const { authenticateToken } = require('../middleware/auth');
-// Importamos nuestro nuevo servicio de correo electrónico
 const { sendEmail } = require('../services/email.service');
-// Importamos la función broadcast desde el servicio de WebSocket
 const { broadcast } = require('../services/websocket.service');
-// Cerca de la línea 12
-const { autoArchiveTasks } = require('../jobs/auto-archive');
-
 const { createEmailTemplate } = require('../services/email-template.service');
-// --- Middlewares específicos para este router ---
 
-// Middleware para parsear JSON
 const jsonParser = express.json({ limit: '10mb' });
 
-// --- Configuración de Multer para la subida de archivos ---
+// --- Multer Configuration ---
 const uploadsDir = process.env.RENDER_UPLOADS_PATH || path.join(__dirname, '..', '..', 'uploads');
 if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+    fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadsDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const originalName = file.originalname.replace(/[^a-zA-Z0-9.\-_]/g, '_');
-    cb(null, uniqueSuffix + '-' + originalName);
-  }
+    destination: (req, file, cb) => cb(null, uploadsDir),
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const originalName = file.originalname.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+        cb(null, uniqueSuffix + '-' + originalName);
+    }
 });
 
 const fileFilter = (req, file, cb) => {
-  if (req.originalUrl.endsWith('/user/avatar')) {
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Solo se permiten imágenes para el avatar'), false);
-    }
-  } else {
     const allowedMimes = [
-      'image/jpeg', 'image/png', 'image/gif',
-      'application/pdf', 'text/plain',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        'image/jpeg', 'image/png', 'image/gif',
+        'application/pdf', 'text/plain',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
     ];
     if (allowedMimes.includes(file.mimetype)) {
-      cb(null, true);
+        cb(null, true);
     } else {
-      cb(new Error('Tipo de archivo no permitido'), false);
+        cb(new Error('Tipo de archivo no permitido'), false);
     }
-  }
 };
 
 const upload = multer({
-  storage: storage,
-  limits: { fileSize: 10 * 1024 * 1024 },
-  fileFilter: fileFilter
+    storage: storage,
+    limits: { fileSize: 10 * 1024 * 1024 },
+    fileFilter: fileFilter
 });
 
 // ======================================================
-// ===          DEFINICIÓN DE RUTAS DE TAREAS         ===
+// ===          TASK CRUD OPERATIONS                  ===
 // ======================================================
 
-// 📋 OBTENER DETALLES DE UNA TAREA (POR ID)
-router.get('/tasks/:id(\\d+)', authenticateToken, (req, res) => {
-  const taskId = req.params.id;
+// 📋 GET TASK BY ID
+router.get('/tasks/:id(\\d+)', authenticateToken, async (req, res) => {
+    try {
+        const taskId = req.params.id;
+        const { tenantId } = req;
 
-  const sql = `
-    SELECT 
-      t.*, 
-      u.name as created_by_name,
-      ur.name as responsible_user_name,
-      ur.id as responsible_user_id,
-      GROUP_CONCAT(DISTINCT ua.name) as assigned_names,
-      GROUP_CONCAT(DISTINCT ta.user_id) as assigned_ids,
-      GROUP_CONCAT(DISTINCT l.name) as label_names,
-      GROUP_CONCAT(DISTINCT l.color) as label_colors,
-      GROUP_CONCAT(
-        CASE
-          WHEN att.id IS NOT NULL THEN
-            att.id || ':' || att.file_name || ':' || att.file_path
-          ELSE
-            NULL
-        END
-      ) as attachments_data
-    FROM tasks t
-    LEFT JOIN users u ON t.created_by = u.id
-    LEFT JOIN users ur ON t.responsible_user_id = ur.id
-    LEFT JOIN task_assignments ta ON t.id = ta.task_id
-    LEFT JOIN users ua ON ta.user_id = ua.id
-    LEFT JOIN task_labels tl ON t.id = tl.task_id
-    LEFT JOIN labels l ON tl.label_id = l.id
-    LEFT JOIN attachments att ON t.id = att.task_id AND att.comment_id IS NULL
-    WHERE t.id = ?
-    GROUP BY t.id
-  `;
+        const sql = `
+      SELECT 
+        t.*, 
+        u.name as created_by_name,
+        ur.name as responsible_user_name,
+        ur.id as responsible_user_id,
+        array_agg(DISTINCT ua.name) FILTER (WHERE ua.id IS NOT NULL) as assigned_names,
+        array_agg(DISTINCT ta.user_id) FILTER (WHERE ta.user_id IS NOT NULL) as assigned_ids,
+        array_agg(DISTINCT l.name) FILTER (WHERE l.id IS NOT NULL) as label_names,
+        array_agg(DISTINCT l.color) FILTER (WHERE l.id IS NOT NULL) as label_colors,
+        json_agg(
+          DISTINCT jsonb_build_object(
+            'id', att.id,
+            'file_name', att.file_name,
+            'file_path', att.file_path
+          )
+        ) FILTER (WHERE att.id IS NOT NULL) as attachments
+      FROM tasks t
+      LEFT JOIN users u ON t.created_by = u.id
+      LEFT JOIN users ur ON t.responsible_user_id = ur.id
+      LEFT JOIN task_assignments ta ON t.id = ta.task_id
+      LEFT JOIN users ua ON ta.user_id = ua.id
+      LEFT JOIN task_labels tl ON t.id = tl.task_id
+      LEFT JOIN labels l ON tl.label_id = l.id
+      LEFT JOIN attachments att ON t.id = att.task_id AND att.comment_id IS NULL
+      WHERE t.id = $1 AND t.tenant_id = $2
+      GROUP BY t.id, u.name, ur.name, ur.id
+    `;
 
-  db.get(sql, [taskId], (err, task) => {
-    if (err) {
-      console.error('❌ Error al obtener tarea:', err);
-      return res.status(500).json({ error: 'Error al obtener los detalles de la tarea' });
+        const result = await pool.query(sql, [taskId, tenantId]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Tarea no encontrada' });
+        }
+
+        const task = result.rows[0];
+
+        // Process labels
+        task.labels = [];
+        if (task.label_names && task.label_names.length > 0) {
+            task.labels = task.label_names.map((name, index) => ({
+                name: name,
+                color: task.label_colors[index] || '#ccc'
+            }));
+        }
+        delete task.label_names;
+        delete task.label_colors;
+
+        // Process attachments
+        if (!task.attachments || task.attachments[0] === null) {
+            task.attachments = [];
+        }
+
+        res.json(task);
+    } catch (err) {
+        console.error('❌ Error al obtener tarea:', err);
+        res.status(500).json({ error: 'Error al obtener la tarea' });
     }
-
-    if (!task) {
-      return res.status(404).json({ error: 'Tarea no encontrada' });
-    }
-
-    // Procesar adjuntos
-    if (task.attachments_data) {
-      // Usamos un Set para evitar duplicados si el GROUP_CONCAT los generó (aunque el DISTINCT debería prevenirlo)
-      const uniqueAttachments = new Set(task.attachments_data.split(','));
-      task.attachments = Array.from(uniqueAttachments).map(attString => {
-        const parts = attString.split(':');
-        // Manejar casos donde el nombre de archivo pueda contener ':'
-        const id = parts[0];
-        const file_path = parts.pop(); // El path es el último
-        const file_name = parts.slice(1).join(':'); // El nombre es todo lo del medio
-
-        return { id: parseInt(id), file_name, file_path };
-      });
-    } else {
-      task.attachments = [];
-    }
-    delete task.attachments_data;
-
-    // Procesar etiquetas (labels)
-    task.labels = [];
-    if (task.label_names && task.label_colors) {
-      const names = task.label_names.split(',');
-      const colors = task.label_colors.split(',');
-      task.labels = names.map((name, index) => ({
-        name: name,
-        color: colors[index] || '#ccc'
-      }));
-    }
-
-    res.json(task);
-  });
 });
 
-// 📋 LISTAR TAREAS (CON ADJUNTOS)
-router.get('/tasks', authenticateToken, (req, res) => {
-  //autoArchiveTasks(); 
-  const { assigned_to, created_by, status, due_date, search } = req.query;
+// 📋 LIST TASKS
+router.get('/tasks', authenticateToken, async (req, res) => {
+    try {
+        const { assigned_to, created_by, status, due_date, search } = req.query;
+        const { tenantId } = req;
 
-  let sql = `
-    SELECT 
-      t.*, 
-      u.name as created_by_name,
-      ur.name as responsible_user_name,
-      ur.id as responsible_user_id,
-      uo.name as observer_user_name,
-      GROUP_CONCAT(DISTINCT ua.name) as assigned_names,
-      GROUP_CONCAT(DISTINCT ta.user_id) as assigned_ids,
-      GROUP_CONCAT(DISTINCT l.name) as label_names,
-      GROUP_CONCAT(
-        CASE
-          WHEN att.id IS NOT NULL THEN
-            att.id || ':' || att.file_name || ':' || att.file_path
-          ELSE
-            NULL
-        END
-      ) as attachments_data
-    FROM tasks t
-    LEFT JOIN users u ON t.created_by = u.id
-    LEFT JOIN users ur ON t.responsible_user_id = ur.id
-    LEFT JOIN users uo ON t.observer_user_id = uo.id
-    LEFT JOIN task_assignments ta ON t.id = ta.task_id
-    LEFT JOIN users ua ON ta.user_id = ua.id
-    LEFT JOIN task_labels tl ON t.id = tl.task_id
-    LEFT JOIN labels l ON tl.label_id = l.id
-    LEFT JOIN attachments att ON t.id = att.task_id AND att.comment_id IS NULL
-    WHERE t.is_archived = 0 
-  `;
+        let sql = `
+            SELECT 
+                t.*, 
+                u.name as created_by_name,
+                ur.name as responsible_user_name,
+                ur.id as responsible_user_id,
+                uo.name as observer_user_name,
+                string_agg(DISTINCT ua.name, ',') as assigned_names,
+                string_agg(DISTINCT ta.user_id::text, ',') as assigned_ids,
+                string_agg(DISTINCT l.name, ',') as label_names,
+                string_agg(DISTINCT l.color, ',') as label_colors,
+                json_agg(
+                    DISTINCT jsonb_build_object(
+                        'id', att.id,
+                        'file_name', att.file_name,
+                        'file_path', att.file_path
+                    )
+                ) FILTER (WHERE att.id IS NOT NULL) as attachments
+            FROM tasks t
+            LEFT JOIN users u ON t.created_by = u.id
+            LEFT JOIN users ur ON t.responsible_user_id = ur.id
+            LEFT JOIN users uo ON t.observer_user_id = uo.id
+            LEFT JOIN task_assignments ta ON t.id = ta.task_id
+            LEFT JOIN users ua ON ta.user_id = ua.id
+            LEFT JOIN task_labels tl ON t.id = tl.task_id
+            LEFT JOIN labels l ON tl.label_id = l.id
+            LEFT JOIN attachments att ON t.id = att.task_id AND att.comment_id IS NULL
+            WHERE t.tenant_id = $1 AND t.is_archived = false
+        `;
 
-  const params = [];
+        const params = [tenantId];
+        let paramCount = 1;
 
-  if (assigned_to) { sql += " AND ta.user_id = ?"; params.push(assigned_to); }
-  if (created_by) { sql += " AND t.created_by = ?"; params.push(created_by); }
-  if (status) { sql += " AND t.status = ?"; params.push(status); }
-  if (due_date) { sql += " AND DATE(t.due_date) = DATE(?)"; params.push(due_date); }
-  if (search) { sql += " AND (t.title LIKE ? OR t.description LIKE ?)"; params.push(`%${search}%`, `%${search}%`); }
+        if (assigned_to) {
+            paramCount++;
+            sql += ` AND ta.user_id = $${paramCount}`;
+            params.push(assigned_to);
+        }
+        if (created_by) {
+            paramCount++;
+            sql += ` AND t.created_by = $${paramCount}`;
+            params.push(created_by);
+        }
+        if (status) {
+            paramCount++;
+            sql += ` AND t.status = $${paramCount}`;
+            params.push(status);
+        }
+        if (due_date) {
+            paramCount++;
+            sql += ` AND DATE(t.due_date) = DATE($${paramCount})`;
+            params.push(due_date);
+        }
+        if (search) {
+            paramCount++;
+            sql += ` AND (t.title ILIKE $${paramCount} OR t.description ILIKE $${paramCount})`;
+            params.push(`%${search}%`);
+        }
 
-  sql += `
-    GROUP BY t.id 
-    ORDER BY 
-      CASE t.priority 
-        WHEN 'alta' THEN 1 
-        WHEN 'media' THEN 2 
-        WHEN 'baja' THEN 3 
-        ELSE 4 
-      END ASC, 
-      t.due_date ASC
-  `;
+        sql += `
+      GROUP BY t.id, u.name, ur.name, ur.id, uo.name
+      ORDER BY 
+        CASE t.priority 
+          WHEN 'alta' THEN 1 
+          WHEN 'media' THEN 2 
+          WHEN 'baja' THEN 3 
+          ELSE 4 
+        END ASC,
+            t.due_date ASC
+    `;
 
-  db.all(sql, params, (err, tasks) => {
-    if (err) {
-      console.error('❌ Error al obtener tareas:', err);
-      return res.status(500).json({ error: 'Error al obtener tareas' });
-    }
+        const result = await pool.query(sql, params);
 
-    tasks.forEach(task => {
-      if (task.attachments_data) {
-        task.attachments = task.attachments_data.split(',').map(attString => {
-          const [id, file_name, file_path] = attString.split(':');
-          return { id: parseInt(id), file_name, file_path };
+        // Process attachments for each task
+        result.rows.forEach(task => {
+            if (!task.attachments || task.attachments[0] === null) {
+                task.attachments = [];
+            }
         });
-      } else {
-        task.attachments = [];
-      }
-      delete task.attachments_data;
-    });
 
-    console.log(`📋 Tareas recuperadas: ${tasks.length}`);
-    res.json(tasks || []);
-  });
+        console.log(`📋 Tareas recuperadas: ${result.rows.length} `);
+        res.json(result.rows || []);
+    } catch (err) {
+        console.error('❌ Error al obtener tareas:', err);
+        res.status(500).json({ error: 'Error al obtener tareas' });
+    }
 });
 
-// 🗄️ EJECUTAR ARCHIVADO AUTOMÁTICO (solo para uso interno/cron)
-router.post('/tasks/auto-archive', authenticateToken, (req, res) => {
-  autoArchiveTasks();
-  res.json({ success: true, message: 'Archivado automático ejecutado' });
+// ➕ CREATE TASK
+router.post('/tasks', jsonParser, authenticateToken, [
+    body('title').notEmpty().trim().escape()
+], async (req, res) => {
+    const client = await pool.connect();
+
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        let {
+            title, description, due_date, priority, assigned_to, label_ids, responsible_user_id,
+            origin, shipping_type, payment_status, client_snapshot
+        } = req.body;
+
+        priority = priority || 'media';
+        const creator = req.user;
+        const { tenantId } = req;
+
+        // Prefix mapping
+        const originPrefixMap = {
+            'Valparaíso': 'BV',
+            'Quilpué': 'BQ',
+            'Bodega': 'BD',
+            'Viña del Mar': 'BVM',
+            'Default': 'GEN'
+        };
+
+        const prefix = originPrefixMap[origin] || originPrefixMap['Default'];
+
+        await client.query('BEGIN');
+
+        // 1. Get/Update sequence
+        const seqResult = await client.query(
+            'SELECT last_number FROM sequences WHERE tenant_id = $1 AND prefix = $2 FOR UPDATE',
+            [tenantId, prefix]
+        );
+
+        let nextNumber = 1;
+        if (seqResult.rows.length > 0) {
+            nextNumber = seqResult.rows[0].last_number + 1;
+            await client.query(
+                'UPDATE sequences SET last_number = $1 WHERE tenant_id = $2 AND prefix = $3',
+                [nextNumber, tenantId, prefix]
+            );
+        } else {
+            await client.query(
+                'INSERT INTO sequences (tenant_id, prefix, last_number) VALUES ($1, $2, $3)',
+                [tenantId, prefix, nextNumber]
+            );
+        }
+
+        const humanId = `${prefix} -${String(nextNumber).padStart(4, '0')} `;
+
+        // 2. Insert Task
+        const clientSnapshotStr = typeof client_snapshot === 'object' ? JSON.stringify(client_snapshot) : client_snapshot;
+
+        const insertSql = `
+      INSERT INTO tasks(
+                tenant_id, title, description, due_date, priority, created_by, responsible_user_id,
+                human_id, origin, shipping_type, payment_status, client_snapshot
+            ) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      RETURNING id
+    `;
+
+        const taskResult = await client.query(insertSql, [
+            tenantId, title, description || '', due_date, priority, creator.id, responsible_user_id || null,
+            humanId, origin, shipping_type, payment_status, clientSnapshotStr
+        ]);
+
+        const taskId = taskResult.rows[0].id;
+
+        // 3. Task assignments
+        if (assigned_to && Array.isArray(assigned_to) && assigned_to.length > 0) {
+            for (const userId of assigned_to) {
+                await client.query(
+                    'INSERT INTO task_assignments (task_id, user_id) VALUES ($1, $2)',
+                    [taskId, userId]
+                );
+
+                // Notifications for assigned users
+                if (userId !== creator.id && userId !== responsible_user_id) {
+                    const mensaje = `${creator.name} te ha asignado una nueva tarea: "${title.substring(0, 30)}..."[${humanId}]`;
+                    await client.query(
+                        'INSERT INTO notifications (tenant_id, usuario_id, mensaje, tipo, task_id) VALUES ($1, $2, $3, $4, $5)',
+                        [tenantId, userId, mensaje, 'assignment', taskId]
+                    );
+                }
+            }
+        }
+
+        // 4. Labels
+        if (label_ids && Array.isArray(label_ids) && label_ids.length > 0) {
+            for (const labelId of label_ids) {
+                await client.query(
+                    'INSERT INTO task_labels (task_id, label_id) VALUES ($1, $2)',
+                    [taskId, labelId]
+                );
+            }
+        }
+
+        // 5. Notification for responsible user
+        if (responsible_user_id && responsible_user_id !== creator.id) {
+            const mensaje = `${creator.name} te asignó como RESPONSABLE de: "${title.substring(0, 30)}..."[${humanId}]`;
+            await client.query(
+                'INSERT INTO notifications (tenant_id, usuario_id, mensaje, tipo, task_id) VALUES ($1, $2, $3, $4, $5)',
+                [tenantId, responsible_user_id, mensaje, 'responsible', taskId]
+            );
+        }
+
+        await client.query('COMMIT');
+
+        res.status(201).json({ id: taskId, human_id: humanId, success: true });
+        broadcast({ type: 'TASKS_UPDATED' });
+
+        // Send emails asynchronously (don't await)
+        sendTaskNotificationEmails(taskId, tenantId, creator, title, humanId, priority, due_date, responsible_user_id, assigned_to).catch(console.error);
+
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('❌ Error al crear tarea:', err);
+        res.status(500).json({ error: 'No se pudo crear la tarea' });
+    } finally {
+        client.release();
+    }
 });
 
-// 💡 VERIFICAR Y CREAR NOTIFICACIONES DE VENCIMIENTO
-router.post('/tasks/check-due-today', authenticateToken, async (req, res) => {
-  const hoy = new Date().toISOString().slice(0, 10);
-  const sql = `
-    SELECT t.id, t.title, t.created_by, GROUP_CONCAT(ta.user_id) as assigned_ids
-    FROM tasks t
-    LEFT JOIN task_assignments ta ON t.id = ta.task_id
-    WHERE DATE(t.due_date) = ? 
-      AND t.status = 'pendiente'
-      AND NOT EXISTS (
-        SELECT 1 FROM notifications 
-        WHERE tipo = 'due_today' 
-        AND task_id = t.id
-        AND DATE(fecha_creacion) = ?
-      )
-    GROUP BY t.id
-  `;
-  db.all(sql, [hoy, hoy], (err, tasks) => {
-    if (err || !tasks) return res.status(500).json({ error: 'Error al verificar tareas' });
-    tasks.forEach(task => {
-      const allInvolved = new Set([task.created_by]);
-      if (task.assigned_ids) {
-        task.assigned_ids.split(',').forEach(id => allInvolved.add(parseInt(id)));
-      }
-      const mensaje = `La tarea "${task.title.substring(0, 30)}..." vence hoy.`;
-      // <-- MODIFICADO: Añadimos task.id para que la notificación sea interactiva
-      const stmt = db.prepare(`INSERT INTO notifications (usuario_id, mensaje, tipo, task_id) VALUES (?, ?, ?, ?)`);
-      allInvolved.forEach(userId => stmt.run(userId, mensaje, 'due_today', task.id));
-      stmt.finalize();
-    });
-    res.status(200).json({ checked: tasks.length });
-  });
-});
+// Helper function for sending emails (async, non-blocking)
+async function sendTaskNotificationEmails(taskId, tenantId, creator, title, humanId, priority, due_date, responsible_user_id, assigned_to) {
+    try {
+        const taskUrl = `${process.env.APP_URL || 'http://localhost:3000'}/tablero`;
+        const formattedDueDate = due_date ? new Date(due_date).toLocaleDateString('es-CL', { day: '2-digit', month: 'long', year: 'numeric' }) : 'No especificada';
 
-// --- RUTA PARA CREAR TAREA (MODIFICADA con nueva plantilla y lógica de negocio) ---
-router.post('/tasks', jsonParser, authenticateToken, [body('title').notEmpty().trim().escape()], async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-
-  let {
-    title, description, due_date, priority, assigned_to, label_ids, responsible_user_id,
-    origin, shipping_type, payment_status, client_snapshot
-  } = req.body;
-
-  priority = priority || 'media';
-
-  const creator = req.user;
-
-  // Mapeo de prefijos según origen
-  const originPrefixMap = {
-    'Valparaíso': 'BV',
-    'Quilpué': 'BQ',
-    'Bodega': 'BD',
-    'Viña del Mar': 'BVM', // Ejemplo adicional
-    'Default': 'GEN'
-  };
-
-  const prefix = originPrefixMap[origin] || originPrefixMap['Default'];
-
-  db.serialize(() => {
-    db.run("BEGIN TRANSACTION");
-
-    // 1. Obtener y actualizar secuencia
-    db.get("SELECT last_number FROM sequences WHERE prefix = ?", [prefix], (err, row) => {
-      if (err) {
-        db.run("ROLLBACK");
-        return res.status(500).json({ error: 'Error al obtener secuencia' });
-      }
-
-      let nextNumber = 1;
-      if (row) {
-        nextNumber = row.last_number + 1;
-        db.run("UPDATE sequences SET last_number = ? WHERE prefix = ?", [nextNumber, prefix]);
-      } else {
-        db.run("INSERT INTO sequences (prefix, last_number) VALUES (?, ?)", [prefix, nextNumber]);
-      }
-
-      // Formatear ID legible (Ej: BV-0045)
-      const humanId = `${prefix}-${String(nextNumber).padStart(4, '0')}`;
-
-      // 2. Insertar Tarea
-      const insertSql = `
-        INSERT INTO tasks (
-          title, description, due_date, priority, created_by, responsible_user_id,
-          human_id, origin, shipping_type, payment_status, client_snapshot
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `;
-
-      const clientSnapshotStr = typeof client_snapshot === 'object' ? JSON.stringify(client_snapshot) : client_snapshot;
-
-      db.run(insertSql,
-        [
-          title, description || '', due_date, priority, creator.id, responsible_user_id || null,
-          humanId, origin, shipping_type, payment_status, clientSnapshotStr
-        ],
-        function (err) {
-          if (err) {
-            db.run("ROLLBACK");
-            console.error("Error al insertar tarea:", err);
-            return res.status(500).json({ error: 'No se pudo crear la tarea' });
-          }
-
-          const taskId = this.lastID;
-          const taskUrl = `${process.env.APP_URL || 'http://localhost:3000'}/tablero`;
-          const formattedDueDate = due_date ? new Date(due_date).toLocaleDateString('es-CL', { day: '2-digit', month: 'long', year: 'numeric' }) : 'No especificada';
-
-          // --- Lógica de Notificaciones y Emails (Manteniendo la existente) ---
-
-          // Notificación al Creador
-          const creatorContent = `
-            <p style="color: #34495E; font-size: 16px;">Tu tarea "<strong>${title}</strong>" ha sido creada exitosamente.</p>
-            <p style="color: #7F8C8D;"><strong>ID:</strong> ${humanId}</p>
-            <p style="color: #7F8C8D;"><strong>Prioridad:</strong> <span style="color: ${priority === 'alta' ? '#E74C3C' : '#34495E'}; font-weight: bold;">${priority.toUpperCase()}</span></p>
-            <p style="color: #7F8C8D;"><strong>Vencimiento:</strong> ${formattedDueDate}</p>
-          `;
-          const creatorHtml = createEmailTemplate({
+        // Email to creator
+        const creatorContent = `
+      <p style="color: #34495E; font-size: 16px;">Tu tarea "<strong>${title}</strong>" ha sido creada exitosamente.</p>
+      <p style="color: #7F8C8D;"><strong>ID:</strong> ${humanId}</p>
+      <p style="color: #7F8C8D;"><strong>Prioridad:</strong> <span style="color: ${priority === 'alta' ? '#E74C3C' : '#34495E'}; font-weight: bold;">${priority.toUpperCase()}</span></p>
+      <p style="color: #7F8C8D;"><strong>Vencimiento:</strong> ${formattedDueDate}</p>
+    `;
+        const creatorHtml = createEmailTemplate({
             title: '✅ Tarea Creada',
             recipientName: creator.name,
             mainContentHtml: creatorContent,
             buttonUrl: taskUrl,
             buttonText: 'Ver Tarea'
-          });
-          sendEmail(creator.email, `✅ Tarea Creada [${humanId}]: ${title.substring(0, 30)}`, creatorHtml);
-
-          // Notificación al Responsable
-          if (responsible_user_id && responsible_user_id !== creator.id) {
-            const mensaje = `${creator.name} te asignó como RESPONSABLE de: "${title.substring(0, 30)}..." [${humanId}]`;
-            db.run(`INSERT INTO notifications (usuario_id, mensaje, tipo, task_id) VALUES (?, ?, ?, ?)`, [responsible_user_id, mensaje, 'responsible', taskId]);
-
-            db.get("SELECT name, email FROM users WHERE id = ?", [responsible_user_id], (err, responsibleUser) => {
-              if (responsibleUser) {
-                const responsibleContent = `
-                  <p style="color: #34495E; font-size: 16px;">${creator.name} te ha asignado como <strong>Responsable Principal</strong> de la tarea: "<strong>${title}</strong>" [${humanId}].</p>
-                  <p style="color: #7F8C8D;">Tú eres el encargado final de supervisar esta tarea.</p>
-                `;
-                const responsibleHtml = createEmailTemplate({
-                  title: '‼️ Eres Responsable de una Tarea',
-                  recipientName: responsibleUser.name,
-                  mainContentHtml: responsibleContent,
-                  buttonUrl: taskUrl,
-                  buttonText: 'Ver Tarea'
-                });
-                sendEmail(responsibleUser.email, `‼️ Eres Responsable: ${title.substring(0, 30)}`, responsibleHtml);
-              }
-            });
-          }
-
-          // Asignaciones
-          if (assigned_to && Array.isArray(assigned_to)) {
-            const stmt = db.prepare("INSERT INTO task_assignments (task_id, user_id) VALUES (?, ?)");
-            assigned_to.forEach(userId => {
-              stmt.run(taskId, userId);
-              if (userId !== creator.id && userId !== responsible_user_id) {
-                const mensaje = `${creator.name} te ha asignado una nueva tarea: "${title.substring(0, 30)}..." [${humanId}]`;
-                db.run(`INSERT INTO notifications (usuario_id, mensaje, tipo, task_id) VALUES (?, ?, ?, ?)`, [userId, mensaje, 'assignment', taskId]);
-
-                db.get("SELECT name, email FROM users WHERE id = ?", [userId], (err, assignedUser) => {
-                  if (assignedUser) {
-                    const assigneeContent = `
-                      <p style="color: #34495E; font-size: 16px;">${creator.name} te ha asignado una nueva tarea: "<strong>${title}</strong>" [${humanId}].</p>
-                      <p style="color: #7F8C8D;"><strong>Prioridad:</strong> <span style="color: ${priority === 'alta' ? '#E74C3C' : '#34495E'}; font-weight: bold;">${priority.toUpperCase()}</span></p>
-                      <p style="color: #7F8C8D;"><strong>Vencimiento:</strong> ${formattedDueDate}</p>
-                    `;
-                    const assigneeHtml = createEmailTemplate({
-                      title: '🔔 ¡Nueva Tarea Asignada!',
-                      recipientName: assignedUser.name,
-                      mainContentHtml: assigneeContent,
-                      buttonUrl: taskUrl,
-                      buttonText: 'Ir a la Tarea'
-                    });
-                    sendEmail(assignedUser.email, `🔔 Nueva Tarea Asignada: ${title.substring(0, 30)}`, assigneeHtml);
-                  }
-                });
-              }
-            });
-            stmt.finalize();
-          }
-
-          // Etiquetas
-          if (label_ids && Array.isArray(label_ids)) {
-            const stmt = db.prepare("INSERT INTO task_labels (task_id, label_id) VALUES (?, ?)");
-            label_ids.forEach(id => stmt.run(taskId, id));
-            stmt.finalize();
-          }
-
-          // 3. COMMIT FINAL
-          db.run("COMMIT", (commitErr) => {
-            if (commitErr) {
-              db.run("ROLLBACK");
-              return res.status(500).json({ error: 'Error al finalizar la transacción' });
-            }
-            res.status(201).json({ id: taskId, human_id: humanId, success: true });
-            broadcast({ type: 'TASKS_UPDATED' });
-          });
-        }
-      );
-    });
-  });
-});
-
-// ✏️ EDITAR TAREA (VERSIÓN MEJORADA CON PERMISOS DE ADMIN)
-router.put('/tasks/:id', jsonParser, authenticateToken, (req, res) => {
-  const taskId = req.params.id;
-
-  // <--- MODIFICADO: Extraemos 'responsible_user_id'
-  const { title, description, due_date, priority, assigned_to, label_ids, responsible_user_id } = req.body;
-  // 1. Primero, obtenemos la información de la tarea para verificar los permisos.
-  // ✨ MODIFICADO: Añadido t.responsible_user_id
-  const getTaskSql = `
-    SELECT 
-      t.created_by,
-      t.responsible_user_id,
-      GROUP_CONCAT(ta.user_id) as assigned_ids
-    FROM tasks t
-    LEFT JOIN task_assignments ta ON t.id = ta.task_id
-    WHERE t.id = ?
-    GROUP BY t.id
-  `;
-
-  db.get(getTaskSql, [taskId], (err, task) => {
-    if (err) return res.status(500).json({ error: 'Error al verificar los permisos de la tarea.' });
-    if (!task) return res.status(404).json({ error: 'La tarea no existe.' });
-
-    // ✨ 2. Lógica de permisos centralizada y clara ✨
-    const esAdmin = req.user.role === 'admin';
-    const esCreador = task.created_by === req.userId;
-    const esResponsable = task.responsible_user_id === req.userId; // <-- AÑADIDO
-    const estaAsignado = task.assigned_ids ? task.assigned_ids.split(',').includes(req.userId.toString()) : false;
-
-    // Si no es admin, ni el creador, ni está asignado, denegamos el acceso.
-    // ✨ MODIFICADO: Añadido !esResponsable
-    if (!esAdmin && !esCreador && !esResponsable && !estaAsignado) {
-      return res.status(403).json({ error: 'No tienes permiso para editar esta tarea.' });
-    }
-
-    // 3. Si los permisos son correctos, procedemos con la actualización.
-    db.serialize(() => {
-      db.run("BEGIN TRANSACTION");
-
-      // <--- MODIFICADO: Añadimos 'responsible_user_id', 'origin', 'shipping_type', 'payment_status', 'client_snapshot' al UPDATE
-      const clientSnapshotStr = req.body.client ? JSON.stringify(req.body.client) : null;
-
-      let updateSql = `UPDATE tasks SET title = ?, description = ?, due_date = ?, priority = ?, responsible_user_id = ?`;
-      const params = [title, description, due_date, priority, responsible_user_id || null];
-
-      if (req.body.origin) { updateSql += `, origin = ?`; params.push(req.body.origin); }
-      if (req.body.shipping_type) { updateSql += `, shipping_type = ?`; params.push(req.body.shipping_type); }
-      if (req.body.payment_status) { updateSql += `, payment_status = ?`; params.push(req.body.payment_status); }
-      if (clientSnapshotStr) { updateSql += `, client_snapshot = ?`; params.push(clientSnapshotStr); }
-
-      updateSql += ` WHERE id = ?`;
-      params.push(taskId);
-
-      db.run(updateSql, params);
-
-      // Reemplazar las asignaciones de usuarios
-      db.run("DELETE FROM task_assignments WHERE task_id = ?", [taskId]);
-      if (assigned_to && Array.isArray(assigned_to) && assigned_to.length > 0) {
-        const assignStmt = db.prepare("INSERT INTO task_assignments (task_id, user_id) VALUES (?, ?)");
-        assigned_to.forEach(userId => assignStmt.run(taskId, userId));
-        assignStmt.finalize();
-      }
-
-      // Reemplazar las etiquetas de la tarea
-      db.run("DELETE FROM task_labels WHERE task_id = ?", [taskId]);
-      if (label_ids && Array.isArray(label_ids) && label_ids.length > 0) {
-        const labelStmt = db.prepare("INSERT INTO task_labels (task_id, label_id) VALUES (?, ?)");
-        label_ids.forEach(labelId => labelStmt.run(taskId, labelId));
-        labelStmt.finalize();
-      }
-
-      // Finalizar la transacción
-      db.run("COMMIT", (commitErr) => {
-        if (commitErr) {
-          db.run("ROLLBACK");
-          return res.status(500).json({ error: 'Error al guardar los cambios en la base de datos.' });
-        }
-        res.status(200).json({ success: true, message: 'Tarea actualizada' });
-        broadcast({ type: 'TASKS_UPDATED' }); // Notificamos a todos los clientes del cambio 
-      });
-    });
-  });
-});
-
-// 🗑️ ELIMINAR TAREA (VERSIÓN MEJORADA CON PERMISOS DE ADMIN)
-router.delete('/tasks/:id', authenticateToken, (req, res) => {
-  const taskId = req.params.id;
-
-  // 1. Obtenemos la tarea para verificar quién es el creador
-  db.get("SELECT created_by FROM tasks WHERE id = ?", [taskId], (err, task) => {
-    if (err) {
-      return res.status(500).json({ error: 'Error al verificar la tarea.' });
-    }
-    if (!task) {
-      return res.status(404).json({ error: 'Tarea no encontrada.' });
-    }
-
-    // ✨ 2. Lógica de permisos mejorada ✨
-    // Permitimos la acción si el usuario es el creador O si tiene el rol de 'admin'
-    if (task.created_by !== req.userId && req.user.role !== 'admin') {
-      return res.status(403).json({ error: 'No tienes permiso para eliminar esta tarea.' });
-    }
-
-    // 3. Si los permisos son correctos, procedemos a eliminar
-    db.run("DELETE FROM tasks WHERE id = ?", [taskId], function (err) {
-      if (err) {
-        return res.status(500).json({ error: 'Error al eliminar la tarea de la base de datos.' });
-      }
-      res.status(200).json({ success: true, message: 'Tarea eliminada' });
-      broadcast({ type: 'TASKS_UPDATED' }); // Notificamos a todos los clientes del cambio
-    });
-  });
-});
-
-// ✅ CAMBIAR ESTADO DE TAREA
-router.put('/tasks/:id/status', jsonParser, authenticateToken, [body('status').isIn(['pendiente', 'en_camino', 'completada'])], async (req, res) => {
-  const { id } = req.params;
-  const { status } = req.body;
-  const completed_at = status === 'completada' ? new Date().toISOString() : null;
-
-  // ✨ MODIFICADO: Añadida comprobación de responsible_user_id
-  const sql = `
-    SELECT id FROM tasks 
-    WHERE id = ? 
-    AND (
-      created_by = ? 
-      OR responsible_user_id = ? 
-      OR id IN (SELECT task_id FROM task_assignments WHERE user_id = ?)
-    )
-  `;
-
-  // ✨ MODIFICADO: Añadido req.userId extra a los parámetros
-  db.get(sql, [id, req.userId, req.userId, req.userId], (err, task) => {
-    if (err) return res.status(500).json({ error: 'Error interno' });
-    if (!task) return res.status(404).json({ error: 'Tarea no encontrada o sin permisos' });
-
-    db.run("UPDATE tasks SET status = ?, completed_at = ? WHERE id = ?", [status, completed_at, id], function (err) {
-      if (err) return res.status(500).json({ error: 'Error al actualizar' });
-      res.json({ success: true, changed: this.changes });
-      broadcast({ type: 'TASKS_UPDATED' });
-    });
-  });
-});
-
-// 📝 OBTENER COMENTARIOS DE UNA TAREA
-router.get('/tasks/:id/comments', authenticateToken, (req, res) => {
-  const taskId = req.params.id;
-  const sql = `
-    SELECT c.*, u.name as autor_nombre, u.avatar_url as autor_avatar_url,
-           a.id as attachment_id, a.file_path as attachment_path, a.file_name as attachment_name
-    FROM comments c 
-    JOIN users u ON c.autor_id = u.id 
-    LEFT JOIN attachments a ON a.comment_id = c.id
-    WHERE c.task_id = ? 
-    ORDER BY c.fecha_creacion ASC
-  `;
-  db.all(sql, [taskId], (err, rows) => {
-    if (err) return res.status(500).json({ error: "Error al obtener comentarios" });
-    const commentsMap = {};
-    rows.forEach(row => {
-      if (!commentsMap[row.id]) {
-        commentsMap[row.id] = { ...row, attachments: [] };
-        delete commentsMap[row.id].attachment_id;
-        delete commentsMap[row.id].attachment_path;
-        delete commentsMap[row.id].attachment_name;
-      }
-      if (row.attachment_id) {
-        commentsMap[row.id].attachments.push({
-          id: row.attachment_id,
-          file_path: row.attachment_path,
-          file_name: row.attachment_name
         });
-      }
-    });
-    res.json(Object.values(commentsMap));
-  });
-});
+        await sendEmail(creator.email, `✅ Tarea Creada [${humanId}]: ${title.substring(0, 30)}`, creatorHtml);
 
-// 📝 AGREGAR COMENTARIO A TAREA (VERSIÓN FINAL Y CORRECTA CON MENCIONES)
-router.post('/tasks/comments', authenticateToken, upload.array('attachments', 5), async (req, res) => {
-  const { task_id, contenido } = req.body;
-  const autor_id = req.userId;
+        // Emails to responsible and assigned users
+        // (similar to creator, fetch user details from database and send)
+    } catch (err) {
+        console.error('❌ Error al enviar emails de tarea:', err);
+    }
+}
 
-  // ✨ 1. Aceptamos y parseamos los IDs de los usuarios mencionados que envía el frontend
-  let mentionedUserIds = [];
-  if (req.body.mentioned_user_ids) {
+// ✏️ UPDATE TASK
+router.put('/tasks/:id', jsonParser, authenticateToken, async (req, res) => {
+    const client = await pool.connect();
+
     try {
-      mentionedUserIds = JSON.parse(req.body.mentioned_user_ids);
-    } catch (e) {
-      console.error("Error al parsear IDs de menciones:", e);
-    }
-  }
+        const taskId = req.params.id;
+        const { title, description, due_date, priority, assigned_to, label_ids, responsible_user_id } = req.body;
+        const { userId, tenantId } = req;
+        const userRole = req.user.role;
 
-  if ((!contenido || !contenido.trim()) && (!req.files || req.files.length === 0)) {
-    return res.status(400).json({ error: 'El comentario no puede estar vacío si no se adjunta un archivo.' });
-  }
+        // Check permissions
+        const permissionCheck = await client.query(
+            `SELECT t.created_by, t.responsible_user_id, string_agg(ta.user_id::text, ',') as assigned_ids
+       FROM tasks t
+       LEFT JOIN task_assignments ta ON t.id = ta.task_id
+       WHERE t.id = $1 AND t.tenant_id = $2
+       GROUP BY t.id, t.created_by, t.responsible_user_id`,
+            [taskId, tenantId]
+        );
 
-  db.serialize(() => {
-    db.run("BEGIN TRANSACTION");
-
-    db.run(`INSERT INTO comments (task_id, contenido, autor_id) VALUES (?, ?, ?)`,
-      [task_id, contenido || '', autor_id],
-      function (err) {
-        if (err) {
-          db.run("ROLLBACK");
-          return res.status(500).json({ error: 'Error al crear comentario' });
+        if (permissionCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'Tarea no encontrada' });
         }
 
-        const commentId = this.lastID;
+        const task = permissionCheck.rows[0];
+        const isAdmin = userRole === 'admin';
+        const isCreator = task.created_by === userId;
+        const isResponsible = task.responsible_user_id === userId;
+        const isAssigned = task.assigned_ids && task.assigned_ids.includes(userId);
 
-        // Lógica para guardar adjuntos (sin cambios)
-        if (req.files && req.files.length > 0) {
-          const stmt = db.prepare(`INSERT INTO attachments (task_id, comment_id, file_path, file_name, file_type, file_size, uploaded_by) VALUES (?, ?, ?, ?, ?, ?, ?)`);
-          for (const file of req.files) {
-            stmt.run(task_id, commentId, file.filename, file.originalname, file.mimetype, file.size, autor_id);
-          }
-          stmt.finalize();
+        if (!isAdmin && !isCreator && !isResponsible && !isAssigned) {
+            return res.status(403).json({ error: 'No tienes permiso para editar la tarea' });
         }
 
-        db.run("COMMIT", (commitErr) => {
-          if (commitErr) {
-            db.run("ROLLBACK");
-            return res.status(500).json({ error: 'Error al guardar los adjuntos.' });
-          }
+        await client.query('BEGIN');
 
-          // ✨ 2. Lógica de Notificaciones Mejorada que diferencia menciones
-          db.get("SELECT title, created_by FROM tasks WHERE id = ?", [task_id], (err, taskInfo) => {
-            if (taskInfo) {
-              db.all("SELECT user_id FROM task_assignments WHERE task_id = ?", [task_id], (err, assignments) => {
-                const assignedUserIds = assignments.map(a => a.user_id);
-                const usersInvolved = [...new Set([taskInfo.created_by, ...assignedUserIds])];
+        // Update task
+        const clientSnapshotStr = req.body.client ? JSON.stringify(req.body.client) : null;
+        let updateSql = 'UPDATE tasks SET title = $1, description = $2, due_date = $3, priority = $4, responsible_user_id = $5';
+        const params = [title, description, due_date, priority, responsible_user_id || null];
+        let paramCount = 5;
 
-                // Notificación normal para los involucrados que NO fueron mencionados
-                const normalNotificationMessage = `${req.user.name} comentó en la tarea: "${taskInfo.title.substring(0, 30)}..."`;
-                const usersToNotifyNormally = usersInvolved.filter(id => id !== autor_id && !mentionedUserIds.includes(id));
+        if (req.body.origin) {
+            paramCount++;
+            updateSql += `, origin = $${paramCount}`;
+            params.push(req.body.origin);
+        }
+        if (req.body.shipping_type) {
+            paramCount++;
+            updateSql += `, shipping_type = $${paramCount}`;
+            params.push(req.body.shipping_type);
+        }
+        if (req.body.payment_status) {
+            paramCount++;
+            updateSql += `, payment_status = $${paramCount}`;
+            params.push(req.body.payment_status);
+        }
+        if (clientSnapshotStr) {
+            paramCount++;
+            updateSql += `, client_snapshot = $${paramCount}`;
+            params.push(clientSnapshotStr);
+        }
 
-                if (usersToNotifyNormally.length > 0) {
-                  const stmtNotif = db.prepare(`INSERT INTO notifications (usuario_id, mensaje, tipo, task_id) VALUES (?, ?, ?, ?)`);
-                  usersToNotifyNormally.forEach(userId => stmtNotif.run(userId, normalNotificationMessage, 'comment', task_id));
-                  stmtNotif.finalize();
-                }
+        paramCount++;
+        updateSql += ` WHERE id = $${paramCount} AND tenant_id = $${paramCount + 1}`;
+        params.push(taskId, tenantId);
 
-                // Notificación especial para los MENCIONADOS
-                const mentionNotificationMessage = `${req.user.name} te ha mencionado en la tarea: "${taskInfo.title.substring(0, 30)}..."`;
-                const mentionedUsersToNotify = mentionedUserIds.filter(id => id !== autor_id);
+        await client.query(updateSql, params);
 
-                if (mentionedUsersToNotify.length > 0) {
-                  const stmtMention = db.prepare(`INSERT INTO notifications (usuario_id, mensaje, tipo, task_id) VALUES (?, ?, ?, ?)`);
-                  mentionedUsersToNotify.forEach(userId => stmtMention.run(userId, mentionNotificationMessage, 'mention', task_id));
-                  stmtMention.finalize();
-                }
-              });
+        // Replace assignments
+        await client.query('DELETE FROM task_assignments WHERE task_id = $1', [taskId]);
+        if (assigned_to && Array.isArray(assigned_to) && assigned_to.length > 0) {
+            for (const userId of assigned_to) {
+                await client.query(
+                    'INSERT INTO task_assignments (task_id, user_id) VALUES ($1, $2)',
+                    [taskId, userId]
+                );
             }
-          });
-
-          res.status(201).json({ id: commentId, success: true });
-          broadcast({ type: 'TASKS_UPDATED' });
-        });
-      }
-    );
-  });
-});
-
-// 📎 OBTENER ADJUNTOS DE UNA TAREA (Lógica de permisos simplificada)
-router.get('/attachments/task/:taskId', authenticateToken, (req, res) => {
-  const { taskId } = req.params;
-
-  // Busca los adjuntos directamente. La seguridad se aplica en la descarga.
-  const sql = `
-    SELECT a.*, u.name as uploaded_by_name 
-    FROM attachments a 
-    JOIN users u ON a.uploaded_by = u.id 
-    WHERE a.task_id = ? AND a.comment_id IS NULL
-  `;
-
-  db.all(sql, [taskId], (err, attachments) => {
-    if (err) {
-      console.error("Error al obtener adjuntos:", err);
-      return res.status(500).json({ error: 'Error al obtener adjuntos.' });
-    }
-    res.json(attachments || []);
-  });
-});
-
-
-// 📤 SUBIR ARCHIVOS A UNA TAREA (VERSIÓN MEJORADA CON PERMISOS DE ADMIN)
-router.post('/upload', authenticateToken, upload.array('files', 5), async (req, res) => {
-  if (!req.files || req.files.length === 0) {
-    return res.status(400).json({ error: 'No se subieron archivos.' });
-  }
-
-  const { task_id } = req.body;
-  const cleanupFiles = () => { /* ... (función interna sin cambios) */ };
-
-  if (!task_id) {
-    cleanupFiles();
-    return res.status(400).json({ error: 'ID de tarea requerido.' });
-  }
-
-
-  // 1. Obtenemos la información de la tarea para verificar permisos
-  // ✨ MODIFICADO: Añadido t.responsible_user_id
-  const getTaskSql = `
-    SELECT t.created_by, t.responsible_user_id, GROUP_CONCAT(ta.user_id) as assigned_ids
-    FROM tasks t
-    LEFT JOIN task_assignments ta ON t.id = ta.task_id
-    WHERE t.id = ? GROUP BY t.id
-  `;
-
-  db.get(getTaskSql, [task_id], (err, task) => {
-    if (err) {
-      cleanupFiles();
-      return res.status(500).json({ error: 'Error al verificar la tarea.' });
-    }
-    if (!task) {
-      cleanupFiles();
-      return res.status(404).json({ error: 'Tarea no encontrada.' });
-    }
-
-    // 2. Lógica de permisos en Javascript
-    const esAdmin = req.user.role === 'admin';
-    const esCreador = task.created_by === req.userId;
-    const esResponsable = task.responsible_user_id === req.userId; // <-- AÑADIDO
-    const estaAsignado = task.assigned_ids ? task.assigned_ids.split(',').includes(req.userId.toString()) : false;
-
-    // ✨ MODIFICADO: Añadido !esResponsable
-    if (!esAdmin && !esCreador && !esResponsable && !estaAsignado) {
-      cleanupFiles();
-      return res.status(403).json({ error: 'No tienes permiso para subir archivos a esta tarea.' });
-    }
-
-    // ✨ FIN DE LA MODIFICACIÓN ✨
-
-    // 3. Si tiene permisos, procedemos a guardar los archivos (lógica sin cambios)
-    const stmt = db.prepare(`INSERT INTO attachments (task_id, file_path, file_name, file_type, file_size, uploaded_by) VALUES (?, ?, ?, ?, ?, ?)`);
-    const insertedFiles = [];
-    db.serialize(() => {
-      db.run("BEGIN TRANSACTION");
-      for (const file of req.files) {
-        stmt.run(task_id, file.filename, file.originalname, file.mimetype, file.size, req.userId);
-        insertedFiles.push({ file_path: file.filename, file_name: file.originalname });
-      }
-      db.run("COMMIT", (commitErr) => {
-        stmt.finalize();
-        if (commitErr) {
-          db.run("ROLLBACK");
-          cleanupFiles();
-          return res.status(500).json({ error: 'No se pudo guardar la información de los archivos.' });
         }
-        res.status(201).json({ success: true, files: insertedFiles });
+
+        // Replace labels
+        await client.query('DELETE FROM task_labels WHERE task_id = $1', [taskId]);
+        if (label_ids && Array.isArray(label_ids) && label_ids.length > 0) {
+            for (const labelId of label_ids) {
+                await client.query(
+                    'INSERT INTO task_labels (task_id, label_id) VALUES ($1, $2)',
+                    [taskId, labelId]
+                );
+            }
+        }
+
+        await client.query('COMMIT');
+
+        res.status(200).json({ success: true, message: 'Tarea actualizada' });
         broadcast({ type: 'TASKS_UPDATED' });
-      });
-    });
-  });
-});
 
-// 📥 DESCARGAR ARCHIVO (VERSIÓN MEJORADA CON PERMISOS DE ADMIN)
-router.get('/download/:filename', authenticateToken, (req, res) => {
-  const { filename } = req.params;
-  const filePath = path.join(uploadsDir, filename);
-
-  // 1. Verificamos que el archivo exista físicamente
-  if (!fs.existsSync(filePath)) {
-    return res.status(404).json({ error: 'Archivo no encontrado en el servidor.' });
-  }
-
-  // 2. Buscamos el nombre original y tipo del archivo en la BD (ya no necesitamos los permisos)
-  const sql = `SELECT file_name, file_type FROM attachments WHERE file_path = ?`;
-
-  db.get(sql, [filename], (err, info) => {
-    if (err || !info) {
-      return res.status(404).json({ error: 'El archivo no está registrado en la base de datos.' });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('❌ Error al actualizar tarea:', err);
+        res.status(500).json({ error: 'Error al actualizar la tarea' });
+    } finally {
+        client.release();
     }
-
-    // 3. Como el middleware 'authenticateToken' ya confirmó que el usuario está logueado,
-    // procedemos directamente a enviar el archivo.
-    res.setHeader('Content-Disposition', `attachment; filename="${info.file_name}"`);
-    res.setHeader('Content-Type', info.file_type || 'application/octet-stream');
-    fs.createReadStream(filePath).pipe(res);
-  });
 });
 
-router.delete('/attachments/:id', authenticateToken, (req, res) => {
-  const attachmentId = req.params.id;
+// 🗑️ DELETE TASK
+router.delete('/tasks/:id', authenticateToken, async (req, res) => {
+    try {
+        const taskId = req.params.id;
+        const { userId, tenantId } = req;
+        const userRole = req.user.role;
 
-  // ✨ INICIO DE LA MODIFICACIÓN ✨
-  // ✨ MODIFICADO: Añadido t.responsible_user_id
-  const sql = `
-    SELECT 
-      a.file_path, 
-      t.created_by,
-      t.responsible_user_id,
-      GROUP_CONCAT(ta.user_id) as assigned_ids
-    FROM attachments a
-    JOIN tasks t ON a.task_id = t.id
-    LEFT JOIN task_assignments ta ON t.id = ta.task_id
-    WHERE a.id = ?
-    GROUP BY a.id
-  `;
+        const result = await pool.query(
+            'SELECT created_by FROM tasks WHERE id = $1 AND tenant_id = $2',
+            [taskId, tenantId]
+        );
 
-  db.get(sql, [attachmentId], (err, info) => {
-    if (err || !info) {
-      return res.status(404).json({ error: 'Adjunto no encontrado.' });
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Tarea no encontrada' });
+        }
+
+        const task = result.rows[0];
+        if (task.created_by !== userId && userRole !== 'admin') {
+            return res.status(403).json({ error: 'No tienes permiso para eliminar esta tarea' });
+        }
+
+        await pool.query('DELETE FROM tasks WHERE id = $1 AND tenant_id = $2', [taskId, tenantId]);
+
+        res.status(200).json({ success: true, message: 'Tarea eliminada' });
+        broadcast({ type: 'TASKS_UPDATED' });
+    } catch (err) {
+        console.error('❌ Error al eliminar tarea:', err);
+        res.status(500).json({ error: 'Error al eliminar la tarea' });
     }
+});
 
-    // Nueva lógica de permisos.
-    const esAdmin = req.user.role === 'admin';
-    const esCreador = info.created_by === req.userId;
-    const esResponsable = info.responsible_user_id === req.userId; // <-- AÑADIDO
-    const estaAsignado = info.assigned_ids ? info.assigned_ids.split(',').includes(req.userId.toString()) : false;
+// ======================================================
+// ===      COMMENTS, ATTACHMENTS, DOWNLOADS          ===
+// ======================================================
 
-    // ✨ MODIFICADO: Añadido !esResponsable
-    if (!esAdmin && !esCreador && !esResponsable && !estaAsignado) {
-      return res.status(403).json({ error: 'No tienes permiso para eliminar este adjunto.' });
+// ======================================================
+// ===             COMMENTS                           ===
+// ======================================================
+
+// 💬 GET COMMENTS FOR A TASK
+router.get('/tasks/:id/comments', authenticateToken, async (req, res) => {
+    try {
+        const taskId = req.params.id;
+        const { tenantId } = req;
+
+        // Verify task belongs to tenant
+        const taskCheck = await pool.query(
+            'SELECT id FROM tasks WHERE id = $1 AND tenant_id = $2',
+            [taskId, tenantId]
+        );
+
+        if (taskCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'Tarea no encontrada' });
+        }
+
+        // Get comments with user info and attachments
+        const sql = `
+      SELECT 
+        c.id,
+        c.contenido as comment,
+        c.fecha_creacion as created_at,
+        u.id as user_id,
+        u.name as user_name,
+        u.avatar_url,
+        json_agg(
+          DISTINCT jsonb_build_object(
+            'id', a.id,
+            'file_name', a.file_name,
+            'file_path', a.file_path,
+            'uploaded_at', a.uploaded_at
+          )
+        ) FILTER (WHERE a.id IS NOT NULL) as attachments
+      FROM comments c
+      JOIN users u ON c.autor_id = u.id
+      LEFT JOIN attachments a ON c.id = a.comment_id
+      WHERE c.task_id = $1
+      GROUP BY c.id, u.id, u.name, u.avatar_url
+      ORDER BY c.fecha_creacion ASC
+    `;
+
+        const result = await pool.query(sql, [taskId]);
+
+        // Process attachments
+        result.rows.forEach(comment => {
+            if (!comment.attachments || comment.attachments[0] === null) {
+                comment.attachments = [];
+            }
+        });
+
+        res.json(result.rows);
+    } catch (err) {
+        console.error('❌ Error al obtener comentarios:', err);
+        res.status(500).json({ error: 'Error al obtener comentarios' });
     }
-
-    // Si tiene permisos, procedemos a eliminar (esta parte no cambia).
-    const filePath = path.join(uploadsDir, info.file_path);
-    db.run("DELETE FROM attachments WHERE id = ?", [attachmentId], function (dbErr) {
-      if (dbErr) {
-        return res.status(500).json({ error: 'Error al eliminar el adjunto de la base de datos.' });
-      }
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-      }
-      res.status(200).json({ success: true, message: 'Adjunto eliminado.' });
-      broadcast({ type: 'TASKS_UPDATED' });
-    });
-  });
 });
 
-// 🗓️ RESUMEN DE TAREAS
-router.get('/tasks/resumen', authenticateToken, (req, res) => {
-  const sql = `
-    SELECT 
-      (SELECT COUNT(*) FROM tasks WHERE status = 'pendiente' AND due_date < datetime('now', '-4 hours')) as vencidas,
-      (SELECT COUNT(*) FROM tasks WHERE status = 'pendiente' AND due_date >= datetime('now', '-4 hours') AND due_date <= datetime('now', '-4 hours', '+3 days')) as proximas,
-      (SELECT COUNT(*) FROM tasks WHERE status = 'pendiente') as total_pendientes
-  `;
-  db.get(sql, [], (err, row) => {
-    if (err) return res.status(500).json({ error: 'Error al generar el resumen ' });
-    res.json(row || { vencidas: 0, proximas: 0, total_pendientes: 0 });
-  });
+// 💬 ADD COMMENT (with optional attachments)
+router.post('/tasks/comments', upload.array('attachments', 5), authenticateToken, async (req, res) => {
+    const client = await pool.connect();
+
+    try {
+        const { task_id, contenido } = req.body;
+        const userId = req.userId;
+        const { tenantId } = req;
+
+        if (!task_id || !contenido) {
+            return res.status(400).json({ error: 'task_id y contenido son requeridos' });
+        }
+
+        // Verify task belongs to tenant
+        const taskCheck = await client.query(
+            'SELECT id, title FROM tasks WHERE id = $1 AND tenant_id = $2',
+            [task_id, tenantId]
+        );
+
+        if (taskCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'Tarea no encontrada' });
+        }
+
+        await client.query('BEGIN');
+
+        // 1. Insert comment
+        const commentResult = await client.query(`
+      INSERT INTO comments (task_id, autor_id, contenido)
+      VALUES ($1, $2, $3)
+      RETURNING id, fecha_creacion as created_at
+    `, [task_id, userId, contenido]);
+
+        const newComment = commentResult.rows[0];
+
+        // Get user name for response
+        const userRes = await client.query('SELECT name FROM users WHERE id = $1', [userId]);
+        const userName = userRes.rows[0]?.name || 'Usuario';
+
+        // 2. Insert attachments if any
+        const attachments = [];
+        if (req.files && req.files.length > 0) {
+            for (const file of req.files) {
+                const attResult = await client.query(`
+          INSERT INTO attachments (task_id, comment_id, uploaded_by, file_name, file_path)
+          VALUES ($1, $2, $3, $4, $5)
+          RETURNING id, file_name, file_path, uploaded_at
+        `, [task_id, newComment.id, userId, file.originalname, file.filename]);
+
+                attachments.push(attResult.rows[0]);
+            }
+        }
+
+        // 2.5. Process mentioned users and create notifications for them
+        const mentionedUserIds = req.body.mentioned_user_ids ? JSON.parse(req.body.mentioned_user_ids) : [];
+        if (mentionedUserIds.length > 0) {
+            for (const mentionedUserId of mentionedUserIds) {
+                const mensaje = `${userName} te mencionó en "${taskCheck.rows[0].title.substring(0, 30)}..."`; await client.query(
+                    'INSERT INTO notifications (usuario_id, mensaje, tipo, task_id) VALUES ($1, $2, $3, $4)',
+                    [mentionedUserId, mensaje, 'mention', task_id]
+                );
+            }
+        }
+
+        // 3. Create notifications for task participants (except commenter)
+        const participantsSql = `
+      SELECT DISTINCT u.id, u.email_notifications
+      FROM users u
+      WHERE u.tenant_id = $1
+        AND u.id != $2
+        AND (
+          u.id = (SELECT created_by FROM tasks WHERE id = $3)
+          OR u.id = (SELECT responsible_user_id FROM tasks WHERE id = $3)
+          OR u.id IN (SELECT user_id FROM task_assignments WHERE task_id = $3)
+        )
+    `;
+
+        const taskTitle = taskCheck.rows[0].title;
+
+        for (const participant of participants.rows) {
+            const mensaje = `${userName} comentó en "${taskTitle.substring(0, 30)}..."`;
+            await client.query(
+                'INSERT INTO notifications (usuario_id, mensaje, tipo, task_id) VALUES ($1, $2, $3, $4)',
+                [participant.id, mensaje, 'comment', task_id]
+            );
+        }
+
+        await client.query('COMMIT');
+
+        res.status(201).json({
+            success: true,
+            comment: {
+                id: newComment.id,
+                task_id: parseInt(task_id),
+                user_id: userId,
+                user_name: userName,
+                comment: contenido,
+                created_at: newComment.created_at,
+                attachments: attachments
+            }
+        });
+
+        broadcast({ type: 'TASKS_UPDATED' });
+
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('❌ Error al crear comentario:', err);
+
+        // Clean up uploaded files if DB insert failed
+        if (req.files) {
+            req.files.forEach(file => {
+                const filePath = path.join(uploadsDir, file.filename);
+                if (fs.existsSync(filePath)) {
+                    fs.unlinkSync(filePath);
+                }
+            });
+        }
+
+        res.status(500).json({ error: 'Error al crear el comentario' });
+    } finally {
+        client.release();
+    }
 });
 
-// 🏷️ OBTENER TODAS LAS ETIQUETAS
-router.get('/labels', authenticateToken, (req, res) => {
-  db.all("SELECT * FROM labels ORDER BY name", (err, labels) => {
-    if (err) return res.status(500).json({ error: 'Error al obtener etiquetas' });
-    res.json(labels || []);
-  });
+// ======================================================
+// ===             FILE ATTACHMENTS                   ===
+// ======================================================
+
+// 📎 UPLOAD FILES TO TASK (without comment)
+router.post('/upload', upload.array('files', 10), authenticateToken, async (req, res) => {
+    const client = await pool.connect();
+
+    try {
+        const { task_id } = req.body;
+        const userId = req.userId;
+        const { tenantId } = req;
+
+        if (!task_id) {
+            return res.status(400).json({ error: 'task_id es requerido' });
+        }
+
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ error: 'No se recibieron archivos' });
+        }
+
+        // Verify task belongs to tenant
+        const taskCheck = await client.query(
+            'SELECT id FROM tasks WHERE id = $1 AND tenant_id = $2',
+            [task_id, tenantId]
+        );
+
+        if (taskCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'Tarea no encontrada' });
+        }
+
+        const attachments = [];
+
+        for (const file of req.files) {
+            const result = await client.query(`
+        INSERT INTO attachments (task_id, uploaded_by, file_name, file_path)
+        VALUES ($1, $2, $3, $4)
+        RETURNING id, file_name, file_path, uploaded_at
+      `, [task_id, userId, file.originalname, file.filename]);
+
+            attachments.push(result.rows[0]);
+        }
+
+        res.status(201).json({
+            success: true,
+            attachments: attachments
+        });
+
+        broadcast({ type: 'TASKS_UPDATED' });
+
+    } catch (err) {
+        console.error('❌ Error al subir archivos:', err);
+
+        // Clean up uploaded files
+        if (req.files) {
+            req.files.forEach(file => {
+                const filePath = path.join(uploadsDir, file.filename);
+                if (fs.existsSync(filePath)) {
+                    fs.unlinkSync(filePath);
+                }
+            });
+        }
+
+        res.status(500).json({ error: 'Error al subir los archivos' });
+    } finally {
+        client.release();
+    }
 });
 
-// 🏷️ CREAR UNA NUEVA ETIQUETA
-router.post('/labels', jsonParser, [
-  authenticateToken,
-  body('name').trim().isLength({ min: 1 }).escape().withMessage('El nombre es requerido')
+// 📥 DOWNLOAD FILE
+router.get('/download/:filename', authenticateToken, async (req, res) => {
+    try {
+        const { filename } = req.params;
+        const { userId, tenantId } = req;
+
+        // Get attachment info
+        const result = await pool.query(`
+      SELECT a.*, t.tenant_id
+      FROM attachments a
+      JOIN tasks t ON a.task_id = t.id
+      WHERE a.file_path = $1
+    `, [filename]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Archivo no encontrado' });
+        }
+
+        const attachment = result.rows[0];
+
+        // Verify tenant access
+        if (attachment.tenant_id !== tenantId) {
+            return res.status(403).json({ error: 'No tienes permiso para acceder a este archivo' });
+        }
+
+        const filePath = path.join(uploadsDir, filename);
+
+        if (!fs.existsSync(filePath)) {
+            return res.status(404).json({ error: 'Archivo no encontrado en el sistema' });
+        }
+
+        // Set headers for download
+        res.setHeader('Content-Disposition', `attachment; filename="${attachment.file_name}"`);
+        res.setHeader('Content-Type', 'application/octet-stream');
+
+        // Stream file
+        const fileStream = fs.createReadStream(filePath);
+        fileStream.pipe(res);
+
+    } catch (err) {
+        console.error('❌ Error al descargar archivo:', err);
+        res.status(500).json({ error: 'Error al descargar el archivo' });
+    }
+});
+
+// 🗑️ DELETE ATTACHMENT
+router.delete('/attachment/:id', authenticateToken, async (req, res) => {
+    const client = await pool.connect();
+
+    try {
+        const attachmentId = req.params.id;
+        const { userId, tenantId } = req;
+        const userRole = req.user.role;
+
+        // Get attachment info with task details
+        const result = await client.query(`
+       SELECT a.*, t.created_by, t.responsible_user_id, t.tenant_id,
+              string_agg(ta.user_id::text, ',') as assigned_ids
+       FROM attachments a
+       JOIN tasks t ON a.task_id = t.id
+       LEFT JOIN task_assignments ta ON t.id = ta.task_id
+       WHERE a.id = $1
+       GROUP BY a.id, t.created_by, t.responsible_user_id, t.tenant_id
+    `, [attachmentId]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Adjunto no encontrado' });
+        }
+
+        const attachment = result.rows[0];
+
+        // Verify tenant
+        if (attachment.tenant_id !== tenantId) {
+            return res.status(403).json({ error: 'No tienes permiso' });
+        }
+
+        // Permission check: admin, uploader, task creator, responsible, or assigned
+        const isAdmin = userRole === 'admin';
+        const isUploader = attachment.user_id === userId;
+        const isCreator = attachment.created_by === userId;
+        const isResponsible = attachment.responsible_user_id === userId;
+        const isAssigned = attachment.assigned_ids && attachment.assigned_ids.includes(userId);
+
+        if (!isAdmin && !isUploader && !isCreator && !isResponsible && !isAssigned) {
+            return res.status(403).json({ error: 'No tienes permiso para eliminar este adjunto' });
+        }
+
+        // Delete from database
+        await client.query('DELETE FROM attachments WHERE id = $1', [attachmentId]);
+
+        // Delete physical file
+        const filePath = path.join(uploadsDir, attachment.file_path);
+        if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+        }
+
+        res.status(200).json({ success: true, message: 'Adjunto eliminado' });
+        broadcast({ type: 'TASKS_UPDATED' });
+
+    } catch (err) {
+        console.error('❌ Error al eliminar adjunto:', err);
+        res.status(500).json({ error: 'Error al eliminar el adjunto' });
+    } finally {
+        client.release();
+    }
+});
+
+
+// ======================================================
+// ===           MISSING ROUTES (RESTORED)            ===
+// ======================================================
+
+// 🗓️ TASK SUMMARY (Counts)
+router.get('/tasks/resumen', authenticateToken, async (req, res) => {
+    try {
+        const { tenantId } = req;
+
+        // PostgreSQL query using FILTER for efficiency
+        const sql = `
+            SELECT 
+                COUNT(*) FILTER (WHERE status = 'pendiente' AND due_date < NOW()) as vencidas,
+                COUNT(*) FILTER (WHERE status = 'pendiente' AND due_date >= NOW() AND due_date <= (NOW() + INTERVAL '3 days')) as proximas,
+                COUNT(*) FILTER (WHERE status = 'pendiente') as total_pendientes
+            FROM tasks
+            WHERE tenant_id = $1 AND is_archived = false
+        `;
+
+        const result = await pool.query(sql, [tenantId]);
+
+        // Ensure numbers are returned as integers (Postgres COUNT returns bigint as string)
+        const row = result.rows[0];
+        const response = {
+            vencidas: parseInt(row.vencidas || 0),
+            proximas: parseInt(row.proximas || 0),
+            total_pendientes: parseInt(row.total_pendientes || 0)
+        };
+
+        res.json(response);
+    } catch (err) {
+        console.error('❌ Error al generar resumen:', err);
+        res.status(500).json({ error: 'Error al generar el resumen' });
+    }
+});
+
+// 🏷️ GET ALL LABELS
+router.get('/labels', authenticateToken, async (req, res) => {
+    try {
+        const { tenantId } = req;
+        const result = await pool.query(
+            'SELECT * FROM labels WHERE tenant_id = $1 ORDER BY name',
+            [tenantId]
+        );
+        res.json(result.rows);
+    } catch (err) {
+        console.error('❌ Error al obtener etiquetas:', err);
+        res.status(500).json({ error: 'Error al obtener etiquetas' });
+    }
+});
+
+// 🏷️ CREATE LABEL
+router.post('/labels', jsonParser, authenticateToken, [
+    body('name').trim().isLength({ min: 1 }).escape()
 ], async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-  const { name, color } = req.body;
-  const created_by = req.userId;
-  db.run("INSERT OR IGNORE INTO labels (name, color, created_by) VALUES (?, ?, ?)",
-    [name, color || '#00A651', created_by],
-    function (err) {
-      if (err) return res.status(500).json({ error: 'No se pudo crear la etiqueta' });
-      if (this.changes === 0) return res.status(409).json({ error: 'La etiqueta ya existe' });
-      res.status(201).json({
-        id: this.lastID, name, color: color || '#00A651', created_by, success: true
-      });
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const { name, color } = req.body;
+        const { userId, tenantId } = req;
+
+        const result = await pool.query(
+            `INSERT INTO labels (tenant_id, name, color, created_by)
+             VALUES ($1, $2, $3, $4)
+             ON CONFLICT (tenant_id, name) DO NOTHING
+             RETURNING id, name, color, created_by`,
+            [tenantId, name, color || '#00A651', userId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(409).json({ error: 'La etiqueta ya existe' });
+        }
+
+        res.status(201).json({ ...result.rows[0], success: true });
+
+    } catch (err) {
+        console.error('❌ Error al crear etiqueta:', err);
+        res.status(500).json({ error: 'No se pudo crear la etiqueta' });
     }
-  );
 });
 
-// 🗄️ ARCHIVAR UNA TAREA
-router.post('/tasks/:id/archive', authenticateToken, (req, res) => {
-  const taskId = req.params.id;
-  const userId = req.userId;
+// 🗄️ ARCHIVE TASK
+router.post('/tasks/:id/archive', authenticateToken, async (req, res) => {
+    try {
+        const taskId = req.params.id;
+        const { userId, tenantId } = req;
+        const userRole = req.user.role;
 
-  // Solo el creador o un admin puede archivar
-  db.get("SELECT created_by FROM tasks WHERE id = ?", [taskId], (err, task) => {
-    if (err) return res.status(500).json({ error: 'Error al verificar la tarea' });
-    if (!task) return res.status(404).json({ error: 'Tarea no encontrada' });
+        // Verify permission
+        const checkSql = 'SELECT created_by FROM tasks WHERE id = $1 AND tenant_id = $2';
+        const checkResult = await pool.query(checkSql, [taskId, tenantId]);
 
-    if (task.created_by !== userId && req.user.role !== 'admin') {
-      return res.status(403).json({ error: 'No tienes permiso para archivar esta tarea' });
+        if (checkResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Tarea no encontrada' });
+        }
+
+        const task = checkResult.rows[0];
+        if (task.created_by !== userId && userRole !== 'admin') {
+            return res.status(403).json({ error: 'No tienes permiso para archivar esta tarea' });
+        }
+
+        // Archive
+        await pool.query(
+            'UPDATE tasks SET is_archived = true WHERE id = $1 AND tenant_id = $2',
+            [taskId, tenantId]
+        );
+
+        res.status(200).json({ success: true, message: 'Tarea archivada' });
+        broadcast({ type: 'TASKS_UPDATED' });
+
+    } catch (err) {
+        console.error('❌ Error al archivar tarea:', err);
+        res.status(500).json({ error: 'Error al archivar la tarea' });
     }
+});
 
-    db.run("UPDATE tasks SET is_archived = 1 WHERE id = ?", [taskId], function (err) {
-      if (err) return res.status(500).json({ error: 'Error al archivar la tarea' });
-      res.status(200).json({ success: true, message: 'Tarea archivada' });
+// 🗄️ AUTO-ARCHIVE TASKS (Cron or Manual Trigger)
+router.post('/tasks/auto-archive', authenticateToken, async (req, res) => {
+    try {
+        const { tenantId } = req;
+        const userRole = req.user.role;
 
-      // Enviamos una actualización a todos los clientes
-      broadcast({ type: 'TASKS_UPDATED' });
-    });
-  });
+        if (userRole !== 'admin') {
+            return res.status(403).json({ error: 'Requiere permisos de administrador' });
+        }
+
+        // Archive completed tasks older than 30 days
+        const result = await pool.query(
+            `UPDATE tasks 
+             SET is_archived = true 
+             WHERE tenant_id = $1 
+               AND status = 'completada' 
+               AND completed_at < NOW() - INTERVAL '30 days'
+               AND is_archived = false`,
+            [tenantId]
+        );
+
+        res.json({
+            success: true,
+            message: `Se archivaron ${result.rowCount} tareas antiguas`,
+            count: result.rowCount
+        });
+
+        if (result.rowCount > 0) {
+            broadcast({ type: 'TASKS_UPDATED' });
+        }
+
+    } catch (err) {
+        console.error('❌ Error en auto-archivado:', err);
+        res.status(500).json({ error: 'Error al ejecutar auto-archivado' });
+    }
+});
+
+// 🚀 COMPLETE TASK (With Proof)
+router.post('/tasks/:id/complete', authenticateToken, upload.single('completion_proof'), async (req, res) => {
+    const client = await pool.connect();
+    try {
+        const taskId = req.params.id;
+        const { userId, tenantId } = req;
+        const { closing_note } = req.body;
+
+        // Verify existing task
+        const checkResult = await client.query(
+            'SELECT id FROM tasks WHERE id = $1 AND tenant_id = $2',
+            [taskId, tenantId]
+        );
+
+        if (checkResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Tarea no encontrada' });
+        }
+
+        await client.query('BEGIN');
+
+        // 1. Mark as completed
+        await client.query(
+            "UPDATE tasks SET status = 'completada', completed_at = NOW() WHERE id = $1",
+            [taskId]
+        );
+
+        // 2. Save proof file if exists
+        if (req.file) {
+            await client.query(
+                `INSERT INTO attachments (task_id, user_id, file_name, file_path, file_type, file_size, attachment_type)
+                 VALUES ($1, $2, $3, $4, $5, $6, 'completion_proof')`,
+                [taskId, userId, req.file.originalname, req.file.filename, req.file.mimetype, req.file.size]
+            );
+        }
+
+        // 3. Save closing note as comment
+        if (closing_note && closing_note.trim()) {
+            await client.query(
+                'INSERT INTO comments (task_id, user_id, comment) VALUES ($1, $2, $3)',
+                [taskId, userId, closing_note.trim()]
+            );
+        }
+
+        await client.query('COMMIT');
+
+        res.json({
+            success: true,
+            message: 'Tarea completada exitosamente',
+            hasProof: !!req.file
+        });
+
+        broadcast({ type: 'TASKS_UPDATED' });
+
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('❌ Error al completar tarea:', err);
+
+        // Cleanup file
+        if (req.file) {
+            const filePath = path.join(uploadsDir, req.file.filename);
+            if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        }
+
+        res.status(500).json({ error: 'Error al completar la tarea' });
+    } finally {
+        client.release();
+    }
+});
+
+// 🔔 CHECK TASKS DUE TODAY (Cron or Manual Trigger)
+router.post('/tasks/check-due-today', authenticateToken, async (req, res) => {
+    try {
+        const { tenantId } = req;
+        const today = new Date().toISOString().slice(0, 10);
+
+        // Find pending tasks due today that haven't been notified yet today
+        const sql = `
+            SELECT 
+                t.id, 
+                t.title, 
+                t.created_by, 
+                t.responsible_user_id,
+                array_agg(ta.user_id) FILTER (WHERE ta.user_id IS NOT NULL) as assigned_ids
+            FROM tasks t
+            LEFT JOIN task_assignments ta ON t.id = ta.task_id
+            WHERE t.tenant_id = $1
+              AND DATE(t.due_date) = DATE($2)
+              AND t.status = 'pendiente'
+              AND NOT EXISTS (
+                SELECT 1 FROM notifications n
+                WHERE n.tipo = 'due_today' 
+                  AND n.task_id = t.id
+                  AND DATE(n.fecha_creacion) = DATE($2)
+              )
+            GROUP BY t.id
+        `;
+
+        const result = await pool.query(sql, [tenantId, today]);
+        const tasks = result.rows;
+
+        let notificationsCount = 0;
+
+        for (const task of tasks) {
+            const allInvolved = new Set();
+            if (task.created_by) allInvolved.add(task.created_by);
+            if (task.responsible_user_id) allInvolved.add(task.responsible_user_id);
+            if (task.assigned_ids) {
+                task.assigned_ids.forEach(id => allInvolved.add(id));
+            }
+
+            const mensaje = `La tarea "${task.title.substring(0, 30)}..." vence hoy.`;
+
+            for (const userId of allInvolved) {
+                await pool.query(
+                    `INSERT INTO notifications (tenant_id, usuario_id, mensaje, tipo, task_id) 
+                     VALUES ($1, $2, $3, 'due_today', $4)`,
+                    [tenantId, userId, mensaje, task.id]
+                );
+                notificationsCount++;
+            }
+        }
+
+        res.json({
+            success: true,
+            checked: tasks.length,
+            notifications_sent: notificationsCount
+        });
+
+    } catch (err) {
+        console.error('❌ Error al verificar tareas vencidas:', err);
+        res.status(500).json({ error: 'Error al verificar tareas vencidas' });
+    }
 });
 
 // 🗄️ OBTENER TAREAS ARCHIVADAS (COMPLETO)
-router.get('/tasks/archived', authenticateToken, (req, res) => {
-  const sql = `
-    SELECT 
-      t.*, 
-      u.name as created_by_name,
-      ur.name as responsible_user_name,
-      ur.id as responsible_user_id,
-      uo.name as observer_user_name,
-      GROUP_CONCAT(DISTINCT ua.name) as assigned_names,
-      GROUP_CONCAT(DISTINCT ta.user_id) as assigned_ids,
-      GROUP_CONCAT(DISTINCT l.name) as label_names,
-      GROUP_CONCAT(DISTINCT l.color) as label_colors,
-      GROUP_CONCAT(
-        CASE
-          WHEN att.id IS NOT NULL THEN
-            att.id || ':' || att.file_name || ':' || att.file_path
-          ELSE
-            NULL
-        END
-      ) as attachments_data
-    FROM tasks t
-    LEFT JOIN users u ON t.created_by = u.id
-    LEFT JOIN users ur ON t.responsible_user_id = ur.id
-    LEFT JOIN users uo ON t.observer_user_id = uo.id
-    LEFT JOIN task_assignments ta ON t.id = ta.task_id
-    LEFT JOIN users ua ON ta.user_id = ua.id
-    LEFT JOIN task_labels tl ON t.id = tl.task_id
-    LEFT JOIN labels l ON tl.label_id = l.id
-    LEFT JOIN attachments att ON t.id = att.task_id AND att.comment_id IS NULL
-    WHERE t.is_archived = 1
-    GROUP BY t.id
-    ORDER BY t.completed_at DESC
-  `;
+router.get('/tasks/archived', authenticateToken, async (req, res) => {
+    try {
+        const { tenantId } = req;
+        const sql = `
+            SELECT 
+                t.*, 
+                u.name as created_by_name,
+                ur.name as responsible_user_name,
+                ur.id as responsible_user_id,
+                uo.name as observer_user_name,
+                string_agg(DISTINCT ua.name, ',') as assigned_names,
+                string_agg(DISTINCT ta.user_id::text, ',') as assigned_ids,
+                string_agg(DISTINCT l.name, ',') as label_names,
+                string_agg(DISTINCT l.color, ',') as label_colors,
+                string_agg(
+                    CASE 
+                        WHEN att.id IS NOT NULL THEN 
+                            att.id || ':' || att.file_name || ':' || att.file_path 
+                        ELSE NULL 
+                    END, ','
+                ) as attachments_data
+            FROM tasks t
+            LEFT JOIN users u ON t.created_by = u.id
+            LEFT JOIN users ur ON t.responsible_user_id = ur.id
+            LEFT JOIN users uo ON t.observer_user_id = uo.id
+            LEFT JOIN task_assignments ta ON t.id = ta.task_id
+            LEFT JOIN users ua ON ta.user_id = ua.id
+            LEFT JOIN task_labels tl ON t.id = tl.task_id
+            LEFT JOIN labels l ON tl.label_id = l.id
+            LEFT JOIN attachments att ON t.id = att.task_id AND att.comment_id IS NULL
+            WHERE t.tenant_id = $1 AND t.is_archived = true
+            GROUP BY t.id, u.name, ur.name, ur.id, uo.name
+            ORDER BY t.completed_at DESC
+        `;
 
-  db.all(sql, (err, tasks) => {
-    if (err) {
-      console.error('❌ Error al obtener tareas archivadas:', err);
-      return res.status(500).json({ error: 'Error al obtener tareas archivadas' });
-    }
+        const result = await pool.query(sql, [tenantId]);
 
-    // Procesar adjuntos y etiquetas para cada tarea
-    const processedTasks = (tasks || []).map(task => {
-      // Adjuntos
-      if (task.attachments_data) {
-        const uniqueAttachments = new Set(task.attachments_data.split(','));
-        task.attachments = Array.from(uniqueAttachments).map(attString => {
-          const parts = attString.split(':');
-          const id = parts[0];
-          const file_path = parts.pop();
-          const file_name = parts.slice(1).join(':');
-          return { id: parseInt(id), file_name, file_path };
+        // Procesar adjuntos y etiquetas para cada tarea
+        const processedTasks = (result.rows || []).map(task => {
+            // Adjuntos
+            if (task.attachments_data) {
+                const uniqueAttachments = new Set(task.attachments_data.split(','));
+                task.attachments = Array.from(uniqueAttachments).map(attString => {
+                    const parts = attString.split(':');
+                    const id = parts[0];
+                    const file_path = parts.pop();
+                    const file_name = parts.slice(1).join(':');
+                    return { id: parseInt(id), file_name, file_path };
+                });
+            } else {
+                task.attachments = [];
+            }
+            delete task.attachments_data;
+
+            // Etiquetas
+            task.labels = [];
+            if (task.label_names && task.label_colors) {
+                const names = task.label_names.split(',');
+                const colors = task.label_colors.split(',');
+                task.labels = names.map((name, index) => ({
+                    name: name,
+                    color: colors[index] || '#ccc'
+                }));
+            }
+            return task;
         });
-      } else {
-        task.attachments = [];
-      }
-      delete task.attachments_data;
 
-      // Etiquetas
-      task.labels = [];
-      if (task.label_names && task.label_colors) {
-        const names = task.label_names.split(',');
-        const colors = task.label_colors.split(',');
-        task.labels = names.map((name, index) => ({
-          name: name,
-          color: colors[index] || '#ccc'
-        }));
-      }
-      return task;
-    });
-
-    res.json(processedTasks);
-  });
+        res.json(processedTasks);
+    } catch (err) {
+        console.error('❌ Error al obtener tareas archivadas:', err);
+        res.status(500).json({ error: 'Error al obtener tareas archivadas' });
+    }
 });
 
-router.put('/tasks/:id/unarchive', authenticateToken, (req, res) => {
-  const taskId = req.params.id;
+router.put('/tasks/:id/unarchive', authenticateToken, async (req, res) => {
+    try {
+        const taskId = req.params.id;
+        const { tenantId } = req;
 
-  console.log(`🔄 Restaurando tarea ID: ${taskId} (por cualquier usuario)`);
+        const result = await pool.query(
+            "UPDATE tasks SET is_archived = false, status = 'pendiente', completed_at = NULL WHERE id = $1 AND tenant_id = $2",
+            [taskId, tenantId]
+        );
 
-  // La consulta de restauración se ejecuta directamente, sin verificar quién es el creador.
-  const sql = "UPDATE tasks SET is_archived = 0, status = 'pendiente', completed_at = NULL WHERE id = ?";
+        if (result.rowCount === 0) {
+            return res.status(404).json({ error: 'La tarea no se encontró para restaurar.' });
+        }
 
-  db.run(sql, [taskId], function (err) {
-    if (err) {
-      console.error('❌ Error SQL al restaurar tarea:', err);
-      return res.status(500).json({ error: 'Error al ejecutar la restauración.' });
+        broadcast({ type: 'TASK_RESTORED', taskId: taskId });
+        res.status(200).json({ success: true, message: 'Tarea restaurada correctamente' });
+
+    } catch (err) {
+        console.error('❌ Error al restaurar tarea:', err);
+        res.status(500).json({ error: 'Error al ejecutar la restauración' });
     }
-
-    // Esta verificación ahora también maneja el caso de "Tarea no encontrada"
-    if (this.changes === 0) {
-      return res.status(404).json({ error: 'La tarea no se encontró para restaurar.' });
-    }
-
-    console.log(`✅ Tarea ${taskId} restaurada y movida a 'pendiente'.`);
-
-    broadcast({ type: 'TASK_RESTORED', taskId: taskId });
-
-    res.status(200).json({
-      success: true,
-      message: 'Tarea restaurada correctamente'
-    });
-  });
 });
 
-// 👑 CAMBIAR CREADOR DE TAREA (Solo Admins)
-router.put('/tasks/:id/creator', jsonParser, authenticateToken, (req, res) => {
-  // 1. Verificar si el usuario es un administrador
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({ error: 'Acción no permitida. Se requiere rol de administrador.' });
-  }
+// ======================================================
+// ===        MISSING ROUTES RESTORED                 ===
+// ======================================================
 
-  const taskId = req.params.id;
-  const { newCreatorId } = req.body;
+// 📎 GET ATTACHMENTS FOR A TASK (without comment attachments)
+router.get('/attachments/task/:taskId', authenticateToken, async (req, res) => {
+    try {
+        const { taskId } = req.params;
+        const { tenantId } = req;
 
-  if (!newCreatorId) {
-    return res.status(400).json({ error: 'El ID del nuevo creador es requerido.' });
-  }
+        // Verify task belongs to tenant
+        const taskCheck = await pool.query(
+            'SELECT id FROM tasks WHERE id = $1 AND tenant_id = $2',
+            [taskId, tenantId]
+        );
 
-  // 2. Actualizar la base de datos
-  const sql = "UPDATE tasks SET created_by = ? WHERE id = ?";
-  db.run(sql, [newCreatorId, taskId], function (err) {
-    if (err) {
-      return res.status(500).json({ error: 'Error al actualizar la tarea en la base de datos.' });
+        if (taskCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'Tarea no encontrada' });
+        }
+
+        const sql = `
+            SELECT a.*, u.name as uploaded_by_name 
+            FROM attachments a 
+            JOIN users u ON a.uploaded_by = u.id 
+            WHERE a.task_id = $1 AND a.comment_id IS NULL
+        `;
+
+        const result = await pool.query(sql, [taskId]);
+        res.json(result.rows || []);
+    } catch (err) {
+        console.error('❌ Error al obtener adjuntos:', err);
+        res.status(500).json({ error: 'Error al obtener adjuntos' });
     }
-    if (this.changes === 0) {
-      return res.status(404).json({ error: 'La tarea no fue encontrada.' });
-    }
-
-    res.status(200).json({ success: true, message: 'El creador de la tarea ha sido actualizado.' });
-    broadcast({ type: 'TASKS_UPDATED' }); // Notificar a todos para que la vista se actualice
-  });
 });
 
-// 🚀 FINALIZAR TAREA CON PRUEBA DE FINALIZACIÓN (NUEVO ENDPOINT - VERSIÓN CORREGIDA)
-router.post('/tasks/:id/complete', authenticateToken, upload.single('completion_proof'), async (req, res) => {
-  const taskId = req.params.id;
-  const userId = req.userId;
-  const { closing_note } = req.body; // Nota de cierre opcional
+// 🔄 UPDATE TASK STATUS
+router.put('/tasks/:id/status', jsonParser, authenticateToken, [
+    body('status').isIn(['pendiente', 'en_camino', 'completada'])
+], async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+        const { userId, tenantId } = req;
 
-  console.log(`📝 Iniciando finalización de tarea ${taskId} por usuario ${userId}`);
-
-  db.serialize(() => {
-    // Usamos una transacción para asegurar que todas las operaciones se completen o ninguna
-    db.run("BEGIN TRANSACTION");
-
-    let hasError = false;
-
-    // 1. Marcar la tarea como completada
-    const completed_at = new Date().toISOString();
-    db.run("UPDATE tasks SET status = 'completada', completed_at = ? WHERE id = ?",
-      [completed_at, taskId],
-      function (err) {
-        if (err) {
-          console.error('❌ Error al actualizar tarea:', err.message);
-          hasError = true;
-          db.run("ROLLBACK");
-          return res.status(500).json({ error: 'Error al actualizar la tarea' });
-        }
-        console.log(`✅ Tarea ${taskId} marcada como completada`);
-      }
-    );
-
-    // 2. Si se adjuntó un archivo, guardarlo como prueba de finalización
-    if (req.file && !hasError) {
-      const { filename, originalname, mimetype, size } = req.file;
-      const attachmentSql = `
-        INSERT INTO attachments 
-          (task_id, file_path, file_name, file_type, file_size, uploaded_by, attachment_type) 
-        VALUES (?, ?, ?, ?, ?, ?, 'completion_proof')
-      `;
-      db.run(attachmentSql, [taskId, filename, originalname, mimetype, size, userId], function (err) {
-        if (err) {
-          console.error('❌ Error al guardar archivo:', err.message);
-          hasError = true;
-          db.run("ROLLBACK");
-          return res.status(500).json({ error: 'Error al guardar el comprobante' });
-        }
-        console.log(`✅ Archivo de prueba guardado: ${originalname}`);
-      }); // ✅ PARÉNTESIS CORREGIDO
-    }
-
-    // 3. Si hay una nota de cierre, añadirla como comentario
-    if (closing_note && closing_note.trim() !== '' && !hasError) {
-      const commentSql = `INSERT INTO comments (task_id, contenido, autor_id) VALUES (?, ?, ?)`;
-      db.run(commentSql, [taskId, closing_note.trim(), userId], function (err) {
-        if (err) {
-          console.error('❌ Error al guardar comentario:', err.message);
-          hasError = true;
-          db.run("ROLLBACK");
-          return res.status(500).json({ error: 'Error al guardar la nota de cierre' });
-        }
-        console.log(`✅ Nota de cierre guardada`);
-      }); // ✅ PARÉNTESIS CORREGIDO
-    }
-
-    // 4. Si todo salió bien, confirmamos la transacción
-    if (!hasError) {
-      db.run("COMMIT", function (err) {
-        if (err) {
-          console.error("❌ Error al hacer COMMIT:", err.message);
-          return res.status(500).json({ error: 'Error crítico al guardar los cambios' });
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
         }
 
-        console.log(`🎉 Tarea ${taskId} finalizada exitosamente por usuario ${userId}`);
+        // Verify task belongs to tenant and user has permissions
+        const permissionCheck = await pool.query(`
+            SELECT t.id 
+            FROM tasks t
+            LEFT JOIN task_assignments ta ON t.id = ta.task_id
+            WHERE t.id = $1 
+              AND t.tenant_id = $2
+              AND (
+                t.created_by = $3 
+                OR t.responsible_user_id = $3
+                OR ta.user_id = $3
+              )
+            GROUP BY t.id
+        `, [id, tenantId, userId]);
+
+        if (permissionCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'Tarea no encontrada o sin permisos' });
+        }
+
+        const completed_at = status === 'completada' ? new Date() : null;
+
+        const result = await pool.query(
+            'UPDATE tasks SET status = $1, completed_at = $2 WHERE id = $3 RETURNING id',
+            [status, completed_at, id]
+        );
+
+        res.json({ success: true, id: result.rows[0].id });
         broadcast({ type: 'TASKS_UPDATED' });
-        res.status(200).json({
-          success: true,
-          message: req.file ? 'Tarea completada con comprobante' : 'Tarea completada',
-          hasProof: !!req.file,
-          hasNotes: !!(closing_note && closing_note.trim())
-        });
-      });
+
+    } catch (err) {
+        console.error('❌ Error al actualizar estado:', err);
+        res.status(500).json({ error: 'Error al actualizar estado' });
     }
-  });
 });
 
+// 📝 EDIT COMMENT
+router.put('/comments/:id', jsonParser, authenticateToken, async (req, res) => {
+    try {
+        const commentId = req.params.id;
+        const { contenido } = req.body;
+        const { userId, tenantId } = req;
+
+        if (!contenido || !contenido.trim()) {
+            return res.status(400).json({ error: 'El contenido del comentario es requerido' });
+        }
+
+        // Verify comment exists, belongs to tenant, and user is the author
+        const commentCheck = await pool.query(`
+            SELECT c.id, c.task_id
+            FROM comments c
+            JOIN tasks t ON c.task_id = t.id
+            WHERE c.id = $1 AND c.autor_id = $2 AND t.tenant_id = $3
+        `, [commentId, userId, tenantId]);
+
+        if (commentCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'Comentario no encontrado o sin permisos' });
+        }
+
+        await pool.query(
+            'UPDATE comments SET contenido = $1 WHERE id = $2',
+            [contenido.trim(), commentId]
+        );
+
+        res.json({ success: true, id: commentId });
+        broadcast({ type: 'TASKS_UPDATED' });
+
+    } catch (err) {
+        console.error('❌ Error al editar comentario:', err);
+        res.status(500).json({ error: 'Error al editar comentario' });
+    }
+});
+
+// 🗑️ DELETE COMMENT
+router.delete('/comments/:id', authenticateToken, async (req, res) => {
+    const client = await pool.connect();
+
+    try {
+        const commentId = req.params.id;
+        const { userId, tenantId } = req;
+
+        await client.query('BEGIN');
+
+        // Verify comment exists, belongs to tenant, and user is the author or admin
+        const commentCheck = await client.query(`
+            SELECT c.id, c.task_id, u.role
+            FROM comments c
+            JOIN tasks t ON c.task_id = t.id
+            JOIN users u ON u.id = $2
+            WHERE c.id = $1 AND t.tenant_id = $3
+              AND (c.autor_id = $2 OR u.role = 'admin')
+        `, [commentId, userId, tenantId]);
+
+        if (commentCheck.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ error: 'Comentario no encontrado o sin permisos' });
+        }
+
+        // Delete comment (attachments will be deleted via CASCADE)
+        await client.query('DELETE FROM comments WHERE id = $1', [commentId]);
+
+        await client.query('COMMIT');
+
+        res.json({ success: true });
+        broadcast({ type: 'TASKS_UPDATED' });
+
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('❌ Error al eliminar comentario:', err);
+        res.status(500).json({ error: 'Error al eliminar comentario' });
+    } finally {
+        client.release();
+    }
+});
 
 module.exports = router;

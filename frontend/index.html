@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Operia - Gestión de Tareas para Equipos</title>
+    <meta name="description"
+        content="Operia es la plataforma de gestión de tareas y proyectos diseñada para equipos que quieren trabajar mejor juntos.">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #2c3e50;
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, #006837 0%, #00a651 100%);
+            color: white;
+            padding: 100px 20px;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: 56px;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+
+        .hero p {
+            font-size: 24px;
+            margin-bottom: 40px;
+            opacity: 0.95;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 15px 40px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 18px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: white;
+            color: #006837;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+        }
+
+        .btn-secondary:hover {
+            background: white;
+            color: #006837;
+        }
+
+        /* Features Section */
+        .features {
+            padding: 80px 20px;
+            background: #f8f9fa;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 42px;
+            margin-bottom: 60px;
+            color: #2c3e50;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+        }
+
+        .feature-card {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .feature-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        .feature-card h3 {
+            font-size: 24px;
+            margin-bottom: 15px;
+            color: #006837;
+        }
+
+        .feature-card p {
+            color: #7f8c8d;
+            line-height: 1.8;
+        }
+
+        /* Pricing Section */
+        .pricing {
+            padding: 80px 20px;
+            background: white;
+        }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .pricing-card {
+            background: white;
+            border: 2px solid #ecf0f1;
+            border-radius: 12px;
+            padding: 40px 30px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .pricing-card:hover {
+            border-color: #006837;
+            transform: translateY(-5px);
+        }
+
+        .pricing-card.featured {
+            border-color: #006837;
+            border-width: 3px;
+            position: relative;
+        }
+
+        .pricing-card.featured::before {
+            content: 'MÁS POPULAR';
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #006837;
+            color: white;
+            padding: 5px 20px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .plan-name {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .plan-price {
+            font-size: 42px;
+            font-weight: bold;
+            color: #006837;
+            margin: 20px 0;
+        }
+
+        .plan-price .currency {
+            font-size: 20px;
+        }
+
+        .plan-features {
+            list-style: none;
+            margin: 30px 0;
+            text-align: left;
+        }
+
+        .plan-features li {
+            padding: 10px 0;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .plan-features li::before {
+            content: '✓';
+            color: #27ae60;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            background: linear-gradient(135deg, #006837 0%, #00a651 100%);
+            color: white;
+            padding: 80px 20px;
+            text-align: center;
+        }
+
+        .cta-section h2 {
+            font-size: 42px;
+            margin-bottom: 20px;
+        }
+
+        .cta-section p {
+            font-size: 20px;
+            margin-bottom: 40px;
+            opacity: 0.95;
+        }
+
+        /* Footer */
+        .footer {
+            background: #2c3e50;
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 40px;
+            text-align: left;
+        }
+
+        .footer-section h4 {
+            margin-bottom: 20px;
+            color: #00a651;
+        }
+
+        .footer-section ul {
+            list-style: none;
+        }
+
+        .footer-section ul li {
+            margin-bottom: 10px;
+        }
+
+        .footer-section a {
+            color: #ecf0f1;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-section a:hover {
+            color: #00a651;
+        }
+
+        .footer-bottom {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #34495e;
+            text-align: center;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 36px;
+            }
+
+            .hero p {
+                font-size: 18px;
+            }
+
+            .section-title {
+                font-size: 32px;
+            }
+
+            .cta-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <h1>Gestiona tus tareas como nunca antes</h1>
+            <p>Operia es la plataforma de gestión de tareas diseñada para equipos que quieren trabajar mejor juntos</p>
+            <div class="cta-buttons">
+                <a href="/signup" class="btn btn-primary">Comenzar Gratis</a>
+                <a href="#pricing" class="btn btn-secondary">Ver Planes</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features">
+        <div class="container">
+            <h2 class="section-title">Todo lo que necesitas para gestionar tu equipo</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">📋</div>
+                    <h3>Gestión de Tareas</h3>
+                    <p>Crea, asigna y da seguimiento a tareas con facilidad. Sistema de etiquetas, prioridades y fechas
+                        de vencimiento.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">👥</div>
+                    <h3>Colaboración en Equipo</h3>
+                    <p>Invita a tu equipo, asigna tareas, comenta y mantén a todos en la misma página.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3>Reportes y Analytics</h3>
+                    <p>Visualiza el progreso de tu equipo con reportes detallados y métricas en tiempo real.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🔒</div>
+                    <h3>Seguridad Multi-tenant</h3>
+                    <p>Cada organización tiene su propio espacio aislado y seguro. Tus datos están protegidos.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">📱</div>
+                    <h3>Acceso desde Cualquier Lugar</h3>
+                    <p>Trabaja desde cualquier dispositivo. Diseño responsive que se adapta a tu pantalla.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🎨</div>
+                    <h3>Personalización</h3>
+                    <p>Personaliza tu espacio con tu logo y colores de marca. Haz que Operia sea tuyo.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="pricing">
+        <div class="container">
+            <h2 class="section-title">Planes para cada tipo de equipo</h2>
+            <div class="pricing-grid">
+                <div class="pricing-card">
+                    <div class="plan-name">Starter</div>
+                    <div class="plan-price">
+                        <span class="currency">$</span>0
+                    </div>
+                    <p>Gratis para siempre</p>
+                    <ul class="plan-features">
+                        <li>5 usuarios</li>
+                        <li>100 clientes</li>
+                        <li>500 MB almacenamiento</li>
+                        <li>Tareas ilimitadas</li>
+                        <li>Soporte por email</li>
+                    </ul>
+                    <a href="/signup" class="btn btn-secondary">Comenzar Gratis</a>
+                </div>
+
+                <div class="pricing-card featured">
+                    <div class="plan-name">Professional</div>
+                    <div class="plan-price">
+                        <span class="currency">$</span>29.990
+                    </div>
+                    <p>por mes</p>
+                    <ul class="plan-features">
+                        <li>25 usuarios</li>
+                        <li>500 clientes</li>
+                        <li>5 GB almacenamiento</li>
+                        <li>Tareas ilimitadas</li>
+                        <li>Branding personalizado</li>
+                        <li>Reportes avanzados</li>
+                        <li>Soporte prioritario</li>
+                    </ul>
+                    <a href="/signup" class="btn btn-primary">Comenzar Prueba</a>
+                </div>
+
+                <div class="pricing-card">
+                    <div class="plan-name">Business</div>
+                    <div class="plan-price">
+                        <span class="currency">$</span>59.990
+                    </div>
+                    <p>por mes</p>
+                    <ul class="plan-features">
+                        <li>100 usuarios</li>
+                        <li>2,000 clientes</li>
+                        <li>20 GB almacenamiento</li>
+                        <li>Tareas ilimitadas</li>
+                        <li>Branding personalizado</li>
+                        <li>Reportes avanzados</li>
+                        <li>API access</li>
+                        <li>Soporte 24/7</li>
+                    </ul>
+                    <a href="/signup" class="btn btn-secondary">Comenzar Prueba</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="container">
+            <h2>¿Listo para mejorar la productividad de tu equipo?</h2>
+            <p>Comienza tu prueba gratuita de 14 días. Sin tarjeta de crédito requerida.</p>
+            <a href="/signup" class="btn btn-primary">Comenzar Ahora</a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Operia</h4>
+                <p>Gestión de tareas para equipos modernos.</p>
+                <p style="margin-top: 20px;">Desarrollado por <a href="https://synapsedev.cl"
+                        target="_blank">SynapseDev</a></p>
+            </div>
+
+            <div class="footer-section">
+                <h4>Producto</h4>
+                <ul>
+                    <li><a href="#features">Características</a></li>
+                    <li><a href="#pricing">Precios</a></li>
+                    <li><a href="/signup">Comenzar Gratis</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Soporte</h4>
+                <ul>
+                    <li><a href="mailto:soporte@synapsedev.cl">Contacto</a></li>
+                    <li><a href="https://synapsedev.cl" target="_blank">SynapseDev</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Legal</h4>
+                <ul>
+                    <li><a href="#">Términos de Servicio</a></li>
+                    <li><a href="#">Política de Privacidad</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2026 Operia by SynapseDev. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+</body>
+
+</html>

@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planes y Precios - Operia</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .pricing-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .pricing-header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .pricing-header h1 {
+            font-size: 48px;
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+
+        .pricing-header p {
+            font-size: 20px;
+            color: #7f8c8d;
+        }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .pricing-card {
+            background: white;
+            border-radius: 16px;
+            padding: 40px 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pricing-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .pricing-card.featured {
+            border: 3px solid #006837;
+            transform: scale(1.05);
+        }
+
+        .pricing-card.featured::before {
+            content: 'MÁS POPULAR';
+            position: absolute;
+            top: 20px;
+            right: -35px;
+            background: #006837;
+            color: white;
+            padding: 5px 40px;
+            transform: rotate(45deg);
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .plan-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .plan-description {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-bottom: 20px;
+            min-height: 40px;
+        }
+
+        .plan-price {
+            font-size: 48px;
+            font-weight: bold;
+            color: #006837;
+            margin-bottom: 5px;
+        }
+
+        .plan-price .currency {
+            font-size: 24px;
+        }
+
+        .plan-period {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-bottom: 30px;
+        }
+
+        .plan-features {
+            list-style: none;
+            margin-bottom: 30px;
+        }
+
+        .plan-features li {
+            padding: 12px 0;
+            border-bottom: 1px solid #ecf0f1;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+        }
+
+        .plan-features li::before {
+            content: '✓';
+            color: #27ae60;
+            font-weight: bold;
+            margin-right: 10px;
+            font-size: 18px;
+        }
+
+        .plan-features li.disabled {
+            color: #bdc3c7;
+        }
+
+        .plan-features li.disabled::before {
+            content: '✗';
+            color: #e74c3c;
+        }
+
+        .btn-select-plan {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-select-plan.primary {
+            background: linear-gradient(135deg, #006837 0%, #00a651 100%);
+            color: white;
+        }
+
+        .btn-select-plan.primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0, 104, 55, 0.3);
+        }
+
+        .btn-select-plan.secondary {
+            background: white;
+            color: #006837;
+            border: 2px solid #006837;
+        }
+
+        .btn-select-plan.secondary:hover {
+            background: #006837;
+            color: white;
+        }
+
+        .btn-select-plan:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        .back-link a {
+            color: #006837;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .back-link a:hover {
+            text-decoration: underline;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+        }
+
+        .error-message {
+            background: #fee;
+            color: #e74c3c;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #e74c3c;
+        }
+
+        @media (max-width: 768px) {
+            .pricing-header h1 {
+                font-size: 32px;
+            }
+
+            .pricing-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .pricing-card.featured {
+                transform: scale(1);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="pricing-container">
+        <div class="pricing-header">
+            <h1>Elige el Plan Perfecto para tu Empresa</h1>
+            <p>Comienza con 14 días de prueba gratis. Sin tarjeta de crédito requerida.</p>
+        </div>
+
+        <div id="loading" class="loading">
+            <p>Cargando planes...</p>
+        </div>
+
+        <div id="error" class="error-message" style="display: none;"></div>
+
+        <div id="pricing-grid" class="pricing-grid" style="display: none;">
+            <!-- Plans will be loaded here -->
+        </div>
+
+        <div class="back-link">
+            <a href="/tablero">← Volver al Tablero</a>
+        </div>
+    </div>
+
+    <script>
+        const plans = [
+            {
+                id: 'starter',
+                name: 'Starter',
+                description: 'Perfecto para empezar',
+                price: 0,
+                period: 'Gratis para siempre',
+                features: [
+                    '5 usuarios',
+                    '100 clientes',
+                    '500 MB de almacenamiento',
+                    'Tareas ilimitadas',
+                    'Soporte por email',
+                    { text: 'Branding personalizado', disabled: true },
+                    { text: 'Reportes avanzados', disabled: true }
+                ],
+                buttonText: 'Plan Actual',
+                buttonClass: 'secondary'
+            },
+            {
+                id: 'professional',
+                name: 'Professional',
+                description: 'Para equipos en crecimiento',
+                price: 29990,
+                period: 'por mes',
+                featured: true,
+                features: [
+                    '25 usuarios',
+                    '500 clientes',
+                    '5 GB de almacenamiento',
+                    'Tareas ilimitadas',
+                    'Soporte prioritario',
+                    'Branding personalizado',
+                    'Reportes avanzados'
+                ],
+                buttonText: 'Seleccionar Plan',
+                buttonClass: 'primary'
+            },
+            {
+                id: 'business',
+                name: 'Business',
+                description: 'Para empresas establecidas',
+                price: 59990,
+                period: 'por mes',
+                features: [
+                    '100 usuarios',
+                    '2,000 clientes',
+                    '20 GB de almacenamiento',
+                    'Tareas ilimitadas',
+                    'Soporte 24/7',
+                    'Branding personalizado',
+                    'Reportes avanzados',
+                    'API access'
+                ],
+                buttonText: 'Seleccionar Plan',
+                buttonClass: 'primary'
+            },
+            {
+                id: 'enterprise',
+                name: 'Enterprise',
+                description: 'Para grandes organizaciones',
+                price: 99990,
+                period: 'por mes',
+                features: [
+                    'Usuarios ilimitados',
+                    'Clientes ilimitados',
+                    '100 GB de almacenamiento',
+                    'Tareas ilimitadas',
+                    'Soporte dedicado',
+                    'Branding personalizado',
+                    'Reportes avanzados',
+                    'API access',
+                    'Onboarding personalizado'
+                ],
+                buttonText: 'Contactar Ventas',
+                buttonClass: 'primary'
+            }
+        ];
+
+        let currentPlan = 'starter';
+        let processingPayment = false;
+
+        async function loadCurrentPlan() {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    window.location.href = '/login';
+                    return;
+                }
+
+                const response = await fetch('/api/payments/subscription', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    currentPlan = data.plan;
+                }
+            } catch (err) {
+                console.error('Error al cargar plan actual:', err);
+            }
+        }
+
+        function renderPlans() {
+            const grid = document.getElementById('pricing-grid');
+            grid.innerHTML = '';
+
+            plans.forEach(plan => {
+                const card = document.createElement('div');
+                card.className = `pricing-card ${plan.featured ? 'featured' : ''}`;
+
+                const featuresHTML = plan.features.map(feature => {
+                    if (typeof feature === 'string') {
+                        return `<li>${feature}</li>`;
+                    } else {
+                        return `<li class="${feature.disabled ? 'disabled' : ''}">${feature.text}</li>`;
+                    }
+                }).join('');
+
+                const isCurrentPlan = plan.id === currentPlan;
+                const buttonText = isCurrentPlan ? 'Plan Actual' : plan.buttonText;
+                const buttonDisabled = isCurrentPlan || processingPayment;
+
+                card.innerHTML = `
+                    <div class="plan-name">${plan.name}</div>
+                    <div class="plan-description">${plan.description}</div>
+                    <div class="plan-price">
+                        <span class="currency">$</span>${plan.price.toLocaleString('es-CL')}
+                    </div>
+                    <div class="plan-period">${plan.period}</div>
+                    <ul class="plan-features">
+                        ${featuresHTML}
+                    </ul>
+                    <button 
+                        class="btn-select-plan ${plan.buttonClass}" 
+                        onclick="selectPlan('${plan.id}')"
+                        ${buttonDisabled ? 'disabled' : ''}
+                    >
+                        ${buttonText}
+                    </button>
+                `;
+
+                grid.appendChild(card);
+            });
+
+            document.getElementById('loading').style.display = 'none';
+            grid.style.display = 'grid';
+        }
+
+        async function selectPlan(planId) {
+            if (processingPayment) return;
+
+            const plan = plans.find(p => p.id === planId);
+
+            if (planId === 'starter') {
+                alert('Ya estás en el plan Starter');
+                return;
+            }
+
+            if (planId === 'enterprise') {
+                alert('Por favor contacta a ventas@operia.app para el plan Enterprise');
+                return;
+            }
+
+            if (planId === currentPlan) {
+                alert('Ya estás en este plan');
+                return;
+            }
+
+            if (!confirm(`¿Deseas cambiar al plan ${plan.name} por $${plan.price.toLocaleString('es-CL')} CLP/mes?`)) {
+                return;
+            }
+
+            processingPayment = true;
+            renderPlans(); // Re-render to disable buttons
+
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/payments/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ plan: planId })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    // Redirect to Flow payment page
+                    window.location.href = data.paymentUrl;
+                } else {
+                    throw new Error(data.error || 'Error al crear pago');
+                }
+            } catch (err) {
+                console.error('Error al procesar pago:', err);
+                document.getElementById('error').textContent = err.message;
+                document.getElementById('error').style.display = 'block';
+                processingPayment = false;
+                renderPlans();
+            }
+        }
+
+        // Initialize
+        (async () => {
+            await loadCurrentPlan();
+            renderPlans();
+        })();
+    </script>
+</body>
+
+</html>
