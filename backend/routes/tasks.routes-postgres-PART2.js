@@ -77,8 +77,10 @@ router.get('/tasks/:id/comments', authenticateToken, async (req, res) => {
         c.comment as contenido,
         c.comment,
         c.created_at,
+        c.created_at as fecha_creacion,
         u.id as user_id,
         u.name as user_name,
+        u.name as autor_nombre,
         u.avatar_url,
         json_agg(
           DISTINCT jsonb_build_object(
@@ -92,7 +94,7 @@ router.get('/tasks/:id/comments', authenticateToken, async (req, res) => {
       JOIN users u ON c.user_id = u.id
       LEFT JOIN attachments a ON c.id = a.comment_id
       WHERE c.task_id = $1
-      GROUP BY c.id, u.id, u.name, u.avatar_url
+      GROUP BY c.id, u.id, u.name, u.avatar_url, c.created_at
       ORDER BY c.created_at ASC
     `;
 
