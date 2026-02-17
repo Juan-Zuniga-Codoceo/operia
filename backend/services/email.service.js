@@ -18,8 +18,12 @@ const transporter = nodemailer.createTransport({
  * @param {string} html - El contenido HTML del correo.
  */
 const sendEmail = async (to, subject, html) => {
+  if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY.length < 5) {
+    console.warn('⚠️ RESEND_API_KEY is missing or invalid. Email execution skipped.');
+    return;
+  }
+
   const mailOptions = {
-    // IMPORTANTE: Cambia el remitente. Usa el de prueba o tu dominio verificado.
     from: '"Operia" <notificaciones@operia.cl>',
     to: to,
     subject: subject,
@@ -30,7 +34,8 @@ const sendEmail = async (to, subject, html) => {
     await transporter.sendMail(mailOptions);
     console.log(`✅ Correo enviado exitosamente a: ${to} vía Resend`);
   } catch (error) {
-    console.error(`❌ Error al enviar correo a ${to} vía Resend:`, error);
+    console.error(`❌ Error al enviar correo a ${to} vía Resend:`, error.message);
+    // Do not throw, just log
   }
 };
 

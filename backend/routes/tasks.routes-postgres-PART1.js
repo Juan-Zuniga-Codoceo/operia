@@ -53,6 +53,107 @@ const upload = multer({
 // ===          TASK CRUD OPERATIONS                  ===
 // ======================================================
 
+// 📊 GET TASKS SUMMARY (Resumen)
+router.get('/tasks/resumen', authenticateToken, async (req, res) => {
+    try {
+        const { tenantId } = req;
+        const { userId } = req;
+
+        // Count tasks by status
+        const statusSql = `
+            SELECT status, COUNT(*) as count 
+            FROM tasks 
+            WHERE tenant_id = $1 AND is_archived = false
+            GROUP BY status
+        `;
+
+        // Count tasks by priority
+        const prioritySql = `
+            SELECT priority, COUNT(*) as count 
+            FROM tasks 
+            WHERE tenant_id = $1 AND is_archived = false
+            GROUP BY priority
+        `;
+
+        // Get recent activity (last 5 completed)
+        const recentSql = `
+            SELECT title, completed_at 
+            FROM tasks 
+            WHERE tenant_id = $1 AND status = 'completada'
+            ORDER BY completed_at DESC 
+            LIMIT 5
+        `;
+
+        const [statusRes, priorityRes, recentRes] = await Promise.all([
+            pool.query(statusSql, [tenantId]),
+            pool.query(prioritySql, [tenantId]),
+            pool.query(recentSql, [tenantId])
+        ]);
+
+        // Format response
+        const stats = {
+            pendientes: 0,
+            en_camino: 0,
+            completadas: 0,
+            alta: 0,
+            media: 0,
+            baja: 0
+        };
+
+        statusRes.rows.forEach(row => {
+            if (row.status === 'pendiente') stats.pendientes = parseInt(row.count);
+            if (row.status === 'en_camino') stats.en_camino = parseInt(row.count);
+            if (row.status === 'completada') stats.completadas = parseInt(row.count);
+        });
+
+        priorityRes.rows.forEach(row => {
+            if (row.priority === 'alta') stats.alta = parseInt(row.count);
+            if (row.priority === 'media') stats.media = parseInt(row.count);
+            if (row.priority === 'baja') stats.baja = parseInt(row.count);
+        });
+
+        res.json({
+            stats,
+            recent: recentRes.rows
+        });
+
+    } catch (err) {
+        console.error('❌ Error al obtener resumen:', err);
+        res.status(500).json({ error: 'Error al obtener resumen' });
+    }
+});
+
+// 📦 AUTO-ARCHIVE COMPLETED TASKS
+router.post('/tasks/auto-archive', authenticateToken, async (req, res) => {
+    try {
+        const { tenantId } = req;
+
+        // Archive tasks completed more than 7 days ago
+        const result = await pool.query(`
+            UPDATE tasks 
+            SET is_archived = true 
+            WHERE tenant_id = $1 
+              AND status = 'completada' 
+              AND completed_at < NOW() - INTERVAL '7 days'
+              AND is_archived = false
+        `, [tenantId]);
+
+        if (result.rowCount > 0) {
+            broadcast({ type: 'TASKS_UPDATED' });
+        }
+
+        res.json({
+            success: true,
+            archived_count: result.rowCount,
+            message: `${result.rowCount} tareas archivadas.`
+        });
+
+    } catch (err) {
+        console.error('❌ Error en auto-archivado:', err);
+        res.status(500).json({ error: 'Error al archivar tareas' });
+    }
+});
+
 // 📋 GET TASK BY ID
 router.get('/tasks/:id(\\d+)', authenticateToken, async (req, res) => {
     try {
