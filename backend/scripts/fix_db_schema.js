@@ -1,5 +1,19 @@
 // backend/scripts/fix_db_schema.js
-require('dotenv').config({ path: '../.env.production' }); // Load env vars
+const path = require('path');
+const fs = require('fs');
+const envPath = path.resolve(__dirname, '../../.env.production'); // Try root/.env.production
+const envPathLocal = path.resolve(__dirname, '../../.env'); // Try root/.env
+const envPathBackend = path.resolve(__dirname, '../.env'); // Try backend/.env
+
+if (fs.existsSync(envPath)) {
+  require('dotenv').config({ path: envPath });
+} else if (fs.existsSync(envPathLocal)) {
+  require('dotenv').config({ path: envPathLocal });
+} else if (fs.existsSync(envPathBackend)) {
+  require('dotenv').config({ path: envPathBackend });
+} else {
+  console.warn('⚠️ No .env file found. Relying on system environment variables.');
+}
 const { Pool } = require('pg');
 
 const pool = new Pool({
