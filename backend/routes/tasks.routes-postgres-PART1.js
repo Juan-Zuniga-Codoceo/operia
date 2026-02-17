@@ -183,7 +183,7 @@ router.get('/tasks/archived', authenticateToken, async (req, res) => {
 
         sql += `
             GROUP BY t.id, u.name, ur.name
-            ORDER BY t.completed_at DESC, t.updated_at DESC
+            ORDER BY t.completed_at DESC, t.id DESC
         `;
 
         const result = await pool.query(sql, params);
