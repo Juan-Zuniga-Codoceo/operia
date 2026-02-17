@@ -195,7 +195,12 @@ createApp({
       return tasks.value.filter(t => {
         let match = true;
         if (misTareas.value && user.value) {
-          const assignedIds = t.assigned_ids ? t.assigned_ids.split(',').map(Number) : [];
+          let assignedIds = [];
+          if (Array.isArray(t.assigned_ids)) {
+            assignedIds = t.assigned_ids;
+          } else if (t.assigned_ids) {
+            assignedIds = t.assigned_ids.toString().split(',').map(Number);
+          }
           match = assignedIds.includes(user.value.id) || t.created_by === user.value.id;
         }
         if (filtroFecha.value) {
@@ -230,7 +235,12 @@ createApp({
       }
 
       // 4. Observador puede editar
-      const assignedIds = tareaSeleccionada.value.assigned_ids?.split(',') || [];
+      let assignedIds = [];
+      if (Array.isArray(tareaSeleccionada.value.assigned_ids)) {
+        assignedIds = tareaSeleccionada.value.assigned_ids.map(String);
+      } else if (tareaSeleccionada.value.assigned_ids) {
+        assignedIds = tareaSeleccionada.value.assigned_ids.toString().split(',');
+      }
       return assignedIds.includes(user.value.id.toString());
     });
 
@@ -590,8 +600,12 @@ createApp({
         description: tareaSeleccionada.value.description,
         due_date: tareaSeleccionada.value.due_date,
         priority: tareaSeleccionada.value.priority,
-        assigned_to: tareaSeleccionada.value.assigned_ids ? tareaSeleccionada.value.assigned_ids.split(',').map(Number) : [],
-        label_ids: tareaSeleccionada.value.label_ids ? tareaSeleccionada.value.label_ids.split(',').map(Number) : [],
+        assigned_to: Array.isArray(tareaSeleccionada.value.assigned_ids)
+          ? tareaSeleccionada.value.assigned_ids
+          : (tareaSeleccionada.value.assigned_ids ? tareaSeleccionada.value.assigned_ids.toString().split(',').map(Number) : []),
+        label_ids: Array.isArray(tareaSeleccionada.value.label_ids)
+          ? tareaSeleccionada.value.label_ids
+          : (tareaSeleccionada.value.label_ids ? tareaSeleccionada.value.label_ids.toString().split(',').map(Number) : []),
         responsible_user_id: tareaSeleccionada.value.responsible_user_id,
         origin: tareaSeleccionada.value.origin || 'Valparaíso',
         shipping_type: tareaSeleccionada.value.shipping_type || 'Starken',
