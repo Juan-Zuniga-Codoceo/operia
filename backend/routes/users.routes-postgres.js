@@ -199,7 +199,7 @@ router.get('/notifications', authenticateToken, async (req, res) => {
         const { userId, tenantId } = req;
 
         const result = await pool.query(
-            `SELECT * FROM notifications 
+            `SELECT *, leida as is_read FROM notifications 
        WHERE usuario_id = $1 AND (tenant_id = $2 OR tenant_id IS NULL)
        ORDER BY fecha_creacion DESC`,
             [userId, tenantId]

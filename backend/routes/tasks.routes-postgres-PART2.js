@@ -70,9 +70,11 @@ router.get('/tasks/:id/comments', authenticateToken, async (req, res) => {
         }
 
         // Get comments with user info and attachments
+        // FIX: Alias 'comment' as 'contenido' for frontend compatibility
         const sql = `
       SELECT 
         c.id,
+        c.comment as contenido,
         c.comment,
         c.created_at,
         u.id as user_id,
@@ -107,6 +109,36 @@ router.get('/tasks/:id/comments', authenticateToken, async (req, res) => {
     } catch (err) {
         console.error('❌ Error al obtener comentarios:', err);
         res.status(500).json({ error: 'Error al obtener comentarios' });
+    }
+});
+
+// 📎 GET ATTACHMENTS FOR A TASK (Separate endpoint)
+router.get('/attachments/task/:taskId', authenticateToken, async (req, res) => {
+    try {
+        const { taskId } = req.params;
+        const { tenantId } = req;
+
+        // Verify task belongs to tenant
+        const taskCheck = await pool.query(
+            'SELECT id FROM tasks WHERE id = $1 AND tenant_id = $2',
+            [taskId, tenantId]
+        );
+
+        if (taskCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'Tarea no encontrada' });
+        }
+
+        const result = await pool.query(`
+            SELECT id, file_name, file_path, uploaded_at, user_id
+            FROM attachments
+            WHERE task_id = $1 AND comment_id IS NULL
+            ORDER BY uploaded_at DESC
+        `, [taskId]);
+
+        res.json(result.rows);
+    } catch (err) {
+        console.error('❌ Error al obtener adjuntos:', err);
+        res.status(500).json({ error: 'Error al obtener adjuntos' });
     }
 });
 
