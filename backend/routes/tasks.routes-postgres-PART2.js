@@ -272,6 +272,48 @@ router.put('/tasks/:id/status', authenticateToken, async (req, res) => {
     }
 });
 
+// ✅ COMPLETE TASK (Legacy/Alternative endpoint)
+router.post('/tasks/:id/complete', authenticateToken, async (req, res) => {
+    try {
+        const taskId = req.params.id;
+        const { tenantId, userId } = req;
+        const completedAt = new Date();
+
+        // Update status
+        const result = await pool.query(
+            'UPDATE tasks SET status = $1, completed_at = $2 WHERE id = $3 AND tenant_id = $4 RETURNING *',
+            ['completada', completedAt, taskId, tenantId]
+        );
+
+        if (result.rowCount === 0) {
+            return res.status(404).json({ error: 'Tarea no encontrada' });
+        }
+
+        const task = result.rows[0];
+
+        // Create notification for creator if someone else completes it
+        if (task.created_by !== userId) {
+            await pool.query(
+                'INSERT INTO notifications (tenant_id, usuario_id, mensaje, tipo, task_id) VALUES ($1, $2, $3, $4, $5)',
+                [tenantId, task.created_by, `Tarea completada`, 'status', taskId]
+            );
+        }
+
+        res.json({ success: true, status: 'completada', completed_at: completedAt });
+        broadcast({ type: 'TASKS_UPDATED' });
+
+    } catch (err) {
+        console.error('❌ Error al completar tarea:', err);
+        res.status(500).json({ error: 'Error al completar tarea' });
+    }
+});
+
+// 📅 CHECK DUE TASKS (background check triggered by frontend)
+router.post('/tasks/check-due-today', authenticateToken, async (req, res) => {
+    // This is optional if we have a background job, but useful for immediate frontend trigger
+    res.json({ success: true, message: 'Verificación de vencimientos iniciada (simulado)' });
+});
+
 // ======================================================
 // ===             FILE ATTACHMENTS                   ===
 // ======================================================
