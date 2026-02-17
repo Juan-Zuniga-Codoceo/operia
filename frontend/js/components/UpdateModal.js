@@ -1,4 +1,4 @@
-const UpdateModal = {
+window.UpdateModal = {
   props: {
     show: Boolean
   },
