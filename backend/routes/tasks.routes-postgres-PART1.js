@@ -84,10 +84,23 @@ router.get('/tasks/resumen', authenticateToken, async (req, res) => {
             LIMIT 5
         `;
 
-        const [statusRes, priorityRes, recentRes] = await Promise.all([
+        // Count upcoming tasks (due in next 3 days)
+        const proximasSql = `
+            SELECT COUNT(*) as count 
+            FROM tasks 
+            WHERE tenant_id = $1 
+              AND status != 'completada'
+              AND is_archived = false
+              AND due_date IS NOT NULL
+              AND due_date >= CURRENT_DATE
+              AND due_date <= CURRENT_DATE + INTERVAL '3 days'
+        `;
+
+        const [statusRes, priorityRes, recentRes, proximasRes] = await Promise.all([
             pool.query(statusSql, [tenantId]),
             pool.query(prioritySql, [tenantId]),
-            pool.query(recentSql, [tenantId])
+            pool.query(recentSql, [tenantId]),
+            pool.query(proximasSql, [tenantId])
         ]);
 
         // Format response
@@ -114,7 +127,10 @@ router.get('/tasks/resumen', authenticateToken, async (req, res) => {
 
         res.json({
             stats,
-            recent: recentRes.rows
+            recent: recentRes.rows,
+            total_pendientes: stats.pendientes,
+            proximas: parseInt(proximasRes.rows[0].count || 0),
+            vencidas: 0 // Placeholder, logic can be added if needed
         });
 
     } catch (err) {
