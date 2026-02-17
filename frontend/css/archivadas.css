@@ -1,9 +1,9 @@
 /* frontend/css/archivadas.css */
 :root {
-  --c-primary: #049DD9;
-  --c-primary-light: #04B2D9;
-  --c-action: #97BF04;
-  --c-action-dark: #83A603;
+  --c-primary: #174a7a;
+  --c-primary-light: #2c6e9e;
+  --c-action: #174a7a;
+  --c-action-dark: #1a4066;
   --c-bg: #F2F2F2;
   --c-white: #FFFFFF;
   --c-text: #34495E;
@@ -11,8 +11,8 @@
   --c-border: #EAECEE;
   --c-panel-bg: #FFFFFF;
   --c-danger: #E74C3C;
-  --c-col-done-bg: #D4EFDF;
-  --c-col-done-title: #1E8449;
+  --c-col-done-bg: #E9F7EF;
+  --c-col-done-title: #2ECC71;
   --radius: 8px;
   --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);

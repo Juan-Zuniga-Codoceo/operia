@@ -1,8 +1,8 @@
 /* Variables Globales */
 :root {
-  --primary-color: #049DD9;
-  --primary-dark: #037EA6;
-  --secondary-color: #00A651;
+  --primary-color: #174a7a;
+  --primary-dark: #1a4066;
+  --secondary-color: #2c6e9e;
   --accent-color: #F2B705;
   --danger-color: #E30613;
   --text-color: #333;
@@ -173,7 +173,7 @@ body {
 
 /* Banner de Cabecera - REFINADO */
 .profile-header-banner {
-  background: linear-gradient(120deg, var(--primary-color), #005f87);
+  background: linear-gradient(120deg, var(--primary-color), #1a4066);
   height: 220px;
   /* Aumentamos altura para que quepa todo */
   border-radius: 0 0 var(--radius-lg) var(--radius-lg);

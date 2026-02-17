@@ -1,8 +1,8 @@
 :root {
-  --azul-principal: #049DD9;
-  --azul-claro: #04B2D9;
-  --verde-lima: #97BF04;
-  --verde-oliva: #87A617;
+  --azul-principal: #174a7a;
+  --azul-claro: #2c6e9e;
+  --verde-lima: #174a7a;
+  --verde-oliva: #1a4066;
   --fondo: #F2F2F2;
   --blanco: #FFFFFF;
   --gris-oscuro: #333333;
@@ -28,7 +28,7 @@ body {
   justify-content: center;
   align-items: center;
   padding: 20px;
-  background-image: linear-gradient(135deg, rgba(4, 157, 217, 0.05) 0%, rgba(4, 178, 217, 0.05) 100%);
+  background-image: linear-gradient(135deg, rgba(23, 74, 122, 0.05) 0%, rgba(44, 110, 158, 0.05) 100%);
 }
 
 .register-container {
@@ -140,7 +140,7 @@ body {
   font-weight: 600;
 }
 
-.register-form > p {
+.register-form>p {
   font-size: 16px;
   color: var(--gris-medio);
   margin-bottom: 25px;
@@ -275,8 +275,15 @@ body {
 
 /* Animaciones */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes ripple {
@@ -284,10 +291,12 @@ body {
     transform: scale(0, 0);
     opacity: 0.5;
   }
+
   20% {
     transform: scale(25, 25);
     opacity: 0.3;
   }
+
   100% {
     opacity: 0;
     transform: scale(40, 40);
@@ -299,57 +308,58 @@ body {
   .register-container {
     flex-direction: column;
     min-height: auto;
-    max-height: none; 
+    max-height: none;
   }
-  
- .brand {
-    display: none; 
+
+  .brand {
+    display: none;
   }
-  
+
   .register-form {
     padding: 30px 20px;
-    border-radius: var(--radio); 
+    border-radius: var(--radio);
     overflow-y: visible;
   }
-  
+
 }
 
 @media (max-width: 480px) {
   body {
     padding: 10px;
   }
-  
+
   .register-form {
     padding: 25px 15px;
   }
-  
+
   .register-form h2 {
     font-size: 24px;
   }
-  
+
   .brand {
     /* Reducimos el espaciado interno */
-    padding: 20px; 
+    padding: 20px;
   }
 
   .brand .logo {
     /* Hacemos el logo más pequeño */
     width: 70px;
     height: 70px;
-    margin-bottom: 15px; /* Reducimos el margen inferior */
+    margin-bottom: 15px;
+    /* Reducimos el margen inferior */
   }
 
   .brand h1 {
     /* Reducimos el tamaño del título */
     font-size: 24px;
   }
-  
+
   .brand p {
     /* Reducimos el tamaño del párrafo */
     font-size: 14px;
   }
- 
-  
+
+
   .input-group input,
   .input-group select {
     padding: 12px;

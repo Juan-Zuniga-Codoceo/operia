@@ -7,194 +7,184 @@
     <title>Operia - Gestión de Tareas para Equipos</title>
     <meta name="description"
         content="Operia es la plataforma de gestión de tareas y proyectos diseñada para equipos que quieren trabajar mejor juntos.">
+    <link rel="icon" href="assets/logo.png" type="image/png">
     <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            line-height: 1.6;
-            color: #2c3e50;
-        }
+        /* Specific Landing Page Styles */
 
         /* Hero Section */
         .hero {
-            background: linear-gradient(135deg, #006837 0%, #00a651 100%);
-            color: white;
-            padding: 100px 20px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: var(--white);
+            padding: 180px 0 120px;
+            /* More top padding for navbar */
             text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .hero-logo-container {
+            margin-bottom: 40px;
+            animation: fadeInDown 1s ease-out;
+        }
+
+        .hero-logo {
+            max-width: 320px;
+            /* Much larger as requested */
+            width: 100%;
+            filter: brightness(0) invert(1);
+            transition: transform 0.3s ease;
+        }
+
+        .hero-logo:hover {
+            transform: scale(1.05);
         }
 
         .hero h1 {
-            font-size: 56px;
-            margin-bottom: 20px;
-            font-weight: 700;
+            font-size: 4rem;
+            margin-bottom: 24px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
         }
 
         .hero p {
-            font-size: 24px;
-            margin-bottom: 40px;
-            opacity: 0.95;
+            font-size: 1.5rem;
+            margin-bottom: 48px;
+            opacity: 0.9;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .cta-buttons {
             display: flex;
             gap: 20px;
             justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .btn {
-            padding: 15px 40px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-size: 18px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            display: inline-block;
-        }
-
-        .btn-primary {
-            background: white;
-            color: #006837;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-        }
-
-        .btn-secondary {
-            background: transparent;
-            color: white;
-            border: 2px solid white;
-        }
-
-        .btn-secondary:hover {
-            background: white;
-            color: #006837;
         }
 
         /* Features Section */
         .features {
-            padding: 80px 20px;
-            background: #f8f9fa;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .section-title {
-            text-align: center;
-            font-size: 42px;
-            margin-bottom: 60px;
-            color: #2c3e50;
+            padding: 100px 0;
+            background: var(--bg-light);
         }
 
         .features-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 40px;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
         }
 
         .feature-card {
-            background: white;
+            background: var(--white);
             padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+            border-top: 4px solid transparent;
         }
 
         .feature-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            transform: translateY(-10px);
+            box-shadow: var(--shadow-lg);
+            border-top-color: var(--primary);
         }
 
         .feature-icon {
-            font-size: 48px;
-            margin-bottom: 20px;
+            font-size: 3rem;
+            margin-bottom: 24px;
+            display: inline-block;
         }
 
         .feature-card h3 {
-            font-size: 24px;
-            margin-bottom: 15px;
-            color: #006837;
-        }
-
-        .feature-card p {
-            color: #7f8c8d;
-            line-height: 1.8;
+            margin-bottom: 16px;
+            color: var(--primary);
         }
 
         /* Pricing Section */
         .pricing {
-            padding: 80px 20px;
-            background: white;
+            padding: 100px 0;
+            background: var(--white);
         }
 
         .pricing-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 30px;
-            max-width: 1200px;
-            margin: 0 auto;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+            margin-top: 60px;
         }
 
         .pricing-card {
-            background: white;
-            border: 2px solid #ecf0f1;
-            border-radius: 12px;
-            padding: 40px 30px;
+            background: var(--white);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 20px;
+            padding: 50px 40px;
             text-align: center;
-            transition: all 0.3s ease;
-        }
-
-        .pricing-card:hover {
-            border-color: #006837;
-            transform: translateY(-5px);
-        }
-
-        .pricing-card.featured {
-            border-color: #006837;
-            border-width: 3px;
+            transition: var(--transition);
             position: relative;
         }
 
-        .pricing-card.featured::before {
-            content: 'MÁS POPULAR';
+        .pricing-card:hover {
+            transform: translateY(-10px);
+            box-shadow: var(--shadow-lg);
+            border-color: transparent;
+        }
+
+        .pricing-card.featured {
+            background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
+            border: 2px solid var(--primary);
+            transform: scale(1.05);
+            z-index: 10;
+            box-shadow: var(--shadow-md);
+        }
+
+        .pricing-card.featured:hover {
+            transform: scale(1.05) translateY(-10px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .badge-popular {
             position: absolute;
             top: -15px;
             left: 50%;
             transform: translateX(-50%);
-            background: #006837;
-            color: white;
-            padding: 5px 20px;
+            background: var(--primary);
+            color: var(--white);
+            padding: 8px 20px;
             border-radius: 20px;
-            font-size: 12px;
-            font-weight: bold;
-        }
-
-        .plan-name {
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 10px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 10px rgba(23, 74, 122, 0.3);
         }
 
         .plan-price {
-            font-size: 42px;
-            font-weight: bold;
-            color: #006837;
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: var(--primary);
             margin: 20px 0;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
         }
 
         .plan-price .currency {
-            font-size: 20px;
+            font-size: 1.5rem;
+            margin-top: 10px;
+            margin-right: 5px;
         }
 
         .plan-features {
@@ -204,163 +194,247 @@
         }
 
         .plan-features li {
-            padding: 10px 0;
-            border-bottom: 1px solid #ecf0f1;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
         }
 
         .plan-features li::before {
             content: '✓';
-            color: #27ae60;
-            font-weight: bold;
-            margin-right: 10px;
+            color: var(--primary);
+            font-weight: 900;
+            margin-right: 12px;
+            font-size: 1.2rem;
         }
 
         /* CTA Section */
         .cta-section {
-            background: linear-gradient(135deg, #006837 0%, #00a651 100%);
-            color: white;
-            padding: 80px 20px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: var(--white);
+            padding: 100px 0;
             text-align: center;
         }
 
         .cta-section h2 {
-            font-size: 42px;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
+            color: var(--white);
         }
 
         .cta-section p {
-            font-size: 20px;
+            font-size: 1.25rem;
             margin-bottom: 40px;
-            opacity: 0.95;
+            opacity: 0.9;
         }
 
         /* Footer */
         .footer {
-            background: #2c3e50;
-            color: white;
-            padding: 40px 20px;
-            text-align: center;
+            background: #0f172a;
+            color: var(--white);
+            padding: 80px 0 20px;
         }
 
         .footer-content {
-            max-width: 1200px;
-            margin: 0 auto;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 40px;
-            text-align: left;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 60px;
+            margin-bottom: 60px;
+        }
+
+        .footer-logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: block;
+            color: var(--white);
         }
 
         .footer-section h4 {
-            margin-bottom: 20px;
-            color: #00a651;
+            color: var(--primary-light);
+            margin-bottom: 24px;
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         .footer-section ul {
             list-style: none;
         }
 
-        .footer-section ul li {
-            margin-bottom: 10px;
+        .footer-section li {
+            margin-bottom: 12px;
         }
 
         .footer-section a {
-            color: #ecf0f1;
-            text-decoration: none;
-            transition: color 0.3s ease;
+            color: #94a3b8;
+            transition: var(--transition);
         }
 
         .footer-section a:hover {
-            color: #00a651;
+            color: var(--white);
+            padding-left: 5px;
         }
 
         .footer-bottom {
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 1px solid #34495e;
+            padding-top: 30px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
             text-align: center;
+            color: #64748b;
         }
 
-        /* Responsive */
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Mobile Adjustments */
         @media (max-width: 768px) {
+            .hero {
+                padding: 140px 0 80px;
+            }
+
             .hero h1 {
-                font-size: 36px;
+                font-size: 2.5rem;
             }
 
-            .hero p {
-                font-size: 18px;
+            .hero-logo {
+                max-width: 220px;
             }
 
-            .section-title {
-                font-size: 32px;
+            .pricing-card.featured {
+                transform: scale(1);
             }
 
             .cta-buttons {
                 flex-direction: column;
-                align-items: center;
-            }
-
-            .btn {
-                width: 100%;
-                max-width: 300px;
             }
         }
     </style>
 </head>
 
 <body>
+    <!-- Navbar -->
+    <nav class="navbar" id="navbar">
+        <div class="container">
+            <a href="#" class="nav-logo white-logo">
+                <img src="assets/logo.png" alt="Operia">
+            </a>
+            <div class="nav-links">
+                <a href="#features">Características</a>
+                <a href="#pricing">Precios</a>
+                <a href="/login.html">Iniciar Sesión</a>
+                <a href="/signup.html" class="btn-nav">Comenzar Gratis</a>
+            </div>
+        </div>
+    </nav>
+
     <!-- Hero Section -->
     <section class="hero">
         <div class="container">
-            <h1>Gestiona tus tareas como nunca antes</h1>
-            <p>Operia es la plataforma de gestión de tareas diseñada para equipos que quieren trabajar mejor juntos</p>
-            <div class="cta-buttons">
-                <a href="/signup" class="btn btn-primary">Comenzar Gratis</a>
-                <a href="#pricing" class="btn btn-secondary">Ver Planes</a>
+            <div class="hero-content">
+                <div class="hero-logo-container">
+                    <img src="assets/logo.png" alt="Operia Logo" class="hero-logo">
+                </div>
+                <h1>Gestiona tus tareas como nunca antes</h1>
+                <p>La plataforma de gestión para equipos que buscan simplicidad, potencia y resultados.</p>
+                <div class="cta-buttons">
+                    <a href="/signup.html" class="btn btn-primary"
+                        style="background: var(--accent); color: var(--primary-dark); border: none;">Comenzar Gratis</a>
+                    <a href="#pricing" class="btn btn-secondary">Ver Planes</a>
+                </div>
+            </div>
+
+            <!-- Dashboard Mockup/Visual -->
+            <div class="hero-visual">
+                <div class="dashboard-mockup">
+                    <div class="mockup-header">
+                        <div class="mockup-dot red"></div>
+                        <div class="mockup-dot yellow"></div>
+                        <div class="mockup-dot green"></div>
+                    </div>
+                    <div class="mockup-body">
+                        <div class="mockup-sidebar"></div>
+                        <div class="mockup-content">
+                            <div class="mockup-row header-row"></div>
+                            <div class="mockup-kanban">
+                                <div class="mockup-column">
+                                    <div class="mockup-card"></div>
+                                    <div class="mockup-card"></div>
+                                </div>
+                                <div class="mockup-column">
+                                    <div class="mockup-card"></div>
+                                </div>
+                                <div class="mockup-column">
+                                    <div class="mockup-card"></div>
+                                    <div class="mockup-card"></div>
+                                    <div class="mockup-card"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Floating Elements for Depth -->
+                <div class="floating-card card-1">
+                    <div class="icon">✓</div>
+                    <div class="text">Tarea Completada</div>
+                </div>
+                <div class="floating-card card-2">
+                    <div class="icon">👥</div>
+                    <div class="text">Nuevo Miembro</div>
+                </div>
             </div>
         </div>
     </section>
 
     <!-- Features Section -->
-    <section class="features">
+    <section id="features" class="features">
         <div class="container">
-            <h2 class="section-title">Todo lo que necesitas para gestionar tu equipo</h2>
+            <div class="section-title">
+                <h2>Todo lo que necesitas para escalar</h2>
+                <p>Herramientas potentes diseñadas para equipos modernos que no quieren perder tiempo.</p>
+            </div>
             <div class="features-grid">
                 <div class="feature-card">
-                    <div class="feature-icon">📋</div>
+                    <div class="feature-icon">🚀</div>
                     <h3>Gestión de Tareas</h3>
-                    <p>Crea, asigna y da seguimiento a tareas con facilidad. Sistema de etiquetas, prioridades y fechas
-                        de vencimiento.</p>
+                    <p>Crea, asigna y da seguimiento a tareas con un sistema intuitivo de tarjetas Kanban y listas.</p>
                 </div>
 
                 <div class="feature-card">
                     <div class="feature-icon">👥</div>
-                    <h3>Colaboración en Equipo</h3>
-                    <p>Invita a tu equipo, asigna tareas, comenta y mantén a todos en la misma página.</p>
+                    <h3>Colaboración Real</h3>
+                    <p>Comentarios, menciones y notificaciones en tiempo real para mantener a todos alineados.</p>
                 </div>
 
                 <div class="feature-card">
                     <div class="feature-icon">📊</div>
-                    <h3>Reportes y Analytics</h3>
-                    <p>Visualiza el progreso de tu equipo con reportes detallados y métricas en tiempo real.</p>
+                    <h3>Reportes Avanzados</h3>
+                    <p>Visualiza el rendimiento de tu equipo con métricas detalladas y gráficos interactivos.</p>
                 </div>
 
                 <div class="feature-card">
                     <div class="feature-icon">🔒</div>
-                    <h3>Seguridad Multi-tenant</h3>
-                    <p>Cada organización tiene su propio espacio aislado y seguro. Tus datos están protegidos.</p>
+                    <h3>Seguridad Total</h3>
+                    <p>Tu propio espacio aislado. Datos cifrados y backups automáticos para tu tranquilidad.</p>
                 </div>
 
                 <div class="feature-card">
                     <div class="feature-icon">📱</div>
-                    <h3>Acceso desde Cualquier Lugar</h3>
-                    <p>Trabaja desde cualquier dispositivo. Diseño responsive que se adapta a tu pantalla.</p>
+                    <h3>Multi-dispositivo</h3>
+                    <p>Accede desde tu computadora, tablet o móvil con nuestra interfaz 100% responsive.</p>
                 </div>
 
                 <div class="feature-card">
                     <div class="feature-icon">🎨</div>
-                    <h3>Personalización</h3>
-                    <p>Personaliza tu espacio con tu logo y colores de marca. Haz que Operia sea tuyo.</p>
+                    <h3>Personalizable</h3>
+                    <p>Adapta Operia a tu marca. Sube tu logo y personaliza los colores de tu espacio de trabajo.</p>
                 </div>
             </div>
         </div>
@@ -369,14 +443,17 @@
     <!-- Pricing Section -->
     <section id="pricing" class="pricing">
         <div class="container">
-            <h2 class="section-title">Planes para cada tipo de equipo</h2>
+            <div class="section-title">
+                <h2>Planes flexibles para cada etapa</h2>
+                <p>Comienza gratis y escala a medida que tu equipo crece.</p>
+            </div>
             <div class="pricing-grid">
                 <div class="pricing-card">
                     <div class="plan-name">Starter</div>
                     <div class="plan-price">
                         <span class="currency">$</span>0
                     </div>
-                    <p>Gratis para siempre</p>
+                    <p>Para freelancers y pequeños equipos</p>
                     <ul class="plan-features">
                         <li>5 usuarios</li>
                         <li>100 clientes</li>
@@ -384,15 +461,19 @@
                         <li>Tareas ilimitadas</li>
                         <li>Soporte por email</li>
                     </ul>
-                    <a href="/signup" class="btn btn-secondary">Comenzar Gratis</a>
+                    <a href="/signup.html" class="btn btn-cta"
+                        style="background: transparent; border: 2px solid var(--primary); color: var(--primary);">Comenzar
+                        Gratis</a>
                 </div>
 
                 <div class="pricing-card featured">
+                    <div class="badge-popular" style="background: var(--accent); color: var(--primary-dark);">MÁS
+                        POPULAR</div>
                     <div class="plan-name">Professional</div>
                     <div class="plan-price">
                         <span class="currency">$</span>29.990
                     </div>
-                    <p>por mes</p>
+                    <p>Para equipos en crecimiento</p>
                     <ul class="plan-features">
                         <li>25 usuarios</li>
                         <li>500 clientes</li>
@@ -402,7 +483,7 @@
                         <li>Reportes avanzados</li>
                         <li>Soporte prioritario</li>
                     </ul>
-                    <a href="/signup" class="btn btn-primary">Comenzar Prueba</a>
+                    <a href="/signup.html" class="btn btn-cta">Comenzar Prueba</a>
                 </div>
 
                 <div class="pricing-card">
@@ -410,18 +491,19 @@
                     <div class="plan-price">
                         <span class="currency">$</span>59.990
                     </div>
-                    <p>por mes</p>
+                    <p>Para organizaciones establecidas</p>
                     <ul class="plan-features">
                         <li>100 usuarios</li>
                         <li>2,000 clientes</li>
                         <li>20 GB almacenamiento</li>
-                        <li>Tareas ilimitadas</li>
-                        <li>Branding personalizado</li>
-                        <li>Reportes avanzados</li>
+                        <li>Todo en Professional</li>
                         <li>API access</li>
                         <li>Soporte 24/7</li>
+                        <li>SSO & Auditoría</li>
                     </ul>
-                    <a href="/signup" class="btn btn-secondary">Comenzar Prueba</a>
+                    <a href="/signup.html" class="btn btn-cta"
+                        style="background: transparent; border: 2px solid var(--primary); color: var(--primary);">Contactar
+                        Ventas</a>
                 </div>
             </div>
         </div>
@@ -430,52 +512,73 @@
     <!-- CTA Section -->
     <section class="cta-section">
         <div class="container">
-            <h2>¿Listo para mejorar la productividad de tu equipo?</h2>
-            <p>Comienza tu prueba gratuita de 14 días. Sin tarjeta de crédito requerida.</p>
-            <a href="/signup" class="btn btn-primary">Comenzar Ahora</a>
+            <h2>¿Listo para transformar tu productividad?</h2>
+            <p>Únete a cientos de equipos que ya confían en Operia.</p>
+            <a href="/signup.html" class="btn btn-primary"
+                style="background: var(--accent); color: var(--primary-dark); border: none; font-weight: 700;">Comenzar
+                Ahora Gratis</a>
         </div>
     </section>
 
     <!-- Footer -->
     <footer class="footer">
-        <div class="footer-content">
-            <div class="footer-section">
-                <h4>Operia</h4>
-                <p>Gestión de tareas para equipos modernos.</p>
-                <p style="margin-top: 20px;">Desarrollado por <a href="https://synapsedev.cl"
-                        target="_blank">SynapseDev</a></p>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <span class="footer-logo">Operia</span>
+                    <p style="color: #94a3b8; max-width: 300px;">La plataforma de gestión operativa definitiva para
+                        equipos de alto rendimiento.</p>
+                    <p style="margin-top: 20px; color: #64748b;">Developed by <a href="https://synapsedev.cl"
+                            target="_blank" style="color: var(--primary-light);">SynapseDev</a></p>
+                </div>
+
+                <div class="footer-section">
+                    <h4>Producto</h4>
+                    <ul>
+                        <li><a href="#features">Características</a></li>
+                        <li><a href="#pricing">Precios</a></li>
+                        <li><a href="/login.html">Iniciar Sesión</a></li>
+                        <li><a href="/signup.html">Registrarse</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-section">
+                    <h4>Recursos</h4>
+                    <ul>
+                        <li><a href="#">Centro de Ayuda</a></li>
+                        <li><a href="#">Blog</a></li>
+                        <li><a href="#">API Docs</a></li>
+                        <li><a href="#">Estado del Sistema</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-section">
+                    <h4>Legal</h4>
+                    <ul>
+                        <li><a href="#">Términos de Servicio</a></li>
+                        <li><a href="#">Política de Privacidad</a></li>
+                        <li><a href="#">Seguridad</a></li>
+                    </ul>
+                </div>
             </div>
 
-            <div class="footer-section">
-                <h4>Producto</h4>
-                <ul>
-                    <li><a href="#features">Características</a></li>
-                    <li><a href="#pricing">Precios</a></li>
-                    <li><a href="/signup">Comenzar Gratis</a></li>
-                </ul>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Operia. Todos los derechos reservados.</p>
             </div>
-
-            <div class="footer-section">
-                <h4>Soporte</h4>
-                <ul>
-                    <li><a href="mailto:soporte@synapsedev.cl">Contacto</a></li>
-                    <li><a href="https://synapsedev.cl" target="_blank">SynapseDev</a></li>
-                </ul>
-            </div>
-
-            <div class="footer-section">
-                <h4>Legal</h4>
-                <ul>
-                    <li><a href="#">Términos de Servicio</a></li>
-                    <li><a href="#">Política de Privacidad</a></li>
-                </ul>
-            </div>
-        </div>
-
-        <div class="footer-bottom">
-            <p>&copy; 2026 Operia by SynapseDev. Todos los derechos reservados.</p>
         </div>
     </footer>
+
+    <script>
+        // Navbar scroll effect
+        window.addEventListener('scroll', function () {
+            const navbar = document.getElementById('navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+    </script>
 </body>
 
 </html>
