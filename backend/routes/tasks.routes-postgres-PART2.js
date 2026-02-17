@@ -178,6 +178,7 @@ router.post('/tasks/comments', upload.array('files', 5), authenticateToken, asyn
 
         for (const participant of participants.rows) {
             const mensaje = `${userName} comentó en "${taskTitle.substring(0, 30)}..."`;
+            // FIX: Use 'tenant_id' and correct column names based on schema
             await client.query(
                 'INSERT INTO notifications (tenant_id, usuario_id, mensaje, tipo, task_id) VALUES ($1, $2, $3, $4, $5)',
                 [tenantId, participant.id, mensaje, 'comment', task_id]
@@ -218,6 +219,56 @@ router.post('/tasks/comments', upload.array('files', 5), authenticateToken, asyn
         res.status(500).json({ error: 'Error al crear el comentario' });
     } finally {
         client.release();
+    }
+});
+
+// 🔄 UPDATE TASK STATUS
+router.put('/tasks/:id/status', authenticateToken, async (req, res) => {
+    try {
+        const taskId = req.params.id;
+        const { status } = req.body;
+        const { userId, tenantId } = req;
+
+        if (!['pendiente', 'en_camino', 'completada'].includes(status)) {
+            return res.status(400).json({ error: 'Estado inválido' });
+        }
+
+        // Verify task exists and belongs to tenant
+        const taskCheck = await pool.query(
+            'SELECT * FROM tasks WHERE id = $1 AND tenant_id = $2',
+            [taskId, tenantId]
+        );
+
+        if (taskCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'Tarea no encontrada' });
+        }
+
+        const task = taskCheck.rows[0];
+        let completedAt = null;
+        if (status === 'completada') {
+            completedAt = new Date();
+        }
+
+        // Update status
+        await pool.query(
+            'UPDATE tasks SET status = $1, completed_at = $2 WHERE id = $3',
+            [status, completedAt, taskId]
+        );
+
+        // Create notification for creator if someone else changes status
+        if (task.created_by !== userId) {
+            await pool.query(
+                'INSERT INTO notifications (tenant_id, usuario_id, mensaje, tipo, task_id) VALUES ($1, $2, $3, $4, $5)',
+                [tenantId, task.created_by, `Estado actualizado a: ${status.toUpperCase()}`, 'status', taskId]
+            );
+        }
+
+        res.json({ success: true, status, completed_at: completedAt });
+        broadcast({ type: 'TASKS_UPDATED' });
+
+    } catch (err) {
+        console.error('❌ Error al actualizar estado:', err);
+        res.status(500).json({ error: 'Error al actualizar estado' });
     }
 });
 
