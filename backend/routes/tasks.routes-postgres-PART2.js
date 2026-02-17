@@ -111,16 +111,20 @@ router.get('/tasks/:id/comments', authenticateToken, async (req, res) => {
 });
 
 // 💬 ADD COMMENT (with optional attachments)
-router.post('/tasks/comments', upload.array('files', 5), authenticateToken, async (req, res) => {
+// Frontend sends 'attachments' not 'files'
+router.post('/tasks/comments', upload.array('attachments', 5), authenticateToken, async (req, res) => {
     const client = await pool.connect();
 
     try {
-        const { task_id, comment } = req.body;
+        // Frontend sends 'contenido' instead of 'comment'
+        const { task_id, contenido, comment: commentAlt } = req.body;
+        const comment = contenido || commentAlt;
+
         const userId = req.userId;
         const { tenantId } = req;
 
         if (!task_id || !comment) {
-            return res.status(400).json({ error: 'task_id y comment son requeridos' });
+            return res.status(400).json({ error: 'task_id y comment (o contenido) son requeridos' });
         }
 
         // Verify task belongs to tenant
