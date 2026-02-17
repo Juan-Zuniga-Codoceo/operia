@@ -144,6 +144,9 @@ async function seedDemoTenant() {
             if (t.clientIdx >= 0) labelIds.push(createdLabels.find(l => l.name === 'Despacho')?.id);
             if (t.clientIdx === -1) labelIds.push(createdLabels.find(l => l.name === 'Oficina')?.id);
 
+            const finalLabelIds = labelIds.filter(Boolean);
+            const finalLabelNames = finalLabelIds.map(id => createdLabels.find(l => l.id === id)?.name || '');
+
             const res = await client.query(
                 `INSERT INTO tasks (
                     tenant_id, title, description, status, priority, 
@@ -153,8 +156,8 @@ async function seedDemoTenant() {
                 [
                     DEMO_TENANT_ID, t.title, t.description, t.status, t.priority,
                     adminId, opId, clientId, snapshot,
-                    labelIds.filter(Boolean).join(','), // label_ids (string for now)
-                    '', // label_names (deprecated/unused by updated logic usually, but keep empty)
+                    finalLabelIds, // Passed as JS Array [1, 2]
+                    finalLabelNames, // Passed as JS Array ["Urgente", "Despacho"]
                     shipType,
                     t.status === 'completada' ? new Date() : null
                 ]
