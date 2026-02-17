@@ -1041,7 +1041,11 @@ createApp({
     };
     const getLabelsArray = (task) => {
       if (!task?.label_names) return [];
-      return task.label_names.split(',').map(label => label.trim()).filter(Boolean);
+      if (Array.isArray(task.label_names)) return task.label_names;
+      if (typeof task.label_names === 'string') {
+        return task.label_names.split(',').map(label => label.trim()).filter(Boolean);
+      }
+      return [];
     };
 
     const toggleNotifications = () => {
