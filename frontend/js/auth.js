@@ -26,10 +26,29 @@ if (document.getElementById('login-app')) {
         loading.value = true;
 
         try {
-          const res = await fetch('/api/login', {
+          // Lógica para obtener el subdominio (Tenant)
+          const hostname = window.location.hostname;
+          let subdomain = null;
+
+          // Asumiendo estructura: cliente.operia.cl
+          const parts = hostname.split('.');
+          if (hostname !== 'localhost' && !hostname.includes('127.0.0.1')) {
+            if (parts.length >= 3) {
+              subdomain = parts[0];
+            }
+          }
+
+          // Si estamos en el dominio raíz (operia.cl), el subdominio es null.
+          // El backend debe manejar esto (posiblemente solo permitiendo admin global).
+
+          const res = await fetch('/api/auth/login', { // <-- CORREGIDO: /api/auth/login
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: email.value, password: password.value })
+            body: JSON.stringify({
+              email: email.value,
+              password: password.value,
+              subdomain: subdomain // <-- ENVIAMOS EL SUBDOMINIO
+            })
           });
 
           if (!res.ok) {
@@ -39,12 +58,11 @@ if (document.getElementById('login-app')) {
 
           const data = await res.json();
 
-          // <-- CAMBIO: AHORA RECIBIMOS UN OBJETO CON 'user' y 'token'
           if (!data.user || !data.token) {
             throw new Error('Respuesta del servidor inválida');
           }
 
-          // Guardar sesión con los nuevos datos
+          // Guardar sesión
           sessionStorage.setItem('biocare_user', JSON.stringify(data.user));
           sessionStorage.setItem('auth_token', data.token);
 
