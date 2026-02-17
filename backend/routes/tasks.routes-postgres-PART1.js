@@ -535,6 +535,25 @@ router.put('/tasks/:id', jsonParser, authenticateToken, async (req, res) => {
             params.push(clientSnapshotStr);
         }
 
+        // Calculate label arrays for denormalization
+        let labelIdsArr = [];
+        let labelNamesArr = [];
+        if (label_ids && Array.isArray(label_ids) && label_ids.length > 0) {
+            labelIdsArr = label_ids.filter(Boolean);
+            // Verify labels exist and get names
+            const labelRes = await client.query('SELECT id, name FROM labels WHERE id = ANY($1)', [labelIdsArr]);
+            // Map back to maintain order or just set
+            labelNamesArr = labelRes.rows.map(r => r.name);
+        }
+
+        paramCount++;
+        updateSql += `, label_ids = $${paramCount}`;
+        params.push(labelIdsArr);
+
+        paramCount++;
+        updateSql += `, label_names = $${paramCount}`;
+        params.push(labelNamesArr);
+
         paramCount++;
         updateSql += ` WHERE id = $${paramCount} AND tenant_id = $${paramCount + 1}`;
         params.push(taskId, tenantId);
