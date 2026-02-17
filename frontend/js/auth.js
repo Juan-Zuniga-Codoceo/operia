@@ -130,7 +130,7 @@ if (document.getElementById('register-app')) {
         loading.value = true;
 
         try {
-          const res = await fetch('/api/register', {
+          const res = await fetch('/api/auth/register', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

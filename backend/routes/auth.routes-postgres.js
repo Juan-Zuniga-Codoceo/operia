@@ -299,11 +299,11 @@ router.post('/login', jsonParser, optionalTenant, [
 // ===      REGISTRO DE USUARIO EN TENANT EXISTENTE   ===
 // ======================================================
 
-router.post('/register', jsonParser, [
+router.post('/register', jsonParser, optionalTenant, [
     body('email').isEmail().normalizeEmail(),
     body('password').isLength({ min: 6 }),
     body('name').trim().isLength({ min: 2 }).escape(),
-    body('tenant_id').isInt() // Debe provenir de invitación
+    // tenant_id is optional in body if provided via subdomain/header
 ], async (req, res) => {
     try {
         const errors = validationResult(req);
@@ -311,7 +311,13 @@ router.post('/register', jsonParser, [
             return res.status(400).json({ error: 'Datos inválidos', detalles: errors.array() });
         }
 
-        const { name, email, password, office, tenant_id } = req.body;
+        const { name, email, password, office } = req.body;
+        // Use tenant_id from body OR from middleware (subdomain)
+        const tenant_id = req.body.tenant_id || req.tenantId;
+
+        if (!tenant_id) {
+            return res.status(400).json({ error: 'Falta identificación de la organización (tenant_id o subdomain)' });
+        }
 
         // Verificar que el tenant existe
         const tenantResult = await pool.query(
