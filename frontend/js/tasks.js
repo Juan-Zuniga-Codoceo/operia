@@ -600,12 +600,16 @@ createApp({
         description: tareaSeleccionada.value.description,
         due_date: tareaSeleccionada.value.due_date,
         priority: tareaSeleccionada.value.priority,
-        assigned_to: Array.isArray(tareaSeleccionada.value.assigned_ids)
+        assigned_to: (Array.isArray(tareaSeleccionada.value.assigned_ids)
           ? tareaSeleccionada.value.assigned_ids
-          : (tareaSeleccionada.value.assigned_ids ? tareaSeleccionada.value.assigned_ids.toString().split(',').map(Number) : []),
-        label_ids: Array.isArray(tareaSeleccionada.value.label_ids)
+          : (typeof tareaSeleccionada.value.assigned_ids === 'string'
+            ? tareaSeleccionada.value.assigned_ids.split(',').map(Number)
+            : [])),
+        label_ids: (Array.isArray(tareaSeleccionada.value.label_ids)
           ? tareaSeleccionada.value.label_ids
-          : (tareaSeleccionada.value.label_ids ? tareaSeleccionada.value.label_ids.toString().split(',').map(Number) : []),
+          : (typeof tareaSeleccionada.value.label_ids === 'string'
+            ? tareaSeleccionada.value.label_ids.split(',').map(Number)
+            : [])),
         responsible_user_id: tareaSeleccionada.value.responsible_user_id,
         origin: tareaSeleccionada.value.origin || 'Valparaíso',
         shipping_type: tareaSeleccionada.value.shipping_type || 'Starken',
