@@ -154,6 +154,47 @@ router.post('/tasks/auto-archive', authenticateToken, async (req, res) => {
     }
 });
 
+// 🏛️ GET ARCHIVED TASKS
+router.get('/tasks/archived', authenticateToken, async (req, res) => {
+    try {
+        const { tenantId } = req;
+        const { search } = req.query;
+
+        let sql = `
+            SELECT 
+                t.*, 
+                u.name as created_by_name,
+                ur.name as responsible_user_name,
+                array_agg(DISTINCT ua.name) FILTER (WHERE ua.id IS NOT NULL) as assigned_names
+            FROM tasks t
+            LEFT JOIN users u ON t.created_by = u.id
+            LEFT JOIN users ur ON t.responsible_user_id = ur.id
+            LEFT JOIN task_assignments ta ON t.id = ta.task_id
+            LEFT JOIN users ua ON ta.user_id = ua.id
+            WHERE t.tenant_id = $1 AND t.is_archived = true
+        `;
+
+        const params = [tenantId];
+
+        if (search) {
+            sql += ` AND (t.title ILIKE $2 OR t.description ILIKE $2)`;
+            params.push(`%${search}%`);
+        }
+
+        sql += `
+            GROUP BY t.id, u.name, ur.name
+            ORDER BY t.completed_at DESC, t.updated_at DESC
+        `;
+
+        const result = await pool.query(sql, params);
+
+        res.json(result.rows);
+    } catch (err) {
+        console.error('❌ Error al obtener tareas archivadas:', err);
+        res.status(500).json({ error: 'Error al obtener tareas archivadas' });
+    }
+});
+
 // 📋 GET TASK BY ID
 router.get('/tasks/:id(\\d+)', authenticateToken, async (req, res) => {
     try {
