@@ -2,14 +2,16 @@
 const nodemailer = require('nodemailer');
 
 const transporter = nodemailer.createTransport({
-  host: 'smtp.resend.com',      // Servidor SMTP de Resend
-  secure: true,                 // Usa SSL
-  port: 465,                    // Puerto para SSL
+  host: 'smtp.resend.com',
+  port: 465,
+  secure: true,
   auth: {
-    user: 'resend',             // Este valor es siempre 'resend'
-    pass: process.env.RESEND_API_KEY // Tu nueva variable de entorno
+    user: 'resend',
+    pass: process.env.RESEND_API_KEY
   }
 });
+
+console.log('📧 Email Service Initialized. API Key Length:', process.env.RESEND_API_KEY ? process.env.RESEND_API_KEY.length : 0);
 
 /**
  * Función para enviar un correo electrónico.

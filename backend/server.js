@@ -1,6 +1,12 @@
 // backend/server.js
 // 🚀 SERVIDOR UNIFICADO OPERIA (PostgreSQL + Multi-tenant)
-require('dotenv').config();
+const path = require('path');
+const dotenv = require('dotenv');
+
+// Cargar configuración según entorno
+const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env';
+dotenv.config({ path: path.resolve(__dirname, '..', envFile) });
+console.log(`🔧 Loaded environment config from: ${envFile}`);
 
 const express = require('express');
 const cors = require('cors');
