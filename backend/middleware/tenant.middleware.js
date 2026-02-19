@@ -92,7 +92,7 @@ function optionalTenant(req, res, next) {
     }
 
     const subdomain = parts[0];
-    const reserved = ['www', 'api', 'app', 'admin', 'mail', 'ftp'];
+    const reserved = ['www', 'api', 'app', 'admin', 'mail', 'ftp', 'operia'];
 
     if (!reserved.includes(subdomain.toLowerCase())) {
         // Intentar extraer tenant pero no fallar si no existe
