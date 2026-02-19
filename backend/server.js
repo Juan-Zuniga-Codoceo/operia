@@ -27,7 +27,7 @@ const tasksRoutesPart2 = require('./routes/tasks.routes-postgres-PART2');
 const onboardingRoutes = require('./routes/onboarding.routes-postgres');
 const adminRoutes = require('./routes/admin.routes-postgres');
 const senderRoutes = require('./routes/sender.routes-postgres');
-const senderRoutes = require('./routes/sender.routes-postgres');
+
 const paymentsRoutes = require('./routes/payments.routes-postgres');
 const tenantsRoutes = require('./routes/tenants.routes');
 
