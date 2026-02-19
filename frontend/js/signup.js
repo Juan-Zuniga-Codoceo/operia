@@ -126,13 +126,18 @@ signupForm.addEventListener('submit', async (e) => {
         localStorage.setItem('user', JSON.stringify(data.user));
         localStorage.setItem('tenant', JSON.stringify(data.tenant));
 
+        // Cookie para persistencia en subdominios
+        document.cookie = `token=${data.token}; domain=.operia.cl; path=/; max-age=28800; Secure; SameSite=Lax`;
+
         // Mostrar mensaje de éxito
         submitBtn.innerHTML = '✅ ¡Cuenta creada! Redirigiendo...';
         submitBtn.style.background = '#27ae60';
 
-        // Redirigir al onboarding wizard
+        // Redirigir al onboarding en el subdominio
+        const redirectUrl = `https://${data.tenant.subdomain}.operia.cl/onboarding.html`;
+
         setTimeout(() => {
-            window.location.href = '/onboarding.html';
+            window.location.href = redirectUrl;
         }, 1500);
 
     } catch (error) {
