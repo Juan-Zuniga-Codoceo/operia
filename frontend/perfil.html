@@ -9,6 +9,68 @@
   <link rel="manifest" href="/manifest.json">
   <link rel="icon" href="/assets/logo.png" type="image/png">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+  <style>
+    /* Danger Zone Styles */
+    .btn-danger {
+      background-color: #e74c3c;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.3s;
+    }
+
+    .btn-danger:hover {
+      background-color: #c0392b;
+    }
+
+    .btn-danger:disabled {
+      background-color: #eccfc9;
+      cursor: not-allowed;
+    }
+
+    .danger-action {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+    }
+
+    .danger-input {
+      width: 100%;
+      padding: 10px;
+      margin: 15px 0;
+      border: 2px solid #e74c3c;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal-content.danger-modal {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      max-width: 500px;
+      width: 90%;
+      border-left: 5px solid #e74c3c;
+    }
+  </style>
 </head>
 
 <body>
@@ -223,6 +285,46 @@
             <button @click="changePassword" class="btn-primary btn-update-password">
               Actualizar Contraseña
             </button>
+          </div>
+
+          <!-- Zona de Peligro (Solo Admin) -->
+          <div class="danger-zone-card card" v-if="user && user.role === 'admin'"
+            style="max-width: 600px; margin: 40px auto 0; border: 1px solid #e74c3c;">
+            <h3 style="color: #c0392b;"><i class="fa-solid fa-triangle-exclamation"></i> Zona de Peligro</h3>
+            <p class="security-desc">Estas acciones son destructivas y no se pueden deshacer.</p>
+
+            <div class="danger-action">
+              <div class="danger-info">
+                <h4>Eliminar Organización</h4>
+                <p>Borra permanentemente la organización, usuarios y todos los datos.</p>
+              </div>
+              <button @click="showDeleteModal = true" class="btn-danger">
+                Eliminar Organización
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal de Confirmación de Eliminación -->
+        <div class="modal-overlay" v-if="showDeleteModal">
+          <div class="modal-content danger-modal">
+            <h3 style="color: #c0392b;"><i class="fa-solid fa-triangle-exclamation"></i> ¿Estás absolutamente seguro?
+            </h3>
+            <p>Esta acción eliminará <strong>permanentemente</strong> la organización <strong>{{ tenant?.name
+                }}</strong> y todos sus datos (usuarios, tareas, archivos).</p>
+            <p>Por favor, escribe <strong>{{ tenant?.subdomain }}</strong> para confirmar.</p>
+
+            <input type="text" v-model="deleteConfirmationInput" class="danger-input"
+              placeholder="Escribe el subdominio aquí...">
+
+            <div class="modal-actions">
+              <button @click="showDeleteModal = false; deleteConfirmationInput = ''"
+                class="btn-cancel">Cancelar</button>
+              <button @click="deleteOrganization" class="btn-danger"
+                :disabled="deleteConfirmationInput !== tenant?.subdomain">
+                Eliminar Permanentemente
+              </button>
+            </div>
           </div>
         </div>
 

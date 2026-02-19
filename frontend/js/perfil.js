@@ -193,8 +193,49 @@ createApp({
       return new Date(isoDate).toLocaleDateString('es-CL');
     };
 
+    // --- ELIMINAR ORGANIZACIÓN ---
+    const showDeleteModal = ref(false);
+    const deleteConfirmationInput = ref('');
+    const tenant = ref(null);
+
+    // Cargar info del tenant al montar
+    const loadTenantInfo = () => {
+      try {
+        const t = localStorage.getItem('tenant');
+        if (t) {
+          tenant.value = JSON.parse(t);
+        }
+      } catch (e) {
+        console.error("Error al leer tenant info", e);
+      }
+    };
+
+    const deleteOrganization = async () => {
+      if (deleteConfirmationInput.value !== tenant.value?.subdomain) {
+        return;
+      }
+
+      try {
+        await API.delete('/api/tenants/current', {
+          confirmation_subdomain: deleteConfirmationInput.value
+        });
+
+        // Limpiar todo y redirigir
+        localStorage.clear();
+        sessionStorage.clear();
+
+        // Redirigir a la landing page genérica
+        window.location.href = 'https://operia.cl?deleted=true';
+
+      } catch (error) {
+        API.showNotification(error.message || 'Error al eliminar la organización', 'error');
+        showDeleteModal.value = false;
+      }
+    };
+
     onMounted(() => {
       loadUserAndSyncToggle();
+      loadTenantInfo();
       cargarTareas();
     });
 
@@ -206,7 +247,9 @@ createApp({
       activeTab, editMode, editForm, toggleEditMode, cancelEdit, saveProfile,
       formatStatus, formatPriority, formatDate,
       // Visibilidad Password
-      showCurrentPassword, showNewPassword, showConfirmPassword
+      showCurrentPassword, showNewPassword, showConfirmPassword,
+      // Eliminación
+      showDeleteModal, deleteConfirmationInput, deleteOrganization, tenant
     };
   }
 }).mount('#app');
