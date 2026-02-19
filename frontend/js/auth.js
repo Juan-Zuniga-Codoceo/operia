@@ -65,6 +65,9 @@ if (document.getElementById('login-app')) {
           // Guardar sesión
           sessionStorage.setItem('biocare_user', JSON.stringify(data.user));
           sessionStorage.setItem('auth_token', data.token);
+          if (data.tenant) {
+            localStorage.setItem('tenant', JSON.stringify(data.tenant));
+          }
 
           // Redirigir
           window.location.href = '/tablero.html';

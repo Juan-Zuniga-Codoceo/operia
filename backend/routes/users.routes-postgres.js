@@ -46,9 +46,11 @@ router.get('/me', authenticateToken, async (req, res) => {
         const { userId, tenantId } = req;
 
         const result = await pool.query(
-            `SELECT id, tenant_id, name, email, role, avatar_url, email_notifications, office, phone 
-             FROM users 
-             WHERE id = $1 AND tenant_id = $2`,
+            `SELECT u.id, u.tenant_id, u.name, u.email, u.role, u.avatar_url, u.email_notifications, u.office, u.phone,
+              t.name as tenant_name, t.subdomain
+             FROM users u
+             JOIN tenants t ON u.tenant_id = t.id
+             WHERE u.id = $1 AND u.tenant_id = $2`,
             [userId, tenantId]
         );
 

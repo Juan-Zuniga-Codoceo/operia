@@ -37,6 +37,17 @@ createApp({
         notificationsEnabled.value = !!freshUser.email_notifications;
         sessionStorage.setItem('biocare_user', JSON.stringify(freshUser));
 
+        // Si el localStorage no tiene tenant, o si actualizamos desde /api/me
+        if (freshUser.subdomain && (!tenant.value || tenant.value.subdomain !== freshUser.subdomain)) {
+          const tenantInfo = {
+            id: freshUser.tenant_id,
+            name: freshUser.tenant_name,
+            subdomain: freshUser.subdomain
+          };
+          tenant.value = tenantInfo;
+          localStorage.setItem('tenant', JSON.stringify(tenantInfo));
+        }
+
       } catch (error) {
         console.error("Error al cargar datos de usuario:", error);
         if (!user.value.id) {
