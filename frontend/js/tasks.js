@@ -455,6 +455,10 @@ createApp({
       cargarDatos();
     };
 
+    const abrirNuevoProyecto = () => {
+      showNewProjectModal.value = true;
+    };
+
     const crearProyecto = async () => {
       try {
         const res = await projectService.createProject(newProject.value);
@@ -1683,7 +1687,7 @@ createApp({
       saveClientChanges,
       deleteClient,
       closeModalOnSelf,
-      projects, selectedProjectId, showNewProjectModal, newProject, crearProyecto, cambiarProyecto
+      projects, selectedProjectId, showNewProjectModal, newProject, crearProyecto, cambiarProyecto, abrirNuevoProyecto
     };
   }
 }).mount('#app');
