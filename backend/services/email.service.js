@@ -26,7 +26,7 @@ const sendEmail = async (to, subject, html) => {
   }
 
   const mailOptions = {
-    from: '"Operia" <notificaciones@operia.cl>',
+    from: '"Operia" <notificaciones@mail.operia.cl>',
     to: to,
     subject: subject,
     html: html

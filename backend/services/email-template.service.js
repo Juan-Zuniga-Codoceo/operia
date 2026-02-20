@@ -16,8 +16,9 @@ const createEmailTemplate = ({ title, recipientName, mainContentHtml, buttonUrl,
                 <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="margin: 0 auto; background-color: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
                     <!-- Header -->
                     <tr>
-                        <td style="padding: 40px 40px 30px; text-align: center; background: linear-gradient(135deg, #006837 0%, #00a651 100%); border-radius: 8px 8px 0 0;">
-                            <h1 style="margin: 0; color: white; font-size: 28px; font-weight: bold;">Operia</h1>
+                        <td style="padding: 40px 40px 30px; text-align: center; background: linear-gradient(135deg, #174a7a 0%, #2c6e9e 100%); border-radius: 8px 8px 0 0;">
+                            <img src="https://operia.cl/assets/logo.png" alt="Operia" style="height: 60px; margin-bottom: 10px; border: 4px solid white; border-radius: 8px; background-color: white; padding: 5px;" />
+                            <!-- <h1 style="margin: 0; color: white; font-size: 28px; font-weight: bold;">Operia</h1> -->
                         </td>
                     </tr>
                     
@@ -33,7 +34,7 @@ const createEmailTemplate = ({ title, recipientName, mainContentHtml, buttonUrl,
                     ${buttonUrl ? `
                     <tr>
                         <td style="padding: 0 40px 40px; text-align: center;">
-                            <a href="${buttonUrl}" style="display: inline-block; padding: 14px 32px; background-color: #006837; color: white; text-decoration: none; border-radius: 6px; font-size: 16px; font-weight: bold;">${buttonText || 'Ver más'}</a>
+                            <a href="${buttonUrl}" style="display: inline-block; padding: 14px 32px; background-color: #174a7a; color: white; text-decoration: none; border-radius: 6px; font-size: 16px; font-weight: bold; border-bottom: 3px solid #1a4066;">${buttonText || 'Ver más'}</a>
                         </td>
                     </tr>
                     ` : ''}
