@@ -371,15 +371,22 @@ router.post('/register', jsonParser, optionalTenant, [
 // ======================================================
 
 router.post('/forgot-password', jsonParser, [
-    body('email').isEmail().normalizeEmail()
+    body('email').isEmail().normalizeEmail(),
+    body('subdomain').optional().trim().isString()
 ], async (req, res) => {
     try {
-        const { email } = req.body;
+        const { email, subdomain } = req.body;
 
-        const result = await pool.query(
-            'SELECT u.*, t.subdomain FROM users u JOIN tenants t ON u.tenant_id = t.id WHERE u.email = $1',
-            [email]
-        );
+        // Si se provee un subdomain, filtramos estricto. Si no (admin global), lo intentamos buscar.
+        let query = 'SELECT u.*, t.subdomain FROM users u JOIN tenants t ON u.tenant_id = t.id WHERE u.email = $1';
+        let params = [email];
+
+        if (subdomain && subdomain !== 'www' && subdomain !== 'app' && subdomain !== 'admin') {
+            query += ' AND t.subdomain = $2';
+            params.push(subdomain);
+        }
+
+        const result = await pool.query(query, params);
 
         if (result.rows.length === 0) {
             return res.status(200).json({ message: 'Si existe una cuenta, se ha enviado un correo de recuperación.' });
