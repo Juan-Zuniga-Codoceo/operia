@@ -1,10 +1,16 @@
 // backend/server-postgres.js
 // PostgreSQL Multi-tenant version of Operia
-require('dotenv').config();
+const path = require('path');
+const dotenv = require('dotenv');
+
+// Cargar variables de entorno según NODE_ENV
+const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env';
+dotenv.config({ path: path.join(__dirname, '..', envFile) });
+// Fallback para cargar .env si faltan variables (ej: credenciales locales)
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 const express = require('express');
 const cors = require('cors');
-const path = require('path');
 const fs = require('fs');
 
 // PostgreSQL database initialization
