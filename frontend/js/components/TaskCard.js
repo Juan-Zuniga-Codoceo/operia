@@ -1,27 +1,27 @@
 import {
-    formatDate, esTareaParaHoy, esTareaVencida, hasClientData,
-    hasClientInfo, getGoogleMapsLink, getLabelsArray, getColor
-} from '../utils/helpers.js';
+  formatDate, esTareaParaHoy, esTareaVencida, hasClientData,
+  hasClientInfo, getGoogleMapsLink, getLabelsArray, getColor
+} from '../utils/helpers.js?v=1.5.5';
 
 export default {
-    props: {
-        task: {
-            type: Object,
-            required: true
-        },
-        columnType: {
-            type: String, // 'pendiente', 'en_camino', 'completada'
-            required: true
-        }
+  props: {
+    task: {
+      type: Object,
+      required: true
     },
-    emits: ['details', 'advance', 'rewind', 'complete'],
-    setup(props, { emit }) {
-        return {
-            formatDate, esTareaParaHoy, esTareaVencida, hasClientData,
-            hasClientInfo, getGoogleMapsLink, getLabelsArray, getColor
-        };
-    },
-    template: `
+    columnType: {
+      type: String, // 'pendiente', 'en_camino', 'completada'
+      required: true
+    }
+  },
+  emits: ['details', 'advance', 'rewind', 'complete'],
+  setup(props, { emit }) {
+    return {
+      formatDate, esTareaParaHoy, esTareaVencida, hasClientData,
+      hasClientInfo, getGoogleMapsLink, getLabelsArray, getColor
+    };
+  },
+  template: `
     <div class="task-card" :class="[
       {'vence-hoy': esTareaParaHoy(task.due_date), 'vencida': esTareaVencida(task.due_date, task.title)},
       {'completed': columnType === 'completada'}
