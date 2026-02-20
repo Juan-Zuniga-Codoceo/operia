@@ -133,6 +133,23 @@
     </header>
 
     <div class="controls-bar">
+      <div class="project-selector"
+        style="display: flex; align-items: center; gap: 10px; margin-right: auto; padding-right: 20px; border-right: 1px solid #dee2e6;">
+        <i class="fa-solid fa-layer-group" style="color: var(--c-primary);"></i>
+        <select v-model="selectedProjectId" @change="cambiarProyecto" class="project-dropdown"
+          style="padding: 6px 12px; border-radius: 6px; border: 1px solid #ced4da; background-color: white; font-weight: 500; color: #333; min-width: 200px; outline: none; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+          <option :value="null">🗂️ Proyecto General (Default)</option>
+          <option v-for="proj in projects" :key="proj.id" :value="proj.id">
+            📋 {{ proj.name }}
+          </option>
+        </select>
+        <button v-if="user && user.role === 'admin'" @click="showNewProjectModal = true" class="btn-icon"
+          title="Nuevo Proyecto"
+          style="background: var(--c-background); border: 1px solid #ced4da; color: var(--c-primary); cursor: pointer; padding: 5px 10px; border-radius: 6px;">
+          <i class="fa-solid fa-plus"></i>
+        </button>
+      </div>
+
       <div class="filters">
         <label for="filtro-fecha" class="filter-label">Vencimiento:</label>
         <input type="date" id="filtro-fecha" v-model="filtroFecha" />
@@ -1282,7 +1299,32 @@
 
       </div>
     </div>
-  </div>
+
+    <!-- Modal Nuevo Proyecto -->
+    <div class="modal" v-if="showNewProjectModal" @click="closeModalOnSelf($event, 'showNewProjectModal')">
+      <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+          <h2><i class="fa-solid fa-folder-plus"></i> Nuevo Proyecto</h2>
+          <button @click="showNewProjectModal = false" class="btn-close-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="proj-name">Nombre del Proyecto *</label>
+            <input id="proj-name" type="text" v-model="newProject.name" placeholder="Ej. Implementación ERP" required>
+          </div>
+          <div class="form-group">
+            <label for="proj-desc">Descripción (Opcional)</label>
+            <textarea id="proj-desc" v-model="newProject.description" placeholder="Objetivo del proyecto..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button @click="showNewProjectModal = false" class="btn-cancel">Cancelar</button>
+          <button @click="crearProyecto" class="btn-create" :disabled="!newProject.name">
+            <i class="fa-solid fa-check"></i> Crear Proyecto
+          </button>
+        </div>
+      </div>
+    </div>
 
   </div> <!-- Cierre de #app -->
 

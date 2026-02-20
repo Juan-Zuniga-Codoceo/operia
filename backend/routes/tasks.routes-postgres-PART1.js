@@ -56,14 +56,27 @@ const upload = multer({
 // 📊 GET TASKS SUMMARY (Resumen)
 router.get('/tasks/resumen', authenticateToken, async (req, res) => {
     try {
-        const { tenantId } = req;
-        const { userId } = req;
+        const { tenantId, userId } = req;
+        const { projectId } = req.query;
+        const userRole = req.user.role;
+
+        let projectFilter = 'AND project_id IS NULL';
+        const params = [tenantId];
+
+        if (projectId) {
+            if (userRole !== 'admin') {
+                const accessCheck = await pool.query('SELECT 1 FROM project_members WHERE project_id = $1 AND user_id = $2', [projectId, userId]);
+                if (accessCheck.rowCount === 0) return res.status(403).json({ error: 'No tienes acceso a este proyecto' });
+            }
+            projectFilter = 'AND project_id = $2';
+            params.push(projectId);
+        }
 
         // Count tasks by status
         const statusSql = `
             SELECT status, COUNT(*) as count 
             FROM tasks 
-            WHERE tenant_id = $1 AND is_archived = false
+            WHERE tenant_id = $1 AND is_archived = false ${projectFilter}
             GROUP BY status
         `;
 
@@ -71,7 +84,7 @@ router.get('/tasks/resumen', authenticateToken, async (req, res) => {
         const prioritySql = `
             SELECT priority, COUNT(*) as count 
             FROM tasks 
-            WHERE tenant_id = $1 AND is_archived = false
+            WHERE tenant_id = $1 AND is_archived = false ${projectFilter}
             GROUP BY priority
         `;
 
@@ -79,7 +92,7 @@ router.get('/tasks/resumen', authenticateToken, async (req, res) => {
         const recentSql = `
             SELECT title, completed_at 
             FROM tasks 
-            WHERE tenant_id = $1 AND status = 'completada'
+            WHERE tenant_id = $1 AND status = 'completada' ${projectFilter}
             ORDER BY completed_at DESC 
             LIMIT 5
         `;
@@ -94,13 +107,14 @@ router.get('/tasks/resumen', authenticateToken, async (req, res) => {
               AND due_date IS NOT NULL
               AND due_date >= CURRENT_DATE
               AND due_date <= CURRENT_DATE + INTERVAL '3 days'
+              ${projectFilter}
         `;
 
         const [statusRes, priorityRes, recentRes, proximasRes] = await Promise.all([
-            pool.query(statusSql, [tenantId]),
-            pool.query(prioritySql, [tenantId]),
-            pool.query(recentSql, [tenantId]),
-            pool.query(proximasSql, [tenantId])
+            pool.query(statusSql, params),
+            pool.query(prioritySql, params),
+            pool.query(recentSql, params),
+            pool.query(proximasSql, params)
         ]);
 
         // Format response
@@ -173,8 +187,9 @@ router.post('/tasks/auto-archive', authenticateToken, async (req, res) => {
 // 🏛️ GET ARCHIVED TASKS
 router.get('/tasks/archived', authenticateToken, async (req, res) => {
     try {
-        const { tenantId } = req;
-        const { search } = req.query;
+        const { tenantId, userId } = req;
+        const { search, projectId } = req.query;
+        const userRole = req.user.role;
 
         let sql = `
             SELECT 
@@ -191,9 +206,23 @@ router.get('/tasks/archived', authenticateToken, async (req, res) => {
         `;
 
         const params = [tenantId];
+        let paramCount = 1;
+
+        if (projectId) {
+            if (userRole !== 'admin') {
+                const accessCheck = await pool.query('SELECT 1 FROM project_members WHERE project_id = $1 AND user_id = $2', [projectId, userId]);
+                if (accessCheck.rowCount === 0) return res.status(403).json({ error: 'No tienes acceso a este proyecto' });
+            }
+            paramCount++;
+            sql += ` AND t.project_id = $${paramCount}`;
+            params.push(projectId);
+        } else {
+            sql += ` AND t.project_id IS NULL`;
+        }
 
         if (search) {
-            sql += ` AND (t.title ILIKE $2 OR t.description ILIKE $2)`;
+            paramCount++;
+            sql += ` AND (t.title ILIKE $${paramCount} OR t.description ILIKE $${paramCount})`;
             params.push(`%${search}%`);
         }
 
@@ -280,8 +309,9 @@ router.get('/tasks/:id(\\d+)', authenticateToken, async (req, res) => {
 // 📋 LIST TASKS
 router.get('/tasks', authenticateToken, async (req, res) => {
     try {
-        const { assigned_to, created_by, status, due_date, search } = req.query;
-        const { tenantId } = req;
+        const { assigned_to, created_by, status, due_date, search, projectId } = req.query;
+        const { tenantId, userId } = req;
+        const userRole = req.user.role;
 
         let sql = `
       SELECT 
@@ -314,6 +344,18 @@ router.get('/tasks', authenticateToken, async (req, res) => {
 
         const params = [tenantId];
         let paramCount = 1;
+
+        if (projectId) {
+            if (userRole !== 'admin') {
+                const accessCheck = await pool.query('SELECT 1 FROM project_members WHERE project_id = $1 AND user_id = $2', [projectId, userId]);
+                if (accessCheck.rowCount === 0) return res.status(403).json({ error: 'No tienes acceso a este proyecto' });
+            }
+            paramCount++;
+            sql += ` AND t.project_id = $${paramCount}`;
+            params.push(projectId);
+        } else {
+            sql += ` AND t.project_id IS NULL`;
+        }
 
         if (assigned_to) {
             paramCount++;
@@ -384,7 +426,7 @@ router.post('/tasks', jsonParser, authenticateToken, [
 
         let {
             title, description, due_date, priority, assigned_to, label_ids, responsible_user_id,
-            origin, shipping_type, payment_status, client_snapshot
+            origin, shipping_type, payment_status, client_snapshot, project_id
         } = req.body;
 
         priority = priority || 'media';
@@ -431,14 +473,14 @@ router.post('/tasks', jsonParser, authenticateToken, [
 
         const insertSql = `
       INSERT INTO tasks (
-        tenant_id, title, description, due_date, priority, created_by, responsible_user_id,
+        tenant_id, project_id, title, description, due_date, priority, created_by, responsible_user_id,
         human_id, origin, shipping_type, payment_status, client_snapshot
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
       RETURNING id
     `;
 
         const taskResult = await client.query(insertSql, [
-            tenantId, title, description || '', due_date, priority, creator.id, responsible_user_id || null,
+            tenantId, project_id || null, title, description || '', due_date, priority, creator.id, responsible_user_id || null,
             humanId, origin, shipping_type, payment_status, clientSnapshotStr
         ]);
 
@@ -534,7 +576,7 @@ router.put('/tasks/:id', jsonParser, authenticateToken, async (req, res) => {
 
     try {
         const taskId = req.params.id;
-        const { title, description, due_date, priority, assigned_to, label_ids, responsible_user_id } = req.body;
+        const { title, description, due_date, priority, assigned_to, label_ids, responsible_user_id, project_id } = req.body;
         const { userId, tenantId } = req;
         const userRole = req.user.role;
 
@@ -567,9 +609,9 @@ router.put('/tasks/:id', jsonParser, authenticateToken, async (req, res) => {
 
         // Update task
         const clientSnapshotStr = req.body.client ? JSON.stringify(req.body.client) : null;
-        let updateSql = 'UPDATE tasks SET title = $1, description = $2, due_date = $3, priority = $4, responsible_user_id = $5';
-        const params = [title, description, due_date, priority, responsible_user_id || null];
-        let paramCount = 5;
+        let updateSql = 'UPDATE tasks SET title = $1, description = $2, due_date = $3, priority = $4, responsible_user_id = $5, project_id = $6';
+        const params = [title, description, due_date, priority, responsible_user_id || null, project_id || null];
+        let paramCount = 6;
 
         if (req.body.origin) {
             paramCount++;

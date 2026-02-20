@@ -144,7 +144,11 @@ app.use('/api', usersRoutes);          // Users, profile, notifications
 app.use('/api/sheets', sheetsRoutes);  // Technical sheets (PDFs)
 app.use('/api', tasksRoutesPart1);     // Tasks CRUD
 app.use('/api', tasksRoutesPart2);     // Tasks comments & attachments
-app.use('/api', onboardingRoutes);     // Onboarding wizard
+app.use('/api/onboarding', onboardingRoutes);     // Onboarding wizard
+
+// Mount projects routes
+const projectsRoutes = require('./routes/projects.routes-postgres');
+app.use('/api/projects', projectsRoutes);
 
 // Mount admin and sender routes (PostgreSQL with tenant isolation)
 app.use('/api/admin', adminRoutes);

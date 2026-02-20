@@ -2,8 +2,9 @@
 // Asume que `API` (de api.js) está disponible globalmente. En la refactorización final a módulos completos, API también se importaría idealmente.
 
 export const taskService = {
-    async getTasks() {
-        return API.get('/api/tasks');
+    async getTasks(projectId = null) {
+        const url = projectId ? `/api/tasks?projectId=${projectId}` : '/api/tasks';
+        return API.get(url);
     },
 
     async getTask(id) {
@@ -22,8 +23,9 @@ export const taskService = {
         return API.delete(`/api/tasks/${id}`);
     },
 
-    async getSummary() {
-        return API.get('/api/tasks/resumen');
+    async getSummary(projectId = null) {
+        const url = projectId ? `/api/tasks/resumen?projectId=${projectId}` : '/api/tasks/resumen';
+        return API.get(url);
     },
 
     async checkDueToday() {

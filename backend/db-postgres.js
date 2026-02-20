@@ -118,12 +118,42 @@ async function initializeDatabase() {
     console.log('✅ Tabla clients creada');
 
     // ==========================================
+    // PROYECTOS (con tenant_id)
+    // ==========================================
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS projects (
+        id SERIAL PRIMARY KEY,
+        tenant_id INTEGER NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        created_by INTEGER REFERENCES users(id),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    await client.query('CREATE INDEX IF NOT EXISTS idx_projects_tenant_id ON projects(tenant_id)');
+    console.log('✅ Tabla projects creada');
+
+    // ==========================================
+    // MIEMBROS DE PROYECTO
+    // ==========================================
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS project_members (
+        project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        PRIMARY KEY (project_id, user_id)
+      )
+    `);
+    console.log('✅ Tabla project_members creada');
+
+    // ==========================================
     // TAREAS (con tenant_id)
     // ==========================================
     await client.query(`
       CREATE TABLE IF NOT EXISTS tasks (
         id SERIAL PRIMARY KEY,
         tenant_id INTEGER NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+        project_id INTEGER REFERENCES projects(id) ON DELETE CASCADE,
         title VARCHAR(500) NOT NULL,
         description TEXT,
         due_date TIMESTAMP,
@@ -143,10 +173,18 @@ async function initializeDatabase() {
         client_reference VARCHAR(255)
       )
     `);
+
+    // Migración en caliente para tablas existentes
+    await client.query(`
+      ALTER TABLE tasks 
+      ADD COLUMN IF NOT EXISTS project_id INTEGER REFERENCES projects(id) ON DELETE CASCADE
+    `);
+
     await client.query('CREATE INDEX IF NOT EXISTS idx_tasks_tenant_id ON tasks(tenant_id)');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_tasks_project_id ON tasks(project_id)');
     await client.query('CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status)');
     await client.query('CREATE INDEX IF NOT EXISTS idx_tasks_due_date ON tasks(due_date)');
-    console.log('✅ Tabla tasks creada');
+    console.log('✅ Tabla tasks verificada/actualizada');
 
     // ==========================================
     // ETIQUETAS (con tenant_id)

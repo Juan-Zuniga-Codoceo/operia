@@ -22,6 +22,10 @@ createApp({
     // 1. ESTADO REACTIVO (refs)
     // ======================================================
     const user = ref(null);
+    const projects = ref([]);
+    const selectedProjectId = ref(null);
+    const showNewProjectModal = ref(false);
+    const newProject = ref({ name: '', description: '' });
     const tasks = ref([]);
     const users = ref([]);
     const labels = ref([]);
@@ -431,14 +435,53 @@ createApp({
       connect();
     };
 
-    onMounted(() => {
+    const cargarProyectos = async () => {
+      try {
+        const response = await projectService.getProjects();
+        projects.value = response || [];
+        const savedProjectId = localStorage.getItem('operia_selected_project_id');
+        if (savedProjectId && savedProjectId !== 'null' && projects.value.some(p => p.id == savedProjectId)) {
+          selectedProjectId.value = parseInt(savedProjectId);
+        } else {
+          selectedProjectId.value = null; // General
+        }
+      } catch (err) {
+        console.error('Error al cargar proyectos:', err);
+      }
+    };
+
+    const cambiarProyecto = () => {
+      localStorage.setItem('operia_selected_project_id', selectedProjectId.value || 'null');
+      cargarDatos();
+    };
+
+    const crearProyecto = async () => {
+      try {
+        const res = await projectService.createProject(newProject.value);
+        if (res && res.id) {
+          showSuccess('Proyecto creado exitosamente');
+          showNewProjectModal.value = false;
+          newProject.value = { name: '', description: '' };
+          await cargarProyectos();
+          selectedProjectId.value = res.id;
+          cambiarProyecto();
+        }
+      } catch (err) {
+        showError('Error al crear proyecto');
+        console.error(err);
+      }
+    };
+
+    onMounted(async () => {
       const userData = sessionStorage.getItem('biocare_user');
       if (!userData) {
         window.location.href = '/login.html';
         return;
       }
       user.value = JSON.parse(userData);
-      cargarDatos();
+
+      await cargarProyectos();
+      await cargarDatos();
       setupWebSocket();
 
       // Verificar si mostrar el modal de actualización
@@ -472,8 +515,8 @@ createApp({
       try {
         loading.value = true;
         const [tasksData, usersData, labelsData, resumenData, notifData] = await Promise.all([
-          taskService.getTasks(), coreDataService.getUsers(), coreDataService.getLabels(),
-          taskService.getSummary(), coreDataService.getNotifications().catch(() => []),
+          taskService.getTasks(selectedProjectId.value), coreDataService.getUsers(), coreDataService.getLabels(),
+          taskService.getSummary(selectedProjectId.value), coreDataService.getNotifications().catch(() => []),
           loadSenderConfig() // Cargar configuración del remitente
         ]);
         tasks.value = tasksData || [];
@@ -577,7 +620,8 @@ createApp({
           origin: editTask.value.origin || '',
           shipping_type: editTask.value.shipping_type || '',
           payment_status: editTask.value.payment_status || '',
-          client: editTask.value.client
+          client: editTask.value.client,
+          project_id: selectedProjectId.value // Aign it to the currently viewed project
         };
 
         await taskService.updateTask(editTask.value.id, taskData);
@@ -649,6 +693,7 @@ createApp({
         // 2. Preparar payload
         const payload = {
           ...newTask.value,
+          project_id: selectedProjectId.value, // Se asigna al proyecto actual
           client_snapshot: newTask.value.client // Enviamos el objeto cliente como snapshot
         };
 
@@ -1637,7 +1682,8 @@ createApp({
       cancelEditClient,
       saveClientChanges,
       deleteClient,
-      closeModalOnSelf
+      closeModalOnSelf,
+      projects, selectedProjectId, showNewProjectModal, newProject, crearProyecto, cambiarProyecto
     };
   }
 }).mount('#app');
