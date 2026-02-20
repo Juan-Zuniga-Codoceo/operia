@@ -376,6 +376,7 @@ router.post('/forgot-password', jsonParser, [
 ], async (req, res) => {
     try {
         const { email, subdomain } = req.body;
+        console.log(`[FORGOT-PASSWORD] Intento de recuperación: Email=${email} | Subdomain=${subdomain}`);
 
         // Si se provee un subdomain, filtramos estricto. Si no (admin global), lo intentamos buscar.
         let query = 'SELECT u.*, t.subdomain FROM users u JOIN tenants t ON u.tenant_id = t.id WHERE u.email = $1';
@@ -387,8 +388,10 @@ router.post('/forgot-password', jsonParser, [
         }
 
         const result = await pool.query(query, params);
+        console.log(`[FORGOT-PASSWORD] Usuarios encontrados en BD: ${result.rows.length}`);
 
         if (result.rows.length === 0) {
+            console.log(`[FORGOT-PASSWORD] ❌ No se encontró el usuario en este subdominio.`);
             return res.status(200).json({ message: 'Si existe una cuenta, se ha enviado un correo de recuperación.' });
         }
 
@@ -415,11 +418,16 @@ router.post('/forgot-password', jsonParser, [
             buttonText: 'Restablecer mi Contraseña'
         });
 
-        await sendEmail(user.email, 'Recuperación de Contraseña - Operia', emailHtml);
+        try {
+            await sendEmail(user.email, 'Recuperación de Contraseña - Operia', emailHtml);
+            console.log(`[FORGOT-PASSWORD] ✅ Correo de recuperación enviado a ${user.email}`);
+        } catch (emailErr) {
+            console.error(`[FORGOT-PASSWORD] ❌ Error al enviar el correo a ${user.email}:`, emailErr);
+        }
         res.status(200).json({ message: 'Si existe una cuenta, se ha enviado un correo de recuperación.' });
 
     } catch (error) {
-        console.error('Error en forgot-password:', error);
+        console.error('[FORGOT-PASSWORD] ❌ Error global en forgot-password:', error);
         res.status(500).json({ error: 'Error al procesar solicitud' });
     }
 });
