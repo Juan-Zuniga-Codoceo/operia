@@ -97,3 +97,37 @@ export const getLabelsArray = (labelsData) => {
     if (typeof labelsData === 'string') return labelsData.split(',').map(s => s.trim());
     return [];
 };
+
+
+export const formatCommentContent = (text) => {
+    if (!text) return '';
+    return text
+        .replace(/\n/g, '<br>')
+        .replace(/@([A-Za-z0-9_ Á-Úá-ú]+)/g, '<strong class="mention">@$1</strong>');
+};
+
+export const getColor = (labelName) => {
+    if (!labelName) return '#7F8C8D';
+    const predefinedColors = {
+        'Entrega': '#049DD9', 'Express': '#3498DB', 'Factura': '#97BF04',
+        'Valparaíso': '#F39C12', 'Viña del Mar': '#E67E22', 'Quilpué': '#16A085',
+        'Prioritaria': '#E74C3C', 'Urgente': '#C0392B'
+    };
+    if (predefinedColors[labelName]) return predefinedColors[labelName];
+    const defaultColors = ['#2980B9', '#27AE60', '#8E44AD', '#2C3E50', '#7F8C8D'];
+    let hash = 0;
+    for (let i = 0; i < labelName.length; i++) {
+        hash = labelName.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return defaultColors[Math.abs(hash) % defaultColors.length];
+};
+
+export const getPriorityText = (priority) => ({ 'alta': 'Alta', 'media': 'Media', 'baja': 'Baja' }[priority] || priority);
+
+export const getFileSize = (bytes) => {
+    if (!bytes || bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+};
