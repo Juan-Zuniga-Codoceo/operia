@@ -247,7 +247,7 @@
               </div>
             </div>
 
-            <div v-if="!newTask.is_internal">
+            <div v-if="newTask && !newTask.is_internal && newTask.client">
 
               <div class="form-group">
                 <label>Buscar Cliente Frecuente</label>
@@ -391,8 +391,8 @@
                 <label for="responsible_user">Responsable Principal</label>
                 <select id="responsible_user" v-model="newTask.responsible_user_id" class="user-select-add">
                   <option :value="null">-- Sin Responsable --</option>
-                  <option v-for="user in users" :key="user.id" :value="user.id">
-                    {{ user.name }}
+                  <option v-for="user in users" :key="user?.id" :value="user?.id">
+                    {{ user?.name }}
                   </option>
                 </select>
               </div>
@@ -400,16 +400,16 @@
               <div class="form-group">
                 <label>Observa (Opcional)</label>
                 <div class="pills-container user-pills">
-                  <span v-for="user in selectedUsersInNew" :key="user.id" class="pill user-pill">
-                    {{ user.name }}
-                    <button @click="removeUserFromNewTask(user.id)" class="remove-pill">&times;</button>
+                  <span v-for="user in selectedUsersInNew" :key="user?.id" class="pill user-pill">
+                    {{ user?.name }}
+                    <button @click="removeUserFromNewTask(user?.id)" class="remove-pill">&times;</button>
                   </span>
                   <span v-if="selectedUsersInNew.length === 0" class="empty-pills">Nadie como observador</span>
                 </div>
                 <select @change="addUserToNewTask($event.target.value)" class="user-select-add" id="task-observer">
                   <option value="" disabled selected>Añadir observador...</option>
-                  <option v-for="user in availableUsersInNew" :key="user.id" :value="user.id">
-                    {{ user.name }}
+                  <option v-for="user in availableUsersInNew" :key="user?.id" :value="user?.id">
+                    {{ user?.name }}
                   </option>
                 </select>
               </div>
@@ -417,18 +417,19 @@
               <div class="form-group">
                 <label>Etiquetas</label>
                 <div class="pills-container">
-                  <span v-for="label in selectedLabelsInNew" :key="label.id" class="pill"
-                    :style="{ backgroundColor: getColor(label.name) }">
-                    {{ label.name }}
-                    <button @click="toggleLabelInNew(label.id)" class="remove-pill">&times;</button>
+                  <span v-for="label in selectedLabelsInNew" :key="label?.id" class="pill"
+                    :style="{ backgroundColor: getColor(label?.name) }">
+                    {{ label?.name }}
+                    <button @click="toggleLabelInNew(label?.id)" class="remove-pill">&times;</button>
                   </span>
                 </div>
                 <div class="dropdown-container">
                   <input type="text" v-model="labelSearchTerm" placeholder="Añadir etiqueta..."
                     @focus="showNewLabelDropdown = true" @blur="showNewLabelDropdown = false" class="label-input" />
                   <div class="label-dropdown" v-if="showNewLabelDropdown">
-                    <div v-for="label in availableLabelsInNew" :key="label.id" @mousedown="toggleLabelInNew(label.id)">
-                      {{ label.name }}
+                    <div v-for="label in availableLabelsInNew" :key="label?.id"
+                      @mousedown="toggleLabelInNew(label?.id)">
+                      {{ label?.name }}
                     </div>
                   </div>
                 </div>
@@ -1309,7 +1310,7 @@
           <h2><i class="fa-solid fa-folder-plus"></i> Nuevo Proyecto</h2>
           <button @click="showNewProjectModal = false" class="btn-close-modal">&times;</button>
         </div>
-        <div class="modal-body">
+        <div class="modal-body" v-if="newProject">
           <div class="form-group">
             <label for="proj-name">Nombre del Proyecto *</label>
             <input id="proj-name" type="text" v-model="newProject.name" placeholder="Ej. Implementación ERP" required>

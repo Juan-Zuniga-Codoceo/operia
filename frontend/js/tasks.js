@@ -775,7 +775,7 @@ createApp({
     const resetForm = () => {
       newTask.value = {
         title: '', description: '', due_date: '', priority: 'media',
-        assigned_to: [], label_ids: [], comentario_inicial: '',
+        assigned_to: [], label_ids: [], is_internal: false, comentario_inicial: '',
         responsible_user_id: null,
         origin: 'Valparaíso', shipping_type: 'Starken', payment_status: 'por_pagar',
         client: {
