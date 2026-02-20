@@ -2,12 +2,20 @@ import { useWebSocket } from './composables/useWebSocket.js';
 import { taskService } from './services/taskService.js';
 import { clientService } from './services/clientService.js';
 import { coreDataService } from './services/coreDataService.js';
+import {
+  formatDate, hasClientData, hasClientInfo, getClientName,
+  getClientPhone, getClientAddress, getClientReference,
+  getGoogleMapsLink, esTareaParaHoy, esTareaVencida, getLabelsArray,
+  getColor, getPriorityText, getFileSize, formatCommentContent
+} from './utils/helpers.js';
+import TaskCard from './components/TaskCard.js';
 
 const { createApp, ref, computed, onMounted, watch, reactive } = Vue;
 
 createApp({
   components: {
-    'update-modal': UpdateModal
+    'update-modal': UpdateModal,
+    'task-card': TaskCard
   },
   setup() {
     // ======================================================
@@ -352,60 +360,6 @@ createApp({
       } else {
         document.body.classList.remove('overlay-active');
       }
-    };
-
-    const getClientName = (snapshot) => {
-      if (!snapshot) return '';
-      try {
-        const client = typeof snapshot === 'string' ? JSON.parse(snapshot) : snapshot;
-        return client.name || '';
-      } catch { return ''; }
-    };
-
-    const getClientPhone = (snapshot) => {
-      if (!snapshot) return '';
-      try {
-        const client = typeof snapshot === 'string' ? JSON.parse(snapshot) : snapshot;
-        return client.phone || '';
-      } catch { return ''; }
-    };
-
-    const getClientAddress = (snapshot) => {
-      if (!snapshot) return '';
-      try {
-        const client = typeof snapshot === 'string' ? JSON.parse(snapshot) : snapshot;
-        const formatAddress = (client) => {
-          if (!client) return 'Sin dirección';
-          return `${client.address_street || ''} ${client.commune || ''}`.trim();
-        };
-        return formatAddress(client);
-      } catch { return ''; }
-    };
-
-    const getGoogleMapsLink = (snapshot) => {
-      if (!snapshot) return null;
-      try {
-        const client = typeof snapshot === 'string' ? JSON.parse(snapshot) : snapshot;
-        if (!client || !client.address_street) return null;
-        const fullAddress = `${client.address_street || ''}, ${client.commune || ''}, ${client.region || ''}, Chile`;
-        return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress.trim())}`;
-      } catch { return null; }
-    };
-
-    const getClientReference = (snapshot) => {
-      if (!snapshot) return '';
-      try {
-        const client = typeof snapshot === 'string' ? JSON.parse(snapshot) : snapshot;
-        return client.reference || '';
-      } catch { return ''; }
-    };
-
-    const hasClientInfo = (snapshot) => {
-      if (!snapshot) return false;
-      try {
-        const client = typeof snapshot === 'string' ? JSON.parse(snapshot) : snapshot;
-        return !!(client.name && client.name.trim() !== '');
-      } catch { return false; }
     };
 
     const handleNotificationClick = async (notificacion) => {
@@ -1066,68 +1020,7 @@ createApp({
       }
     };
 
-    const esTareaParaHoy = (isoDate) => {
-      if (!isoDate) return false;
-      const hoy = new Date();
-      const fechaTarea = new Date(isoDate);
-      return hoy.getFullYear() === fechaTarea.getFullYear() &&
-        hoy.getMonth() === fechaTarea.getMonth() &&
-        hoy.getDate() === fechaTarea.getDate();
-    };
-
-    // --- VERSIÓN DE DEPURACIÓN ---
-    const esTareaVencida = (dateString) => {
-      if (!dateString) return false;
-      const isoDateString = dateString.replace(' ', 'T');
-      const fechaTarea = new Date(isoDateString);
-      const hoy = new Date();
-      if (isNaN(fechaTarea.getTime())) return false;
-      return fechaTarea < hoy;
-    };
-
-    const formatDate = (isoDate) => {
-      if (!isoDate) return 'No especificada';
-      try {
-        return new Date(isoDate).toLocaleString('es-CL', {
-          day: 'numeric', month: 'long', year: 'numeric',
-          hour: '2-digit', minute: '2-digit'
-        });
-      } catch { return isoDate; }
-    };
-
-    const formatCommentContent = (text) => {
-      if (!text) return '';
-      // Convierte saltos de línea a <br> y resalta las menciones con una clase CSS
-      return text
-        .replace(/\n/g, '<br>')
-        .replace(/@([A-Za-z0-9_ Á-Úá-ú]+)/g, '<strong class="mention">@$1</strong>');
-    };
-
-    const getColor = (labelName) => {
-      if (!labelName) return '#7F8C8D';
-      const predefinedColors = {
-        'Entrega': '#049DD9', 'Express': '#3498DB', 'Factura': '#97BF04',
-        'Valparaíso': '#F39C12', 'Viña del Mar': '#E67E22', 'Quilpué': '#16A085',
-        'Prioritaria': '#E74C3C', 'Urgente': '#C0392B'
-      };
-      if (predefinedColors[labelName]) return predefinedColors[labelName];
-      const defaultColors = ['#2980B9', '#27AE60', '#8E44AD', '#2C3E50', '#7F8C8D'];
-      let hash = 0;
-      for (let i = 0; i < labelName.length; i++) {
-        hash = labelName.charCodeAt(i) + ((hash << 5) - hash);
-      }
-      return defaultColors[Math.abs(hash) % defaultColors.length];
-    };
-
-    const getPriorityText = (priority) => ({ 'alta': 'Alta', 'media': 'Media', 'baja': 'Baja' }[priority] || priority);
-
-    const getFileSize = (bytes) => {
-      if (!bytes || bytes === 0) return '0 Bytes';
-      const k = 1024;
-      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-      const i = Math.floor(Math.log(bytes) / Math.log(k));
-      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    };
+    // Las utilidades fueron extraídas a helpers.js
 
 
 

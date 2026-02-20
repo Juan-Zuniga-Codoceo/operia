@@ -177,57 +177,9 @@
             <i class="fa-regular fa-clock"></i> Pendientes
           </h2>
           <div class="task-list">
-            <div v-for="task in tareasPendientes" :key="task.id" class="task-card" :data-task-id="task.id"
-              :class="{ 'vence-hoy': esTareaParaHoy(task.due_date), 'vencida': esTareaVencida(task.due_date, task.title) }"
-              @click="verDetalles(task)">
-              <div class="task-header-badges">
-                <span v-if="task.human_id" class="id-badge">{{ task.human_id }}</span>
-                <span v-if="hasClientData(task) && task.shipping_type" class="courier-badge"><i
-                    class="fa-solid fa-truck-fast"></i> {{ task.shipping_type }}</span><span
-                  v-else-if="!hasClientData(task)" class="courier-badge internal-badge"><i
-                    class="fa-solid fa-building-user"></i> Tarea Interna</span>
-              </div>
-              <h3>{{ task.title }}</h3>
-
-              <!-- Bloque Cliente -->
-              <div v-if="hasClientInfo(task.client_snapshot)" class="client-info-block"
-                style="background: #f8f9fa; padding: 5px; font-size: 0.85em; margin-top: 5px; border-radius: 4px; color: #333;">
-                <div v-if="typeof task.client_snapshot === 'string'">
-                  <strong>👤 {{ JSON.parse(task.client_snapshot).name }}</strong><br>
-                  📞 {{ JSON.parse(task.client_snapshot).phone || 'S/N' }}<br>
-                  📍 {{ JSON.parse(task.client_snapshot).address_street || '' }} {{
-                  JSON.parse(task.client_snapshot).commune || '' }}
-                </div>
-                <div v-else>
-                  <strong>👤 {{ task.client_snapshot.name }}</strong><br>
-                  📞 {{ task.client_snapshot.phone || 'S/N' }}<br>
-                  📍 {{ task.client_snapshot.address_street || '' }} {{ task.client_snapshot.commune || '' }}
-                </div>
-              </div>
-              <p>{{ task.description }}</p>
-              <div class="task-badge-container"></div>
-              <div class="task-meta">
-                <span class="due-date"><i class="fa-regular fa-calendar"></i> {{ formatDate(task.due_date) }}</span>
-                <div class="labels">
-                  <span v-for="label in getLabelsArray(task)" :key="label" class="label-tag"
-                    :style="{ backgroundColor: getColor(label) }">{{ label }}</span>
-                </div>
-              </div>
-
-              <div class="task-footer">
-                <span class="assigned-to" title="Observadores"><i class="fa-solid fa-users-viewfinder"></i> {{
-                  task.assigned_names || 'Sin observadores' }}</span>
-
-                <span class="responsible-user" v-if="task.responsible_user_name"
-                  :title="'Responsable: ' + task.responsible_user_name">
-                  <i class="fa-solid fa-user-shield"></i>
-                  {{ task.responsible_user_name.split(' ')[0] }}
-                </span>
-
-                <button @click="moverACamino(task.id, $event)" class="btn-action">En Camino <i
-                    class="fa-solid fa-arrow-right"></i></button>
-              </div>
-            </div>
+            <task-card v-for="task in tareasPendientes" :key="task.id" :task="task" column-type="pendiente"
+              @details="verDetalles" @advance="moverACamino(task.id, $event)">
+            </task-card>
             <p class="empty" v-if="tareasPendientes.length === 0">No hay tareas pendientes</p>
           </div>
         </div>
@@ -236,60 +188,10 @@
             <i class="fa-solid fa-truck-fast"></i> En Camino
           </h2>
           <div class="task-list">
-            <div v-for="task in tareasEnCamino" :key="task.id" class="task-card" :data-task-id="task.id"
-              @click="verDetalles(task)">
-              <div class="task-header-badges">
-                <span v-if="task.human_id" class="id-badge">{{ task.human_id }}</span>
-                <span v-if="hasClientData(task) && task.shipping_type" class="courier-badge"><i
-                    class="fa-solid fa-truck-fast"></i> {{ task.shipping_type }}</span><span
-                  v-else-if="!hasClientData(task)" class="courier-badge internal-badge"><i
-                    class="fa-solid fa-building-user"></i> Tarea Interna</span>
-              </div>
-              <h3>{{ task.title }}</h3>
-
-              <!-- Bloque Cliente -->
-              <div v-if="hasClientInfo(task.client_snapshot)" class="client-info-block"
-                style="background: #f8f9fa; padding: 5px; font-size: 0.85em; margin-top: 5px; border-radius: 4px; color: #333;">
-                <div v-if="typeof task.client_snapshot === 'string'">
-                  <strong>👤 {{ JSON.parse(task.client_snapshot).name }}</strong><br>
-                  📞 {{ JSON.parse(task.client_snapshot).phone || 'S/N' }}<br>
-                  📍 {{ JSON.parse(task.client_snapshot).address_street || '' }} {{
-                  JSON.parse(task.client_snapshot).commune || '' }}
-                </div>
-                <div v-else>
-                  <strong>👤 {{ task.client_snapshot.name }}</strong><br>
-                  📞 {{ task.client_snapshot.phone || 'S/N' }}<br>
-                  📍 {{ task.client_snapshot.address_street || '' }} {{ task.client_snapshot.commune || '' }}
-                </div>
-              </div>
-              <p>{{ task.description }}</p>
-              <div class="task-badge-container"></div>
-              <div class="task-meta">
-                <span class="due-date"><i class="fa-regular fa-calendar"></i> {{ formatDate(task.due_date) }}</span>
-                <div class="labels">
-                  <span v-for="label in getLabelsArray(task)" :key="label" class="label-tag"
-                    :style="{ backgroundColor: getColor(label) }">{{ label }}</span>
-                </div>
-              </div>
-
-              <div class="task-footer">
-                <span class="assigned-to" title="Observadores"><i class="fa-solid fa-users-viewfinder"></i> {{
-                  task.assigned_names || 'Sin observadores' }}</span>
-
-                <span class="responsible-user" v-if="task.responsible_user_name"
-                  :title="'Responsable: ' + task.responsible_user_name">
-                  <i class="fa-solid fa-user-shield"></i>
-                  {{ task.responsible_user_name.split(' ')[0] }}
-                </span>
-
-                <button @click="retrocederEstado(task.id, 'pendiente', $event)" class="btn-action secondary"
-                  style="margin-right: 5px;">
-                  <i class="fa-solid fa-arrow-left"></i> Regresar
-                </button>
-                <button @click="openCompleteModal(task, $event)" class="btn-action green">Completar <i
-                    class="fa-solid fa-check"></i></button>
-              </div>
-            </div>
+            <task-card v-for="task in tareasEnCamino" :key="task.id" :task="task" column-type="en_camino"
+              @details="verDetalles" @rewind="retrocederEstado(task.id, 'pendiente', $event)"
+              @complete="openCompleteModal(task, $event)">
+            </task-card>
             <p class="empty" v-if="tareasEnCamino.length === 0">No hay tareas en camino</p>
           </div>
         </div>
@@ -298,47 +200,9 @@
             <i class="fa-solid fa-flag-checkered"></i> Completadas ({{ tareasCompletadas.length }})
           </h2>
           <div class="task-list">
-            <div v-for="task in tareasCompletadas" :key="task.id" class="task-card completed" :data-task-id="task.id"
-              @click="verDetalles(task)">
-              <div class="task-header-badges">
-                <span v-if="task.human_id" class="id-badge">{{ task.human_id }}</span>
-                <span v-if="hasClientData(task) && task.shipping_type" class="courier-badge"><i
-                    class="fa-solid fa-truck-fast"></i> {{ task.shipping_type }}</span><span
-                  v-else-if="!hasClientData(task)" class="courier-badge internal-badge"><i
-                    class="fa-solid fa-building-user"></i> Tarea Interna</span>
-              </div>
-              <h3>{{ task.title }}</h3>
-
-              <!-- Bloque Cliente -->
-              <div v-if="hasClientInfo(task.client_snapshot)" class="client-info-block"
-                style="background: #f8f9fa; padding: 5px; font-size: 0.85em; margin-top: 5px; border-radius: 4px; color: #333;">
-                <div v-if="typeof task.client_snapshot === 'string'">
-                  <strong>👤 {{ JSON.parse(task.client_snapshot).name }}</strong><br>
-                  📞 {{ JSON.parse(task.client_snapshot).phone || 'S/N' }}<br>
-                  📍 {{ JSON.parse(task.client_snapshot).address_street || '' }} {{
-                  JSON.parse(task.client_snapshot).commune || '' }}
-                </div>
-                <div v-else>
-                  <strong>👤 {{ task.client_snapshot.name }}</strong><br>
-                  📞 {{ task.client_snapshot.phone || 'S/N' }}<br>
-                  📍 {{ task.client_snapshot.address_street || '' }} {{ task.client_snapshot.commune || '' }}
-                </div>
-              </div>
-
-              <p>{{ task.description }}</p>
-              <div class="task-badge-container"></div>
-              <div class="task-meta">
-                <small>Completado el {{ formatDate(task.completed_at) }}</small>
-              </div>
-              <div class="task-footer">
-                <span class="assigned-to" title="Observadores"><i class="fa-solid fa-users-viewfinder"></i> {{
-                  task.assigned_names || 'Sin observadores' }}</span>
-                <button @click="retrocederEstado(task.id, 'en_camino', $event)" class="btn-action secondary"
-                  style="margin-left: auto;">
-                  <i class="fa-solid fa-arrow-left"></i> Regresar
-                </button>
-              </div>
-            </div>
+            <task-card v-for="task in tareasCompletadas" :key="task.id" :task="task" column-type="completada"
+              @details="verDetalles" @rewind="retrocederEstado(task.id, 'en_camino', $event)">
+            </task-card>
             <p class="empty" v-if="tareasCompletadas.length === 0">No hay tareas completadas</p>
           </div>
         </div>
