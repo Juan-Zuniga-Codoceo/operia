@@ -1,3 +1,8 @@
+import { useWebSocket } from './composables/useWebSocket.js';
+import { taskService } from './services/taskService.js';
+import { clientService } from './services/clientService.js';
+import { coreDataService } from './services/coreDataService.js';
+
 const { createApp, ref, computed, onMounted, watch, reactive } = Vue;
 
 createApp({
@@ -461,41 +466,15 @@ createApp({
     };
 
     const setupWebSocket = () => {
-      const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-      const wsUrl = wsProtocol + window.location.host;
-
-      const ws = new WebSocket(wsUrl);
-      ws.onopen = () => {
-        console.log('✅ Conectado al servidor WebSocket en tiempo real.');
-      };
-
-      ws.onmessage = async (event) => {
-        try {
-          const message = JSON.parse(event.data);
-
-          if (message.type === 'TASK_RESTORED') {
-            console.log(`✨ Tarea ${message.taskId} restaurada, actualizando y resaltando...`);
-            await cargarDatos(); // Carga los datos para que la tarea aparezca
-            highlightTask(message.taskId); // Llama a la nueva función de resaltado
-          }
-          else if (message.type === 'TASKS_UPDATED') {
-            console.log('🔄 Recibida actualización genérica, recargando tablero...');
-            cargarDatos();
-          }
-
-        } catch (e) {
-          console.error('Error al procesar mensaje de WebSocket:', e);
+      const { connect } = useWebSocket(
+        (taskId) => {
+          cargarDatos().then(() => highlightTask(taskId));
+        },
+        () => {
+          cargarDatos();
         }
-      };
-
-      ws.onclose = () => {
-        console.log('🔌 Desconectado del servidor WebSocket. Intentando reconectar en 5 segundos...');
-        setTimeout(setupWebSocket, 5000);
-      };
-      ws.onerror = (error) => {
-        console.error('❌ Error de WebSocket:', error);
-        ws.close();
-      };
+      );
+      connect();
     };
 
     onMounted(() => {
@@ -539,8 +518,8 @@ createApp({
       try {
         loading.value = true;
         const [tasksData, usersData, labelsData, resumenData, notifData] = await Promise.all([
-          API.get('/api/tasks'), API.get('/api/users'), API.get('/api/labels'),
-          API.get('/api/tasks/resumen'), API.get('/api/notifications').catch(() => []),
+          taskService.getTasks(), coreDataService.getUsers(), coreDataService.getLabels(),
+          taskService.getSummary(), coreDataService.getNotifications().catch(() => []),
           loadSenderConfig() // Cargar configuración del remitente
         ]);
         tasks.value = tasksData || [];
@@ -548,7 +527,7 @@ createApp({
         labels.value = labelsData || [];
         resumen.value = resumenData || { vencidas: 0, proximas: 0, total_pendientes: 0 };
         notificaciones.value = notifData || [];
-        API.post('/api/tasks/check-due-today');
+        taskService.checkDueToday();
         return tasksData;
       } catch (err) {
         console.error('Error al cargar datos:', err);
@@ -647,7 +626,7 @@ createApp({
           client: editTask.value.client
         };
 
-        await API.put(`/api/tasks/${editTask.value.id}`, taskData);
+        await taskService.updateTask(editTask.value.id, taskData);
 
         // 2. Manejar archivos adjuntos si hay cambios
         if (adjuntosParaBorrar.value.length > 0) {
@@ -681,7 +660,7 @@ createApp({
 
     const eliminarTarea = async () => {
       try {
-        await API.delete(`/api/tasks/${tareaSeleccionada.value.id}`);
+        await taskService.deleteTask(tareaSeleccionada.value.id);
         showDeleteConfirm.value = false;
         tareaSeleccionada.value = null;
         showSuccess('🗑️ Tarea eliminada correctamente');
@@ -703,7 +682,7 @@ createApp({
         // 1. Guardar cliente si es necesario
         if (saveAsFrequent.value && newTask.value.client.rut) {
           try {
-            await API.post('/api/clients', newTask.value.client);
+            await clientService.createClient(newTask.value.client);
           } catch (err) {
             console.warn('Error al guardar cliente frecuente (puede que ya exista):', err);
             // No bloqueamos la creación de la tarea, pero avisamos
@@ -719,7 +698,7 @@ createApp({
           client_snapshot: newTask.value.client // Enviamos el objeto cliente como snapshot
         };
 
-        const result = await API.post('/api/tasks', payload);
+        const result = await taskService.createTask(payload);
 
         if (archivosAdjuntos.value.length > 0 && result.id) {
           const formData = new FormData();
@@ -739,14 +718,12 @@ createApp({
     };
 
     const avanzarEstado = (task) => {
-      const nuevoEstado = task.status === 'pendiente' ? 'en_camino' : 'completada';
-      cambiarEstadoTarea(task.id, nuevoEstado);
+      taskService.advanceStep(task.id, task.status);
       showStateDropdown.value = false;
     };
 
     const retrocederEstado = (task) => {
-      const nuevoEstado = task.status === 'completada' ? 'en_camino' : 'pendiente';
-      cambiarEstadoTarea(task.id, nuevoEstado);
+      taskService.rewindStep(task.id, task.status);
       showStateDropdown.value = false;
     };
 
