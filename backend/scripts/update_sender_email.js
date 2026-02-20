@@ -24,7 +24,7 @@ async function run() {
             console.log('✅ Tabla sender_config encontrada. Actualizando correos...');
             const result = await pool.query(`
             UPDATE sender_config 
-            SET "fromEmail" = 'notificaciones@mail.operia.cl', "fromName" = 'Operia'
+            SET "email" = 'notificaciones@mail.operia.cl', "name" = 'Operia'
         `);
             console.log(`✅ ¡Éxito! Se actualizaron ${result.rowCount} registros en sender_config.`);
         } else {
