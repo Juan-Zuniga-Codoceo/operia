@@ -283,6 +283,14 @@ router.get('/tasks/:id(\\d+)', authenticateToken, async (req, res) => {
 
         const task = result.rows[0];
 
+        // Security check: If task belongs to a project, verify user access
+        if (task.project_id && req.user.role !== 'admin') {
+            const accessCheck = await pool.query('SELECT 1 FROM project_members WHERE project_id = $1 AND user_id = $2', [task.project_id, req.user.id]);
+            if (accessCheck.rowCount === 0) {
+                return res.status(403).json({ error: 'No tienes acceso a este proyecto ni sus tareas' });
+            }
+        }
+
         // Process labels
         task.labels = [];
         if (task.label_names && task.label_names.length > 0) {
@@ -444,6 +452,14 @@ router.post('/tasks', jsonParser, authenticateToken, [
 
         const prefix = originPrefixMap[origin] || originPrefixMap['Default'];
 
+        // Security check: If trying to add to a project, verify access
+        if (project_id && req.user.role !== 'admin') {
+            const accessCheck = await pool.query('SELECT 1 FROM project_members WHERE project_id = $1 AND user_id = $2', [project_id, creator.id]);
+            if (accessCheck.rowCount === 0) {
+                return res.status(403).json({ error: 'No tienes permisos para agregar tareas a este proyecto' });
+            }
+        }
+
         await client.query('BEGIN');
 
         // 1. Get/Update sequence
@@ -603,6 +619,14 @@ router.put('/tasks/:id', jsonParser, authenticateToken, async (req, res) => {
 
         if (!isAdmin && !isCreator && !isResponsible && !isAssigned) {
             return res.status(403).json({ error: 'No tienes permiso para editar la tarea' });
+        }
+
+        // Security check: If trying to add/move to a project, verify access
+        if (project_id && !isAdmin) {
+            const accessCheck = await client.query('SELECT 1 FROM project_members WHERE project_id = $1 AND user_id = $2', [project_id, userId]);
+            if (accessCheck.rowCount === 0) {
+                return res.status(403).json({ error: 'No tienes permisos para asignar/mover tareas a este proyecto' });
+            }
         }
 
         await client.query('BEGIN');
