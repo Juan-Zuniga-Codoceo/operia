@@ -8,7 +8,7 @@ const { authenticateToken } = require('../middleware/auth');
 // ==========================================
 router.get('/', authenticateToken, async (req, res) => {
     try {
-        const tenant_id = req.user.tenantId;
+        const tenant_id = req.user.tenant_id;
         const user_id = req.user.id;
         const role = req.user.role; // 'admin' o 'user'
 
@@ -48,7 +48,7 @@ router.post('/', authenticateToken, async (req, res) => {
     const client = await pool.connect();
     try {
         const { name, description, members } = req.body;
-        const tenant_id = req.user.tenantId;
+        const tenant_id = req.user.tenant_id;
         const user_id = req.user.id;
 
         if (!name) {
@@ -94,7 +94,7 @@ router.post('/', authenticateToken, async (req, res) => {
 router.get('/:id/members', authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
-        const tenant_id = req.user.tenantId;
+        const tenant_id = req.user.tenant_id;
 
         // Verify project belongs to tenant
         const projectCheck = await pool.query('SELECT id FROM projects WHERE id = $1 AND tenant_id = $2', [id, tenant_id]);
@@ -122,7 +122,7 @@ router.post('/:id/members', authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
         const { user_id } = req.body;
-        const tenant_id = req.user.tenantId;
+        const tenant_id = req.user.tenant_id;
 
         // Optionally, check if caller is admin or project creator
         if (!user_id) return res.status(400).json({ error: 'Falta user_id' });
@@ -149,7 +149,7 @@ router.post('/:id/members', authenticateToken, async (req, res) => {
 router.delete('/:id/members/:userId', authenticateToken, async (req, res) => {
     try {
         const { id, userId } = req.params;
-        const tenant_id = req.user.tenantId;
+        const tenant_id = req.user.tenant_id;
 
         const projectCheck = await pool.query('SELECT id FROM projects WHERE id = $1 AND tenant_id = $2', [id, tenant_id]);
         if (projectCheck.rowCount === 0) return res.status(404).json({ error: 'Proyecto no encontrado' });
