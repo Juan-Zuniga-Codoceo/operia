@@ -47,7 +47,7 @@ router.get('/', authenticateToken, async (req, res) => {
 router.post('/', authenticateToken, async (req, res) => {
     const client = await pool.connect();
     try {
-        const { name, description } = req.body;
+        const { name, description, members } = req.body;
         const tenant_id = req.user.tenantId;
         const user_id = req.user.id;
 
@@ -66,11 +66,16 @@ router.post('/', authenticateToken, async (req, res) => {
 
         const newProject = projectResult.rows[0];
 
-        // Add the creator as the first member
-        await client.query(`
-            INSERT INTO project_members (project_id, user_id)
-            VALUES ($1, $2)
-        `, [newProject.id, user_id]);
+        // Ensure the creator and added members are uniquely added
+        const membersToAdd = new Set(Array.isArray(members) ? members : []);
+        membersToAdd.add(user_id);
+
+        for (const memberId of membersToAdd) {
+            await client.query(`
+                INSERT INTO project_members (project_id, user_id)
+                VALUES ($1, $2)
+            `, [newProject.id, memberId]);
+        }
 
         await client.query('COMMIT');
         res.status(201).json(newProject);

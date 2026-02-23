@@ -1,15 +1,15 @@
-import { useWebSocket } from './composables/useWebSocket.js?v=1.5.6';
-import { taskService } from './services/taskService.js?v=1.5.6';
-import { clientService } from './services/clientService.js?v=1.5.6';
-import { coreDataService } from './services/coreDataService.js?v=1.5.6';
-import { projectService } from './services/projectService.js?v=1.5.6';
+import { useWebSocket } from './composables/useWebSocket.js?v=1.5.7';
+import { taskService } from './services/taskService.js?v=1.5.7';
+import { clientService } from './services/clientService.js?v=1.5.7';
+import { coreDataService } from './services/coreDataService.js?v=1.5.7';
+import { projectService } from './services/projectService.js?v=1.5.7';
 import {
   formatDate, hasClientData, hasClientInfo, getClientName,
   getClientPhone, getClientAddress, getClientReference,
   getGoogleMapsLink, esTareaParaHoy, esTareaVencida, getLabelsArray,
   getColor, getPriorityText, getFileSize, formatCommentContent
-} from './utils/helpers.js?v=1.5.6';
-import TaskCard from './components/TaskCard.js?v=1.5.6';
+} from './utils/helpers.js?v=1.5.7';
+import TaskCard from './components/TaskCard.js?v=1.5.7';
 
 const { createApp, ref, computed, onMounted, watch, reactive } = Vue;
 
@@ -26,7 +26,7 @@ createApp({
     const projects = ref([]);
     const selectedProjectId = ref(null);
     const showNewProjectModal = ref(false);
-    const newProject = ref({ name: '', description: '' });
+    const newProject = ref({ name: '', description: '', members: [] });
     const tasks = ref([]);
     const users = ref([]);
     const labels = ref([]);
@@ -234,6 +234,13 @@ createApp({
     const availableUsersInNew = computed(() => users.value.filter(u => !newTask.value.assigned_to.includes(u.id)));
     const selectedUsersInEdit = computed(() => users.value.filter(u => editTask.value.assigned_to.includes(u.id)));
     const availableUsersInEdit = computed(() => users.value.filter(u => !editTask.value.assigned_to.includes(u.id)));
+
+    const selectedMembersInProject = computed(() => users.value.filter(u => newProject.value.members.includes(u.id)));
+    const availableMembersInProject = computed(() => {
+      // Always exclude the creator explicitly from dropdown if they are already added,
+      // but if user handles their own role implicitly, just exclude what's in array
+      return users.value.filter(u => !newProject.value.members.includes(u.id));
+    });
 
     const puedeEditarTarea = computed(() => {
       if (!user.value || !tareaSeleccionada.value) return false;
@@ -469,7 +476,7 @@ createApp({
         if (res && res.id) {
           showSuccess('Proyecto creado exitosamente');
           showNewProjectModal.value = false;
-          newProject.value = { name: '', description: '' };
+          newProject.value = { name: '', description: '', members: [] };
           await cargarProyectos();
           selectedProjectId.value = res.id;
           cambiarProyecto();
@@ -774,6 +781,17 @@ createApp({
 
     const removeUserFromEditTask = (userId) => {
       editTask.value.assigned_to = editTask.value.assigned_to.filter(id => id !== userId);
+    };
+
+    const addMemberToProject = (userId) => {
+      const id = parseInt(userId);
+      if (id && !newProject.value.members.includes(id)) {
+        newProject.value.members.push(id);
+      }
+    };
+
+    const removeMemberFromProject = (userId) => {
+      newProject.value.members = newProject.value.members.filter(id => id !== userId);
     };
 
     const resetForm = () => {
@@ -1691,7 +1709,8 @@ createApp({
       saveClientChanges,
       deleteClient,
       closeModalOnSelf,
-      projects, selectedProjectId, showNewProjectModal, newProject, crearProyecto, cambiarProyecto, abrirNuevoProyecto
+      projects, selectedProjectId, showNewProjectModal, newProject, crearProyecto, cambiarProyecto, abrirNuevoProyecto,
+      selectedMembersInProject, availableMembersInProject, addMemberToProject, removeMemberFromProject
     };
   }
 }).mount('#app');
