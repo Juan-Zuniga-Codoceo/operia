@@ -456,7 +456,10 @@ createApp({
     };
 
     const abrirNuevoProyecto = () => {
+      console.log('[DEBUG] abrirNuevoProyecto disparado.');
+      console.log('[DEBUG] Estado previo de showNewProjectModal:', showNewProjectModal.value);
       showNewProjectModal.value = true;
+      console.log('[DEBUG] Estado nuevo de showNewProjectModal:', showNewProjectModal.value);
     };
 
     const crearProyecto = async () => {

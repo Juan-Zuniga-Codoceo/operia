@@ -142,7 +142,7 @@
             📋 {{ proj.name }}
           </option>
         </select>
-        <button v-if="user && user.role === 'admin'" type="button" @click.prevent="showNewProjectModal = true"
+        <button v-if="user && user.role === 'admin'" type="button" @click.prevent="abrirNuevoProyecto"
           title="Nuevo Proyecto"
           style="background: var(--c-panel-bg); border: 1px solid #ced4da; color: var(--c-primary); cursor: pointer; padding: 6px 12px; border-radius: 6px; display: flex; align-items: center; justify-content: center; height: 34px;">
           <i class="fa-solid fa-plus"></i></button>
