@@ -2,6 +2,7 @@ import { useWebSocket } from './composables/useWebSocket.js?v=1.5.6';
 import { taskService } from './services/taskService.js?v=1.5.6';
 import { clientService } from './services/clientService.js?v=1.5.6';
 import { coreDataService } from './services/coreDataService.js?v=1.5.6';
+import { projectService } from './services/projectService.js?v=1.5.6';
 import {
   formatDate, hasClientData, hasClientInfo, getClientName,
   getClientPhone, getClientAddress, getClientReference,
