@@ -1,14 +1,14 @@
-import { useWebSocket } from './composables/useWebSocket.js?v=1.5.5';
-import { taskService } from './services/taskService.js?v=1.5.5';
-import { clientService } from './services/clientService.js?v=1.5.5';
-import { coreDataService } from './services/coreDataService.js?v=1.5.5';
+import { useWebSocket } from './composables/useWebSocket.js?v=1.5.6';
+import { taskService } from './services/taskService.js?v=1.5.6';
+import { clientService } from './services/clientService.js?v=1.5.6';
+import { coreDataService } from './services/coreDataService.js?v=1.5.6';
 import {
   formatDate, hasClientData, hasClientInfo, getClientName,
   getClientPhone, getClientAddress, getClientReference,
   getGoogleMapsLink, esTareaParaHoy, esTareaVencida, getLabelsArray,
   getColor, getPriorityText, getFileSize, formatCommentContent
-} from './utils/helpers.js?v=1.5.5';
-import TaskCard from './components/TaskCard.js?v=1.5.5';
+} from './utils/helpers.js?v=1.5.6';
+import TaskCard from './components/TaskCard.js?v=1.5.6';
 
 const { createApp, ref, computed, onMounted, watch, reactive } = Vue;
 
