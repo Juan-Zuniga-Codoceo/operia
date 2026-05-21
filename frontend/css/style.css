@@ -875,3 +875,246 @@ a:hover {
         gap: 50px;
     }
 }
+
+/* NAVBAR ACTIVE INDICATOR */
+.nav-links a {
+    position: relative;
+}
+
+.nav-links a::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    width: 0;
+    height: 3px;
+    background: var(--accent);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    transform: translateX(-50%);
+    border-radius: 20px;
+}
+
+.nav-links a.active {
+    color: var(--primary) !important;
+}
+
+.nav-links a.active::after {
+    width: 100%;
+}
+
+.nav-links .btn-nav::after {
+    display: none; /* Hide indicator for sign up button */
+}
+
+/* BACK TO TOP BUTTON */
+#back-to-top {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: var(--white);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 10px 30px rgba(23, 74, 122, 0.35);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    z-index: 1001;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(20px) scale(0.85);
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#back-to-top.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+}
+
+#back-to-top:hover {
+    background: var(--accent);
+    color: var(--primary-dark);
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: 0 12px 35px var(--accent-glow);
+}
+
+/* SCROLL REVEAL EFFECTS */
+.scroll-reveal {
+    opacity: 0;
+    transform: translateY(32px);
+    transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: opacity, transform;
+}
+
+.scroll-reveal.reveal {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* METRICS SECTION */
+.metrics-section {
+    padding: 100px 0;
+    background: #ffffff;
+    position: relative;
+    text-align: center;
+    border-top: 1px solid #f1f5f9;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.metrics-section .section-title {
+    max-width: 700px;
+    margin: 0 auto 60px;
+}
+
+.metrics-section h2 {
+    font-size: 2.8rem;
+    color: var(--primary);
+    margin-bottom: 16px;
+    letter-spacing: -0.02em;
+}
+
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 30px;
+    margin-bottom: 70px;
+}
+
+.metric-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    padding: 36px 24px;
+    transition: var(--transition);
+}
+
+.metric-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 20px 40px rgba(15, 23, 42, 0.05);
+    border-color: var(--primary-light);
+}
+
+.metric-number {
+    font-size: 3.5rem;
+    font-weight: 800;
+    color: var(--primary);
+    margin-bottom: 12px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.metric-label {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 8px;
+}
+
+.metric-desc {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+/* FLOW DIAGRAM */
+.flow-diagram-container {
+    max-width: 900px;
+    margin: 0 auto;
+    background: radial-gradient(circle at top left, #15223e 0%, #0c152b 100%);
+    border-radius: 24px;
+    padding: 48px;
+    color: var(--white);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 20px 60px rgba(11, 23, 41, 0.25);
+    text-align: left;
+}
+
+.flow-header {
+    margin-bottom: 36px;
+    text-align: center;
+}
+
+.flow-header h3 {
+    font-size: 1.8rem;
+    color: var(--white);
+    margin-bottom: 8px;
+}
+
+.flow-header p {
+    color: #94a3b8;
+    font-size: 1rem;
+}
+
+.flow-steps {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.flow-node {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 16px;
+    padding: 24px;
+    text-align: center;
+    transition: var(--transition);
+}
+
+.flow-node:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: var(--accent);
+    box-shadow: 0 10px 25px rgba(242, 183, 5, 0.1);
+}
+
+.flow-node-icon {
+    font-size: 2.2rem;
+    margin-bottom: 12px;
+}
+
+.flow-node-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: var(--white);
+}
+
+.flow-node-desc {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    line-height: 1.5;
+}
+
+.flow-arrow {
+    font-size: 1.8rem;
+    color: var(--accent);
+    font-weight: bold;
+    animation: bounceArrow 2s infinite;
+}
+
+@keyframes bounceArrow {
+    0%, 100% { transform: translateX(0); opacity: 0.6; }
+    50% { transform: translateX(6px); opacity: 1; }
+}
+
+@media (max-width: 768px) {
+    .flow-steps {
+        flex-direction: column;
+        gap: 20px;
+    }
+    .flow-arrow {
+        transform: rotate(90deg);
+        animation: bounceArrowY 2s infinite;
+    }
+    @keyframes bounceArrowY {
+        0%, 100% { transform: rotate(90deg) translateY(0); opacity: 0.6; }
+        50% { transform: rotate(90deg) translateY(6px); opacity: 1; }
+    }
+}

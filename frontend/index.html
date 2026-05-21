@@ -530,12 +530,13 @@
     <!-- Navbar -->
     <nav class="navbar" id="navbar">
         <div class="container">
-            <a href="#" class="nav-logo white-logo">
+            <a href="#home" class="nav-logo white-logo">
                 <img src="assets/logo.png" alt="Operia">
             </a>
             <div class="nav-links">
                 <a href="#features">Características</a>
                 <a href="#ai-intake">AI Intake 🤖</a>
+                <a href="#metrics">Métricas</a>
                 <a href="#pricing">Precios</a>
                 <a href="/login.html">Iniciar Sesión</a>
                 <a href="/signup.html" class="btn-nav">Comenzar Gratis</a>
@@ -544,12 +545,9 @@
     </nav>
 
     <!-- Hero Section -->
-    <section class="hero">
+    <section class="hero" id="home">
         <div class="container">
             <div class="hero-content">
-                <div class="hero-logo-container">
-                    <img src="assets/logo.png" alt="Operia Logo" class="hero-logo">
-                </div>
                 <h1>Gestiona tus tareas como nunca antes</h1>
                 <p>La plataforma SaaS de gestión operativa para equipos que buscan simplicidad, potencia e inteligencia real.</p>
                 <div class="cta-buttons">
@@ -661,7 +659,7 @@
     </section>
 
     <!-- AI Intake Section (La Gran Novedad) -->
-    <section id="ai-intake" class="ai-showcase">
+    <section id="ai-intake" class="ai-showcase scroll-reveal">
         <div class="container">
             <div class="section-title" style="text-align: center; margin-bottom: 50px;">
                 <span class="ai-badge">🤖 Lanzamiento Nueva Versión v1.6.0</span>
@@ -742,8 +740,69 @@
         </div>
     </section>
 
+    <!-- Metrics Section (New content) -->
+    <section id="metrics" class="metrics-section scroll-reveal">
+        <div class="container">
+            <div class="section-title">
+                <h2>Resultados y Métricas de Impacto</h2>
+                <p>La automatización inteligente y la organización Kanban permiten a los equipos optimizar sus tiempos de forma medible.</p>
+            </div>
+            
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-number">+45%</div>
+                    <div class="metric-label">Productividad del Equipo</div>
+                    <div class="metric-desc">Reducción del tiempo de digitación de requerimientos mediante la ingesta con Gemini.</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-number">99.9%</div>
+                    <div class="metric-label">Precisión en RUTs</div>
+                    <div class="metric-desc">Validación matemática en tiempo real mediante el algoritmo Módulo 11.</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-number">-6 hrs</div>
+                    <div class="metric-label">Tiempo Ahorrado</div>
+                    <div class="metric-desc">Menos horas semanales dedicadas a la creación y estructuración manual de tickets.</div>
+                </div>
+            </div>
+
+            <!-- Flow Diagram Container -->
+            <div class="flow-diagram-container">
+                <div class="flow-header">
+                    <h3>Flujo de Ingesta Inteligente</h3>
+                    <p>Cómo Operia transforma datos desestructurados en acciones operativas concretas</p>
+                </div>
+                <div class="flow-steps">
+                    <div class="flow-node">
+                        <div class="flow-node-icon">✉️</div>
+                        <div class="flow-node-title">1. Entrada Libre</div>
+                        <div class="flow-node-desc">Correos, chats de clientes o minutas desestructuradas.</div>
+                    </div>
+                    <div class="flow-arrow">➔</div>
+                    <div class="flow-node">
+                        <div class="flow-node-icon">🧠</div>
+                        <div class="flow-node-title">2. Procesamiento AI</div>
+                        <div class="flow-node-desc">Gemini 2.5 Flash extrae y valida los datos determinísticamente.</div>
+                    </div>
+                    <div class="flow-arrow">➔</div>
+                    <div class="flow-node">
+                        <div class="flow-node-icon">📋</div>
+                        <div class="flow-node-title">3. Control Operador</div>
+                        <div class="flow-node-desc">El operador valida y ajusta con HITL antes de enviar.</div>
+                    </div>
+                    <div class="flow-arrow">➔</div>
+                    <div class="flow-node">
+                        <div class="flow-node-icon">🚀</div>
+                        <div class="flow-node-title">4. Kanban Activo</div>
+                        <div class="flow-node-desc">La tarea ingresa clasificada con prioridades y plazos.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Features Section -->
-    <section id="features" class="features">
+    <section id="features" class="features scroll-reveal">
         <div class="container">
             <div class="section-title">
                 <h2>Todo lo que necesitas para escalar</h2>
@@ -790,7 +849,7 @@
     </section>
 
     <!-- Pricing Section -->
-    <section id="pricing" class="pricing">
+    <section id="pricing" class="pricing scroll-reveal">
         <div class="container">
             <div class="section-title">
                 <h2>Planes flexibles para cada etapa</h2>
@@ -917,6 +976,9 @@
         </div>
     </footer>
 
+    <!-- Back to top button -->
+    <button id="back-to-top" title="Volver arriba">↑</button>
+
     <script>
         // Navbar scroll effect
         window.addEventListener('scroll', function () {
@@ -927,6 +989,59 @@
                 navbar.classList.remove('scrolled');
             }
         });
+
+        // Scroll Spy (Active Navbar links)
+        const sections = document.querySelectorAll('section[id]');
+        const navLinks = document.querySelectorAll('.nav-links a:not(.btn-nav)');
+        
+        function scrollSpy() {
+            let currentSectionId = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop - 150;
+                if (window.scrollY >= sectionTop) {
+                    currentSectionId = section.getAttribute('id');
+                }
+            });
+            
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === `#${currentSectionId}`) {
+                    link.classList.add('active');
+                }
+            });
+        }
+        window.addEventListener('scroll', scrollSpy);
+        window.addEventListener('load', scrollSpy);
+
+        // Back to Top Button
+        const backToTopBtn = document.getElementById('back-to-top');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 300) {
+                backToTopBtn.classList.add('visible');
+            } else {
+                backToTopBtn.classList.remove('visible');
+            }
+        });
+        backToTopBtn.addEventListener('click', () => {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+
+        // Scroll Reveal Animations
+        const revealElements = document.querySelectorAll('.scroll-reveal');
+        const revealObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('reveal');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, {
+            threshold: 0.1
+        });
+        revealElements.forEach(el => revealObserver.observe(el));
     </script>
 </body>
 
