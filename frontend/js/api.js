@@ -2,7 +2,7 @@
 
 // Detectamos si estamos en desarrollo local o en producción.
 const IS_LOCAL = window.location.hostname.includes('localhost') || window.location.hostname === '127.0.0.1';
-const API_BASE_URL = IS_LOCAL ? 'http://localhost:3000' : '';
+const API_BASE_URL = IS_LOCAL ? `${window.location.protocol}//${window.location.host}` : '';
 // En local, usará 'http://localhost:3000'. En producción, será '' para usar rutas relativas.
 
 class API {

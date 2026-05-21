@@ -10,7 +10,6 @@ console.log(`🔧 Loaded environment config from: ${envFile}`);
 
 const express = require('express');
 const cors = require('cors');
-const path = require('path');
 const fs = require('fs');
 
 // Database & Services
@@ -36,6 +35,7 @@ const senderRoutes = require('./routes/sender.routes-postgres');
 
 const paymentsRoutes = require('./routes/payments.routes-postgres');
 const tenantsRoutes = require('./routes/tenants.routes');
+const operiaIntakeRoutes = require('./routes/operiaIntakeRoutes');
 
 // App Initialization
 const app = express();
@@ -94,6 +94,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/sender-config', senderRoutes);
 app.use('/api/payments', paymentsRoutes);
 app.use('/api/tenants', tenantsRoutes);
+app.use('/api', operiaIntakeRoutes);
 
 // 4. Users & Notifications (usersRoutes)
 //    Mounds logic at /api/users, /api/notifications, etc.

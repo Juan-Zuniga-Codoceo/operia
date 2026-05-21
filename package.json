@@ -21,6 +21,7 @@
   "author": "SynapseDev",
   "license": "MIT",
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "axios": "^1.13.5",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
@@ -36,7 +37,8 @@
     "pg": "^8.11.3",
     "resend": "^3.1.0",
     "sqlite3": "^5.1.7",
-    "ws": "^8.16.0"
+    "ws": "^8.16.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "nodemon": "^3.0.3"

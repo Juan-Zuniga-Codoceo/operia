@@ -135,6 +135,14 @@ createApp({
       Object.assign(SENDER_INFO, newVal);
     }, { deep: true });
     const creandoTarea = ref(false);
+
+    // Inteligencia Artificial - Ingesta Inteligente (Paso 2)
+    const activeTab = ref('manual'); // 'manual' o 'ai'
+    const aiIntakeText = ref('');
+    const aiIntakeLoading = ref(false);
+    const aiIntakeError = ref('');
+    const aiExtractedFields = ref([]); // Campos autocompletados por la IA
+
     const loading = ref(true);
     const error = ref('');
     const showEditModal = ref(false);
@@ -731,6 +739,73 @@ createApp({
       }
     };
 
+    const analizarConIA = async () => {
+      if (!aiIntakeText.value || !aiIntakeText.value.trim()) {
+        aiIntakeError.value = 'Por favor ingresa un correo o chat para analizar.';
+        return;
+      }
+
+      aiIntakeLoading.value = true;
+      aiIntakeError.value = '';
+      aiExtractedFields.value = [];
+
+      try {
+        const response = await API.post('/api/operia/ai-intake', { text: aiIntakeText.value });
+        
+        if (response && response.simulated_insert) {
+          const data = response.simulated_insert;
+          
+          // Pre-completar los datos en newTask
+          newTask.value.client.rut = data.cliente_rut || '';
+          newTask.value.client.name = data.nombre_empresa || '';
+          newTask.value.client.address_street = data.direccion_despacho || '';
+          newTask.value.title = `Envío: ${data.nombre_empresa || 'Cliente'}`;
+          newTask.value.description = data.descripcion_tarea || '';
+          
+          // Mapear urgencia a prioridad
+          const priorityMap = {
+            'baja': 'baja',
+            'media': 'media',
+            'alta': 'alta'
+          };
+          const urgencyLower = (data.urgencia || 'media').toLowerCase();
+          newTask.value.priority = priorityMap[urgencyLower] || 'media';
+          
+          // Asignar fecha_limite
+          if (data.fecha_limite) {
+            newTask.value.due_date = `${data.fecha_limite} 18:00`;
+            // Actualizar flatpickr
+            if (newTaskFp.value) {
+              newTaskFp.value.setDate(`${data.fecha_limite} 18:00`, false);
+            }
+          }
+
+          // Registrar qué campos fueron completados por IA
+          aiExtractedFields.value = ['rut', 'name', 'address_street', 'title', 'description', 'priority', 'due_date'];
+
+          // Desmarcar "Tarea Interna" si es que la IA extrajo datos de cliente
+          newTask.value.is_internal = false;
+
+          showSuccess('✨ Datos extraídos exitosamente por la IA.');
+          
+          // Cambiar a la pestaña manual para revisión (HITL)
+          activeTab.value = 'manual';
+        } else {
+          throw new Error('No se recibieron datos válidos de la IA.');
+        }
+      } catch (err) {
+        console.error('Error al analizar con IA:', err);
+        const msg = err.message || 'Error al procesar el requerimiento.';
+        if (msg.includes('RUT')) {
+          aiIntakeError.value = `La IA detectó un RUT inválido: ${msg}. Por favor, corrígelo en el texto original y vuelve a analizar.`;
+        } else {
+          aiIntakeError.value = msg;
+        }
+      } finally {
+        aiIntakeLoading.value = false;
+      }
+    };
+
     const avanzarEstado = (task) => {
       taskService.advanceStep(task.id, task.status);
       showStateDropdown.value = false;
@@ -808,6 +883,14 @@ createApp({
       clientSearchTerm.value = '';
       suggestedClients.value = [];
       saveAsFrequent.value = false;
+
+      // Reset AI Intake state
+      activeTab.value = 'manual';
+      aiIntakeText.value = '';
+      aiIntakeLoading.value = false;
+      aiIntakeError.value = '';
+      aiExtractedFields.value = [];
+
 
       nuevaEtiqueta.value = '';
       nuevoComentario.value = '';
@@ -1708,7 +1791,7 @@ createApp({
       cancelEditClient,
       saveClientChanges,
       deleteClient,
-      closeModalOnSelf,
+      activeTab, aiIntakeText, aiIntakeLoading, aiIntakeError, aiExtractedFields, analizarConIA,
       projects, selectedProjectId, showNewProjectModal, newProject, crearProyecto, cambiarProyecto, abrirNuevoProyecto,
       selectedMembersInProject, availableMembersInProject, addMemberToProject, removeMemberFromProject
     };

@@ -235,7 +235,77 @@
           <button @click="showModal = false" class="btn-close-modal">&times;</button>
         </div>
         <div class="modal-body">
-          <!-- SECCIÓN 1: DATOS DEL CLIENTE -->
+          <!-- Tabs de selección de modo -->
+          <div class="modal-tabs" style="display: flex; border-bottom: 2px solid #e9ecef; margin-bottom: 20px;">
+            <button type="button" @click="activeTab = 'manual'" 
+              :style="{
+                padding: '10px 20px',
+                border: 'none',
+                background: 'none',
+                borderBottom: activeTab === 'manual' ? '3px solid var(--c-primary, #049DD9)' : '3px solid transparent',
+                color: activeTab === 'manual' ? 'var(--c-primary, #049DD9)' : '#6c757d',
+                fontWeight: activeTab === 'manual' ? '600' : 'normal',
+                cursor: 'pointer'
+              }">
+              <i class="fa-solid fa-keyboard"></i> Formulario Manual
+            </button>
+            <button type="button" @click="activeTab = 'ai'" 
+              :style="{
+                padding: '10px 20px',
+                border: 'none',
+                background: 'none',
+                borderBottom: activeTab === 'ai' ? '3px solid var(--c-primary, #049DD9)' : '3px solid transparent',
+                color: activeTab === 'ai' ? 'var(--c-primary, #049DD9)' : '#6c757d',
+                fontWeight: activeTab === 'ai' ? '600' : 'normal',
+                cursor: 'pointer'
+              }">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Ingesta Inteligente IA 🤖
+            </button>
+          </div>
+
+          <!-- PESTAÑA INGESTA INTELIGENTE IA -->
+          <div v-show="activeTab === 'ai'" class="form-section ai-intake-console" style="background: #f8fafc; border: 1px dashed #cbd5e1; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+              <span style="font-size: 24px;">🤖</span>
+              <div>
+                <h3 style="margin: 0; color: #1e293b;"><i class="fa-solid fa-robot"></i> Consola de Ingesta Inteligente</h3>
+                <p style="margin: 2px 0 0; font-size: 0.85rem; color: #64748b;">Pega un correo o chat desestructurado y la IA extraerá los datos operativos automáticamente.</p>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label style="font-weight: 600; color: #475569; display: block; margin-bottom: 6px;">Texto del Requerimiento *</label>
+              <textarea v-model="aiIntakeText" :disabled="aiIntakeLoading"
+                placeholder="Ejemplo: Estimado equipo de Operia, necesitamos urgente un despacho para Transportes Rodoviarios Ltda (RUT 7.739.022-7) a Av. Vitacura 4321..."
+                style="width: 100%; min-height: 180px; padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-family: inherit; font-size: 0.9rem; resize: vertical;"
+              ></textarea>
+            </div>
+
+            <!-- Alerta de Error Elegante -->
+            <div v-if="aiIntakeError" style="background: #fef2f2; border-left: 4px solid #ef4444; color: #991b1b; padding: 12px; border-radius: 6px; margin-bottom: 15px; font-size: 0.9rem; display: flex; align-items: center; gap: 10px;">
+              <i class="fa-solid fa-triangle-exclamation" style="color: #ef4444;"></i>
+              <span>{{ aiIntakeError }}</span>
+            </div>
+
+            <!-- Loader y Botón -->
+            <div style="display: flex; align-items: center; justify-content: flex-end; gap: 15px; margin-top: 15px;">
+              <div v-if="aiIntakeLoading" style="display: flex; align-items: center; gap: 10px; color: var(--c-primary, #049DD9); font-weight: 500; font-size: 0.9rem;">
+                <i class="fa-solid fa-circle-notch fa-spin"></i>
+                <span>Analizando requerimiento con IA...</span>
+              </div>
+              
+              <button type="button" @click="analizarConIA" :disabled="aiIntakeLoading" 
+                style="background: linear-gradient(135deg, #049DD9, #00A651); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: opacity 0.2s;"
+                :style="{ opacity: aiIntakeLoading ? 0.7 : 1 }">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                <span>Analizar con IA</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- PESTAÑA FORMULARIO MANUAL -->
+          <div v-show="activeTab === 'manual'">
+            <!-- SECCIÓN 1: DATOS DEL CLIENTE -->
           <div class="form-section">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
               <h3 style="margin: 0;"><i class="fa-solid fa-user"></i> Datos del Cliente</h3>
@@ -264,11 +334,11 @@
 
               <div class="form-grid">
                 <div class="form-group">
-                  <label>RUT *</label>
+                  <label>RUT * <span v-if="aiExtractedFields.includes('rut')" style="color: #00A651; font-size: 0.75rem; font-weight: 600; margin-left: 8px;">✨ Extraído por IA</span></label>
                   <input type="text" v-model="newTask.client.rut" placeholder="12.345.678-9" required />
                 </div>
                 <div class="form-group">
-                  <label>Nombre Completo *</label>
+                  <label>Nombre Completo * <span v-if="aiExtractedFields.includes('name')" style="color: #00A651; font-size: 0.75rem; font-weight: 600; margin-left: 8px;">✨ Extraído por IA</span></label>
                   <input type="text" v-model="newTask.client.name" placeholder="Juan Pérez" required />
                 </div>
               </div>
@@ -285,9 +355,21 @@
               </div>
 
               <div class="form-group">
-                <label for="client_address_street">Dirección (Calle, Número, Depto) *</label>
-                <input type="text" id="client_address_street" v-model="newTask.client.address_street"
-                  placeholder="Av. Siempre Viva 742" required />
+                <label for="client_address_street">
+                  Dirección (Calle, Número, Depto) * 
+                  <span v-if="aiExtractedFields.includes('address_street')" style="color: #00A651; font-size: 0.75rem; font-weight: 600; margin-left: 8px;">✨ Extraído por IA</span>
+                </label>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <input type="text" id="client_address_street" v-model="newTask.client.address_street"
+                    placeholder="Av. Siempre Viva 742" required style="flex-grow: 1;" />
+                  <a v-if="newTask.client.address_street" 
+                     :href="'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(newTask.client.address_street + ' ' + (newTask.client.commune || ''))"
+                     target="_blank" 
+                     title="Buscar en Google Maps"
+                     style="color: #049DD9; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; border: 1px solid #ced4da; border-radius: 6px; background-color: #f8f9fa; cursor: pointer; transition: all 0.2s; text-decoration: none;">
+                    <i class="fa-solid fa-map-location-dot"></i>
+                  </a>
+                </div>
               </div>
 
               <div class="form-group">
@@ -354,19 +436,19 @@
               <h3><i class="fa-solid fa-clipboard-list"></i> Detalles de la Tarea</h3>
 
               <div class="form-group">
-                <label for="title">Título *</label>
+                <label for="title">Título * <span v-if="aiExtractedFields.includes('title')" style="color: #00A651; font-size: 0.75rem; font-weight: 600; margin-left: 8px;">✨ Extraído por IA</span></label>
                 <input id="title" type="text" v-model="newTask.title" placeholder="Ej: Envío Pedido #1234" required />
               </div>
 
               <div class="form-group">
-                <label for="description">Descripción</label>
+                <label for="description">Descripción <span v-if="aiExtractedFields.includes('description')" style="color: #00A651; font-size: 0.75rem; font-weight: 600; margin-left: 8px;">✨ Extraído por IA</span></label>
                 <textarea id="description" v-model="newTask.description"
                   placeholder="Detalles adicionales..."></textarea>
               </div>
 
               <div class="form-grid">
                 <div class="form-group">
-                  <label for="new-task-datepicker">Fecha de Entrega *</label>
+                  <label for="new-task-datepicker">Fecha de Entrega * <span v-if="aiExtractedFields.includes('due_date')" style="color: #00A651; font-size: 0.75rem; font-weight: 600; margin-left: 8px;">✨ Extraído por IA</span></label>
                   <div class="date-input-wrapper">
                     <input id="new-task-datepicker" type="text" v-model="newTask.due_date"
                       placeholder="Selecciona una fecha y hora...">
@@ -378,7 +460,7 @@
                   </div>
                 </div>
                 <div class="form-group">
-                  <label for="priority">Prioridad</label>
+                  <label for="priority">Prioridad <span v-if="aiExtractedFields.includes('priority')" style="color: #00A651; font-size: 0.75rem; font-weight: 600; margin-left: 8px;">✨ Extraído por IA</span></label>
                   <select id="priority" v-model="newTask.priority">
                     <option value="baja">Baja</option>
                     <option value="media" selected>Media</option>
@@ -447,7 +529,8 @@
               </div>
             </div>
           </div>
-          <div class="modal-footer">
+        </div>
+        <div class="modal-footer">
             <button @click="showModal = false" class="btn-cancel">Cancelar</button>
             <button @click="crearTarea" class="btn-create" :disabled="creandoTarea">
               <i class="fa-solid fa-check"></i> {{ creandoTarea ? 'Creando...' : 'Crear Tarea' }}

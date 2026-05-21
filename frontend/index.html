@@ -316,6 +316,213 @@
                 flex-direction: column;
             }
         }
+
+        /* AI Showcase Section */
+        .ai-showcase {
+            background: radial-gradient(120% 120% at 50% 10%, #0b1329 0%, #1c2541 50%, #0b0c10 100%);
+            color: var(--white);
+            padding: 100px 0;
+            position: relative;
+        }
+
+        .ai-badge {
+            background: linear-gradient(90deg, #6366f1 0%, #a855f7 100%);
+            color: var(--white);
+            padding: 6px 16px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 24px;
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.4);
+        }
+
+        .ai-showcase h2 {
+            font-size: 3rem;
+            color: var(--white);
+            margin-bottom: 16px;
+        }
+
+        .ai-showcase .subtitle {
+            font-size: 1.25rem;
+            opacity: 0.85;
+            max-width: 800px;
+            margin: 0 auto 60px;
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        .ai-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 50px;
+            align-items: center;
+        }
+
+        .ai-demo-container {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            position: relative;
+            text-align: left;
+        }
+
+        .ai-demo-container::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(135deg, #6366f1, #a855f7, transparent, transparent);
+            border-radius: 26px;
+            z-index: -1;
+            opacity: 0.5;
+        }
+
+        .ai-step {
+            margin-bottom: 24px;
+        }
+
+        .ai-step-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #a855f7;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .ai-textarea-mock {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 16px;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: #cbd5e1;
+            font-style: italic;
+        }
+
+        .ai-arrow-divider {
+            text-align: center;
+            font-size: 1.5rem;
+            color: #a855f7;
+            margin: 15px 0;
+            animation: bounceX 2s infinite;
+        }
+
+        .ai-result-mock {
+            background: rgba(30, 41, 59, 0.9);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(168, 85, 247, 0.1);
+        }
+
+        .ai-result-field {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 0.9rem;
+        }
+
+        .ai-result-field:last-child {
+            border-bottom: none;
+        }
+
+        .ai-result-label {
+            color: #94a3b8;
+        }
+
+        .ai-result-value {
+            color: #f1f5f9;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .ai-badge-extracted {
+            background: rgba(34, 197, 94, 0.15);
+            color: #4ade80;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .ai-badge-valid {
+            background: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .ai-features-list {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            text-align: left;
+        }
+
+        .ai-feature-item {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        .ai-feature-icon-wrapper {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(168, 85, 247, 0.2) 100%);
+            border: 1px solid rgba(168, 85, 247, 0.4);
+            width: 60px;
+            height: 60px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            flex-shrink: 0;
+            box-shadow: 0 8px 20px rgba(168, 85, 247, 0.1);
+        }
+
+        .ai-feature-content h3 {
+            font-size: 1.25rem;
+            margin-bottom: 8px;
+            color: var(--white);
+        }
+
+        .ai-feature-content p {
+            font-size: 0.95rem;
+            color: #94a3b8;
+            line-height: 1.6;
+        }
+
+        @keyframes bounceX {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        @media (max-width: 992px) {
+            .ai-grid {
+                grid-template-columns: 1fr;
+                gap: 40px;
+            }
+        }
     </style>
 </head>
 
@@ -328,6 +535,7 @@
             </a>
             <div class="nav-links">
                 <a href="#features">Características</a>
+                <a href="#ai-intake">AI Intake 🤖</a>
                 <a href="#pricing">Precios</a>
                 <a href="/login.html">Iniciar Sesión</a>
                 <a href="/signup.html" class="btn-nav">Comenzar Gratis</a>
@@ -388,6 +596,88 @@
                 <div class="floating-card card-2">
                     <div class="icon">👥</div>
                     <div class="text">Nuevo Miembro</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- AI Intake Section (La Gran Novedad) -->
+    <section id="ai-intake" class="ai-showcase">
+        <div class="container">
+            <div class="section-title" style="text-align: center; margin-bottom: 50px;">
+                <span class="ai-badge">🤖 Lanzamiento Nueva Versión v1.6.0</span>
+                <h2 style="color: white; margin-bottom: 16px;">Operia AI Intake ⚡</h2>
+                <p class="subtitle">La ingesta inteligente de tareas que transforma correos y chats desestructurados en órdenes de trabajo listas en el Kanban con un solo click.</p>
+            </div>
+
+            <div class="ai-grid">
+                <!-- Left Column: Visual AI parsing demonstration -->
+                <div class="ai-demo-container">
+                    <div class="ai-step">
+                        <div class="ai-step-title">
+                            <span>📩 1. Cliente envía requerimiento (Texto Libre)</span>
+                        </div>
+                        <div class="ai-textarea-mock">
+                            "Hola equipo, favor despachar mañana urgente 50 cajas de insumos de repostería a la empresa Comercializadora Alimentos S.A., RUT 76.120.340-1, en Av. Providencia 1234, Santiago..."
+                        </div>
+                    </div>
+
+                    <div class="ai-arrow-divider">⬇️ Procesando con Gemini 2.5 Flash...</div>
+
+                    <div class="ai-step" style="margin-bottom: 0;">
+                        <div class="ai-step-title" style="color: #4ade80;">
+                            <span>📋 2. Extracción Estructurada & Validación HITL</span>
+                        </div>
+                        <div class="ai-result-mock">
+                            <div class="ai-result-field">
+                                <span class="ai-result-label">Título de Tarea</span>
+                                <span class="ai-result-value">Envío: Comercializadora Alimentos S.A. <span class="ai-badge-extracted">✨ IA</span></span>
+                            </div>
+                            <div class="ai-result-field">
+                                <span class="ai-result-label">Cliente (RUT)</span>
+                                <span class="ai-result-value">76.120.340-1 <span class="ai-badge-valid">✓ Mod 11 Válido</span></span>
+                            </div>
+                            <div class="ai-result-field">
+                                <span class="ai-result-label">Dirección</span>
+                                <span class="ai-result-value">Av. Providencia 1234, Santiago <span class="ai-badge-extracted">✨ IA</span></span>
+                            </div>
+                            <div class="ai-result-field">
+                                <span class="ai-result-label">Prioridad</span>
+                                <span class="ai-result-value" style="color: #ef4444; font-weight: 700;">Alta</span>
+                            </div>
+                            <div class="ai-result-field" style="border-bottom: none; padding-bottom: 0;">
+                                <span class="ai-result-label">Fecha Límite</span>
+                                <span class="ai-result-value">Lunes 25 de Mayo <span class="ai-badge-extracted">✨ IA</span></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Explaining the features -->
+                <div class="ai-features-list">
+                    <div class="ai-feature-item">
+                        <div class="ai-feature-icon-wrapper">🪄</div>
+                        <div class="ai-feature-content">
+                            <h3>Extracción Inteligente en Segundos</h3>
+                            <p>Gemini 2.5 Flash lee instantáneamente cualquier texto desestructurado (correos, WhatsApps o minutas) y autocompleta el formulario del operador sin necesidad de tipeo manual.</p>
+                        </div>
+                    </div>
+
+                    <div class="ai-feature-item">
+                        <div class="ai-feature-icon-wrapper">🛡️</div>
+                        <div class="ai-feature-content">
+                            <h3>Validación del RUT Chileno</h3>
+                            <p>El backend valida matemáticamente mediante el algoritmo Módulo 11 que el RUT provisto por el cliente sea correcto, previniendo errores de facturación.</p>
+                        </div>
+                    </div>
+
+                    <div class="ai-feature-item">
+                        <div class="ai-feature-icon-wrapper">👥</div>
+                        <div class="ai-feature-content">
+                            <h3>Control Humano Activo (HITL)</h3>
+                            <p>Los datos autocompletados se muestran con indicadores visuales claros y te permiten editarlos, revisarlos y verificar la dirección en Google Maps antes de insertarlos al Kanban.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
