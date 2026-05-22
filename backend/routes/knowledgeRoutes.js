@@ -143,12 +143,13 @@ Respuesta sugerida:`;
 
         // 3. Juez de Veracidad Node: Evaluar fidelidad (Structured Outputs)
         const judgeSystemInstruction = `Actúas como un Juez de Veracidad y Auditor de Alucinaciones para el sistema RAG de Operia.
-Tu trabajo es evaluar si el borrador de respuesta generado por el asistente está respaldado al 100% por los fragmentos originales del manual de conocimiento provistos.
+Tu trabajo es evaluar si el borrador de respuesta generado por el asistente está respaldado al 100% por los fragmentos originales del manual de conocimiento provistos para responder la pregunta del usuario.
 
 Criterios de evaluación:
-- La respuesta no debe agregar información externa que no aparezca en los fragmentos de manuales.
-- Si la respuesta dice "No cuento con información oficial para responder." porque la información realmente no está en los fragmentos de manuales, esta respuesta es 100% fiel y correcta, por lo que debe recibir un puntaje (score) de 1.0.
-- Si la respuesta contiene afirmaciones que no se mencionan explícitamente en los fragmentos del manual, califícala con un score menor a 0.8 (por ejemplo, 0.0 a 0.5 según la gravedad de la alucinación).`;
+1. Evalúa si el borrador responde la pregunta del usuario utilizando únicamente el contexto de los fragmentos.
+2. La respuesta no debe agregar información externa que no aparezca en los fragmentos de manuales.
+3. Si la pregunta del usuario NO se puede responder con los fragmentos de manuales, y el borrador responde exactamente "No cuento con información oficial para responder.", califícalo con un score de 1.0 (es una negativa correcta y fiel, sin alucinación).
+4. Si el borrador intenta responder la pregunta agregando afirmaciones, suposiciones o datos que no se mencionan explícitamente en los fragmentos, califícalo con un score menor a 0.8 (por ejemplo, 0.0 a 0.5 según la gravedad de la alucinación).`;
 
         const judgeResponseSchema = {
             type: "OBJECT",
@@ -159,7 +160,7 @@ Criterios de evaluación:
                 },
                 reason: { 
                     type: "STRING", 
-                    description: "Explicación breve del veredicto, identificando si hubo alucinación o no." 
+                    description: "Explicación breve del veredicto, identificando si la respuesta es fiel al contexto para la pregunta dada." 
                 }
             },
             required: ["score", "reason"]
@@ -170,7 +171,10 @@ Criterios de evaluación:
             systemInstruction: judgeSystemInstruction
         });
 
-        const judgePrompt = `Fragmentos del manual original:
+        const judgePrompt = `Pregunta original del usuario:
+"${question.trim()}"
+
+Fragmentos del manual original:
 ${contextText}
 
 Borrador de respuesta a evaluar:
