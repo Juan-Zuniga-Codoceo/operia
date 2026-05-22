@@ -442,17 +442,20 @@ async function seedData() {
         const defaultPassword = await bcrypt.hash('demo2024', 10);
 
         console.log('👥 Obteniendo usuarios existentes...');
-        const existingUsersResult = await client.query(
-            'SELECT id FROM users WHERE tenant_id = $1 ORDER BY id',
-            [TENANT_ID]
-        );
+        // Limpiamos los usuarios previos para evitar duplicados en seeding
+        await client.query('DELETE FROM users WHERE tenant_id = $1 AND email != \'admin@demo.operia.app\'', [TENANT_ID]);
+        
+        let userIds = [];
+        const adminResult = await client.query('SELECT id FROM users WHERE tenant_id = $1 AND email = \'admin@demo.operia.app\'', [TENANT_ID]);
+        if (adminResult.rows.length > 0) {
+            userIds.push(adminResult.rows[0].id);
+        }
 
-        let userIds = existingUsersResult.rows.map(row => row.id);
-
-        // Si no hay usuarios, crearlos
-        if (userIds.length === 0) {
-            console.log('No hay usuarios, creándolos...');
-            for (const user of USERS) {
+        console.log('Creando usuarios demo...');
+        for (const user of USERS) {
+            // Verificar si ya existe para evitar colisión de índice único
+            const check = await client.query('SELECT id FROM users WHERE tenant_id = $1 AND email = $2', [TENANT_ID, user.email]);
+            if (check.rows.length === 0) {
                 const result = await client.query(
                     `INSERT INTO users (tenant_id, name, email, password, office, role, is_active)
                      VALUES ($1, $2, $3, $4, $5, $6, true)
@@ -460,6 +463,8 @@ async function seedData() {
                     [TENANT_ID, user.name, user.email, defaultPassword, user.office, user.role]
                 );
                 userIds.push(result.rows[0].id);
+            } else {
+                userIds.push(check.rows[0].id);
             }
         }
         console.log(`✅ ${userIds.length} usuarios disponibles\n`);

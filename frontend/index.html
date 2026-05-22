@@ -523,6 +523,84 @@
                 gap: 40px;
             }
         }
+
+        /* Screenshot Showcase Section */
+        .demo-showcase {
+            padding: 100px 0;
+            background: var(--bg-light);
+            text-align: center;
+        }
+
+        .demo-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+
+        .demo-tab-btn {
+            background: var(--white);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-weight: 600;
+            color: var(--primary);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .demo-tab-btn:hover {
+            background: rgba(23, 74, 122, 0.05);
+            transform: translateY(-2px);
+        }
+
+        .demo-tab-btn.active {
+            background: var(--primary);
+            color: var(--white);
+            box-shadow: 0 4px 15px rgba(23, 74, 122, 0.2);
+            border-color: var(--primary);
+        }
+
+        .demo-content-wrapper {
+            max-width: 1100px;
+            margin: 0 auto;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+            background: var(--bg-light);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .demo-image-panel {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .demo-image-panel.active {
+            display: block;
+        }
+
+        .demo-image-panel img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .demo-image-desc {
+            padding: 24px;
+            background: var(--white);
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+            font-size: 1.1rem;
+            color: var(--text-dark);
+            text-align: left;
+            line-height: 1.6;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 
@@ -535,6 +613,7 @@
             </a>
             <div class="nav-links">
                 <a href="#features">Características</a>
+                <a href="#demo">Demostración</a>
                 <a href="#ai-intake">AI Intake 🤖</a>
                 <a href="#metrics">Métricas</a>
                 <a href="#pricing">Precios</a>
@@ -653,6 +732,48 @@
                 <div class="floating-card card-2">
                     <div class="icon">🤖</div>
                     <div class="text">AI Intake Activo</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Interactive Screenshot Showcase -->
+    <section id="demo" class="demo-showcase scroll-reveal">
+        <div class="container">
+            <div class="section-title">
+                <h2>Operia en Acción</h2>
+                <p>Explora la interfaz moderna y funcional de nuestra plataforma diseñada para el día a día operativo.</p>
+            </div>
+
+            <div class="demo-tabs">
+                <button class="demo-tab-btn active" data-target="panel-kanban">📊 Tablero Kanban</button>
+                <button class="demo-tab-btn" data-target="panel-details">🔍 Detalle de Tarea</button>
+                <button class="demo-tab-btn" data-target="panel-intake">🤖 Consola AI Intake</button>
+            </div>
+
+            <div class="demo-content-wrapper">
+                <!-- Panel 1: Kanban -->
+                <div class="demo-image-panel active" id="panel-kanban">
+                    <img src="assets/screenshot_kanban.png" alt="Tablero Kanban de Operia">
+                    <div class="demo-image-desc">
+                        <strong>Tablero Kanban Interactivo:</strong> Administra y organiza tus tareas en columnas claras de estado. Visualiza prioridades altas con etiquetas urgentes y filtra por responsable o fecha límite con facilidad.
+                    </div>
+                </div>
+
+                <!-- Panel 2: Details -->
+                <div class="demo-image-panel" id="panel-details">
+                    <img src="assets/screenshot_details.png" alt="Detalle de Tarea en Operia">
+                    <div class="demo-image-desc">
+                        <strong>Ficha y Detalle Completo:</strong> Inspecciona de forma centralizada la información del despacho, datos del cliente, estado del pago, observadores, etiquetas y mantén un historial transparente a través de los comentarios y adjuntos.
+                    </div>
+                </div>
+
+                <!-- Panel 3: AI Intake -->
+                <div class="demo-image-panel" id="panel-intake">
+                    <img src="assets/screenshot_ai_intake.png" alt="Consola AI Intake de Operia">
+                    <div class="demo-image-desc">
+                        <strong>Ingesta Inteligente con Inteligencia Artificial:</strong> Pega correos, chats o minutas desestructuradas directamente en la consola. La IA procesa y extrae automáticamente la información clave, validando los datos del cliente antes de ingresarlos.
+                    </div>
                 </div>
             </div>
         </div>
@@ -1042,6 +1163,21 @@
             threshold: 0.1
         });
         revealElements.forEach(el => revealObserver.observe(el));
+
+        // Tab switching for showcase
+        const tabBtns = document.querySelectorAll('.demo-tab-btn');
+        const imgPanels = document.querySelectorAll('.demo-image-panel');
+
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                tabBtns.forEach(b => b.classList.remove('active'));
+                imgPanels.forEach(p => p.classList.remove('active'));
+
+                btn.classList.add('active');
+                const targetPanelId = btn.getAttribute('data-target');
+                document.getElementById(targetPanelId).classList.add('active');
+            });
+        });
     </script>
 </body>
 
