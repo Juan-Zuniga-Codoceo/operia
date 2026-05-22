@@ -369,6 +369,31 @@ async function initializeDatabase() {
     console.log('✅ Tabla payments creada');
 
     // ==========================================
+    // EXTENSIÓN PGVECTOR Y TABLA DE VECTORES
+    // ==========================================
+    const extensionCheck = await client.query("SELECT 1 FROM pg_available_extensions WHERE name = 'vector'");
+    if (extensionCheck.rows.length > 0) {
+      await client.query("CREATE EXTENSION IF NOT EXISTS vector");
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS knowledge_base_chunks (
+          id SERIAL PRIMARY KEY,
+          document_name VARCHAR(255) NOT NULL,
+          content TEXT NOT NULL,
+          embedding VECTOR(768) NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS knowledge_base_chunks_embedding_hnsw_idx 
+        ON knowledge_base_chunks 
+        USING hnsw (embedding vector_cosine_ops)
+      `);
+      console.log('✅ Tabla knowledge_base_chunks e índice HNSW creados');
+    } else {
+      console.warn('⚠️ La extensión pgvector no está disponible en este sistema PostgreSQL. No se creará la tabla knowledge_base_chunks.');
+    }
+
+    // ==========================================
     // CREAR TENANT DE DEMOSTRACIÓN
     // ==========================================
     const defaultPassword = await bcrypt.hash('1234', 10);
