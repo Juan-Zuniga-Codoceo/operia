@@ -1429,6 +1429,70 @@
       </div>
     </div>
 
+    <!-- ====================================================== -->
+    <!-- ===   SOPORTE INTELIGENTE CHAT WIDGET (PROYECTO 3)  === -->
+    <!-- ====================================================== -->
+    <!-- Botón flotante -->
+    <div class="chat-widget-launcher" @click="showChatWidget = !showChatWidget" title="Soporte Inteligente">
+      <i class="fa-solid" :class="showChatWidget ? 'fa-xmark' : 'fa-robot'"></i>
+      <span class="pulse-ring"></span>
+    </div>
+
+    <!-- Ventana de Chat superpuesta -->
+    <div class="chat-widget-window" v-if="showChatWidget">
+      <div class="chat-widget-header">
+        <div class="chat-widget-title-area">
+          <i class="fa-solid fa-robot"></i>
+          <div>
+            <h4>Soporte Inteligente Operia</h4>
+            <span class="chat-status"><span class="status-dot"></span> En línea (IA RAG)</span>
+          </div>
+        </div>
+        <button class="chat-widget-close" @click="showChatWidget = false">&times;</button>
+      </div>
+
+      <div class="chat-widget-body" id="chat-body-container">
+        <div v-for="(msg, index) in chatMessages" :key="index" class="chat-bubble-wrapper" :class="msg.sender">
+          
+          <div class="chat-bubble" :class="{'hallucination-fallback': msg.sender === 'ia' && !msg.success}">
+            <p>{{ msg.text }}</p>
+            
+            <!-- Badge de Verificación Juez -->
+            <div class="chat-verification-badge" v-if="msg.sender === 'ia' && msg.success && msg.judge">
+              <i class="fa-solid fa-circle-check"></i> verificado (Fidelidad: {{ (msg.judge.score * 100).toFixed(0) }}%)
+            </div>
+
+            <!-- Botón de acción para contactar humano si falla la veracidad -->
+            <div class="chat-fallback-action" v-if="msg.sender === 'ia' && !msg.success">
+              <button class="btn-chat-action" @click="contactHumanTech">
+                <i class="fa-solid fa-headset"></i> Contactar a un Técnico Humano
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Indicador de carga -->
+        <div class="chat-bubble-wrapper ia" v-if="chatLoading">
+          <div class="chat-bubble loading">
+            <div class="loading-dots">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+            <small class="loading-message">🤖 Validando respuesta con manuales oficiales...</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="chat-widget-footer">
+        <input type="text" v-model="chatQuestion" @keyup.enter="sendChatMessage" placeholder="Escribe tu consulta de soporte..." :disabled="chatLoading" />
+        <button class="chat-send-btn" @click="sendChatMessage" :disabled="chatLoading || !chatQuestion.trim()">
+          <i class="fa-solid fa-paper-plane"></i>
+        </button>
+      </div>
+    </div>
+
   </div> <!-- Cierre de #app -->
 
   <!-- Áreas de impresión (ocultas) -->

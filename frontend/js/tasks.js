@@ -23,6 +23,74 @@ createApp({
     // 1. ESTADO REACTIVO (refs)
     // ======================================================
     const user = ref(null);
+
+    // Support Chat Widget State (Proyecto 3)
+    const showChatWidget = ref(false);
+    const chatQuestion = ref('');
+    const chatLoading = ref(false);
+    const chatMessages = ref([
+      { 
+        sender: 'ia', 
+        text: '¡Hola! Soy el Asistente Técnico Oficial de Operia. ¿En qué puedo ayudarte hoy?', 
+        success: true,
+        judge: { score: 1.0, reason: 'Mensaje de bienvenida por defecto.' } 
+      }
+    ]);
+
+    async function sendChatMessage() {
+      if (!chatQuestion.value.trim() || chatLoading.value) return;
+      
+      const userText = chatQuestion.value.trim();
+      chatMessages.value.push({ sender: 'user', text: userText });
+      chatQuestion.value = '';
+      chatLoading.value = true;
+
+      try {
+        const response = await API.post('/api/operia/knowledge-chat', { question: userText });
+        if (response) {
+          chatMessages.value.push({
+            sender: 'ia',
+            text: response.answer,
+            success: response.success,
+            judge: response.judge
+          });
+        }
+      } catch (err) {
+        console.error('Error enviando mensaje de chat:', err);
+        chatMessages.value.push({
+          sender: 'ia',
+          text: 'Ha ocurrido un error al conectar con el asistente de soporte técnico. Por favor, intenta de nuevo.',
+          success: false,
+          judge: { score: 0.0, reason: 'Error de red o de servidor.' }
+        });
+      } finally {
+        chatLoading.value = false;
+        // Hacer scroll automático al fondo del chat
+        setTimeout(() => {
+          const container = document.getElementById('chat-body-container');
+          if (container) {
+            container.scrollTop = container.scrollHeight;
+          }
+        }, 100);
+      }
+    }
+
+    function contactHumanTech() {
+      alert('Derivando caso a un técnico de soporte técnico de Operia. Recibirás una notificación a la brevedad.');
+      chatMessages.value.push({
+        sender: 'ia',
+        text: '✓ Caso derivado con éxito. Un agente humano se pondrá en contacto contigo mediante tu correo corporativo.',
+        success: true,
+        judge: { score: 1.0, reason: 'Derivación manual confirmada por el usuario.' }
+      });
+      setTimeout(() => {
+        const container = document.getElementById('chat-body-container');
+        if (container) {
+          container.scrollTop = container.scrollHeight;
+        }
+      }, 100);
+    }
+
     const projects = ref([]);
     const selectedProjectId = ref(null);
     const showNewProjectModal = ref(false);
@@ -1793,7 +1861,8 @@ createApp({
       deleteClient,
       activeTab, aiIntakeText, aiIntakeLoading, aiIntakeError, aiExtractedFields, analizarConIA,
       projects, selectedProjectId, showNewProjectModal, newProject, crearProyecto, cambiarProyecto, abrirNuevoProyecto,
-      selectedMembersInProject, availableMembersInProject, addMemberToProject, removeMemberFromProject
+      selectedMembersInProject, availableMembersInProject, addMemberToProject, removeMemberFromProject,
+      showChatWidget, chatQuestion, chatLoading, chatMessages, sendChatMessage, contactHumanTech
     };
   }
 }).mount('#app');
