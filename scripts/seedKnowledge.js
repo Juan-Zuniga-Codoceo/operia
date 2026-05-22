@@ -88,8 +88,28 @@ async function run() {
         // Limpiar registros antiguos para evitar duplicados en el demo
         await client.query('DELETE FROM knowledge_base_chunks WHERE document_name = $1', ['knowledge.txt']);
 
-        // Instanciar el modelo de embeddings
-        const model = genAI.getGenerativeModel({ model: 'text-embedding-004' });
+        // Función auxiliar para obtener embeddings con fallback robusto
+        async function getEmbeddingWithFallback(text) {
+            const modelsToTry = ['text-embedding-004', 'gemini-embedding-2', 'gemini-embedding-001'];
+            let lastError = null;
+
+            for (const modelName of modelsToTry) {
+                try {
+                    const model = genAI.getGenerativeModel({ model: modelName });
+                    const result = await model.embedContent({
+                        content: { parts: [{ text }] },
+                        outputDimensionality: 768
+                    });
+                    if (result.embedding && result.embedding.values) {
+                        return result.embedding.values;
+                    }
+                } catch (err) {
+                    lastError = err;
+                    // Continuar al siguiente modelo en caso de error
+                }
+            }
+            throw new Error(`Todos los modelos de embeddings fallaron. Último error: ${lastError ? lastError.message : 'Desconocido'}`);
+        }
 
         for (let idx = 0; idx < chunks.length; idx++) {
             const chunk = chunks[idx].trim();
@@ -98,9 +118,8 @@ async function run() {
             console.log(`🤖 Generando embedding para el fragmento ${idx + 1}/${chunks.length}...`);
             console.log(`📝 Contenido: "${chunk.substring(0, 60)}..."`);
             
-            // Llamar a la API de Gemini para generar el vector
-            const result = await model.embedContent(chunk);
-            const embedding = result.embedding.values;
+            // Generar vector usando la función con fallback
+            const embedding = await getEmbeddingWithFallback(chunk);
 
             if (!embedding || embedding.length !== 768) {
                 throw new Error(`El vector devuelto no tiene la dimensión esperada de 768. Dimensión recibida: ${embedding ? embedding.length : 0}`);
