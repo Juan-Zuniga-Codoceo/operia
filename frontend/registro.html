@@ -65,13 +65,7 @@
         <!-- Oficina -->
         <div class="input-group">
           <label for="office">Oficina</label>
-          <select id="office" v-model="office" required>
-            <option value="" disabled selected>Selecciona tu oficina</option>
-            <option value="Valparaíso">Valparaíso</option>
-            <option value="Viña del Mar">Viña del Mar</option>
-            <option value="Quilpué">Quilpué</option>
-            <option value="Bodega">Bodega</option>
-          </select>
+          <input id="office" type="text" v-model="office" placeholder="Ej: Santiago, Bodega, Valparaíso" required />
         </div>
 
         <!-- Botón de registro -->

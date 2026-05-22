@@ -115,8 +115,8 @@ if (document.getElementById('register-app')) {
         if (password.value !== confirmPassword.value) {
           return 'Las contraseñas no coinciden';
         }
-        if (!office.value) {
-          return 'Selecciona una oficina';
+        if (!office.value.trim()) {
+          return 'Ingresa el nombre de tu oficina';
         }
         return null;
       };
