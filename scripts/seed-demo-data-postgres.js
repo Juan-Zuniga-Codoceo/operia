@@ -442,8 +442,6 @@ async function seedData() {
         const defaultPassword = await bcrypt.hash('demo2024', 10);
 
         console.log('👥 Obteniendo usuarios existentes...');
-        // Limpiamos los usuarios previos para evitar duplicados en seeding
-        await client.query('DELETE FROM users WHERE tenant_id = $1 AND email != \'admin@demo.operia.app\'', [TENANT_ID]);
         
         let userIds = [];
         const adminResult = await client.query('SELECT id FROM users WHERE tenant_id = $1 AND email = \'admin@demo.operia.app\'', [TENANT_ID]);
@@ -451,7 +449,7 @@ async function seedData() {
             userIds.push(adminResult.rows[0].id);
         }
 
-        console.log('Creando usuarios demo...');
+        console.log('Creando o actualizando usuarios demo...');
         for (const user of USERS) {
             // Verificar si ya existe para evitar colisión de índice único
             const check = await client.query('SELECT id FROM users WHERE tenant_id = $1 AND email = $2', [TENANT_ID, user.email]);
@@ -464,6 +462,11 @@ async function seedData() {
                 );
                 userIds.push(result.rows[0].id);
             } else {
+                // Actualizar contraseña para que coincida con demo2024
+                await client.query(
+                    `UPDATE users SET password = $1 WHERE id = $2`,
+                    [defaultPassword, check.rows[0].id]
+                );
                 userIds.push(check.rows[0].id);
             }
         }
