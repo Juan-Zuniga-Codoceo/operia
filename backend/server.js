@@ -36,6 +36,7 @@ const senderRoutes = require('./routes/sender.routes-postgres');
 const paymentsRoutes = require('./routes/payments.routes-postgres');
 const tenantsRoutes = require('./routes/tenants.routes');
 const operiaIntakeRoutes = require('./routes/operiaIntakeRoutes');
+const knowledgeRoutes = require('./routes/knowledgeRoutes');
 
 // App Initialization
 const app = express();
@@ -95,6 +96,7 @@ app.use('/api/sender-config', senderRoutes);
 app.use('/api/payments', paymentsRoutes);
 app.use('/api/tenants', tenantsRoutes);
 app.use('/api', operiaIntakeRoutes);
+app.use('/api', knowledgeRoutes);
 
 // 4. Users & Notifications (usersRoutes)
 //    Mounds logic at /api/users, /api/notifications, etc.

@@ -41,6 +41,7 @@ const onboardingRoutes = require('./routes/onboarding.routes-postgres');
 const adminRoutes = require('./routes/admin.routes-postgres');
 const senderRoutes = require('./routes/sender.routes-postgres');
 const operiaIntakeRoutes = require('./routes/operiaIntakeRoutes');
+const knowledgeRoutes = require('./routes/knowledgeRoutes');
 
 // Scheduled jobs
 const { initScheduledJobs } = require('./jobs/in-app-jobs');
@@ -158,6 +159,7 @@ app.use('/api/sender-config', senderRoutes);
 const paymentsRoutes = require('./routes/payments.routes-postgres');
 app.use('/api/payments', paymentsRoutes);
 app.use('/api', operiaIntakeRoutes);
+app.use('/api', knowledgeRoutes);
 
 // ======================================================
 // ===          FRONTEND HTML ROUTES                 ===
